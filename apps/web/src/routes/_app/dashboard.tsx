@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/")({ component: HomePage })
+export const Route = createFileRoute("/_app/dashboard")({
+  component: DashboardPage,
+})
 
-function HomePage() {
+function DashboardPage() {
   return (
     <>
       <div className="grid auto-rows-min gap-4 md:grid-cols-3">
