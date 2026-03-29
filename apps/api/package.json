@@ -1,10 +1,9 @@
 {
   "name": "api",
   "version": "0.0.1",
-  "type": "commonjs",
   "private": true,
   "scripts": {
-    "dev": "nest start --watch",
+    "dev": "nest start --watch --exec \"node -r @swc-node/register\"",
     "build": "nest build",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\"",
@@ -14,12 +13,16 @@
     "@nestjs/common": "^11.1.3",
     "@nestjs/core": "^11.1.3",
     "@nestjs/platform-express": "^11.1.3",
+    "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.7",
+    "@swc-node/register": "^1.11.1",
+    "@swc/cli": "^0.8.0",
+    "@swc/core": "^1.15.21",
     "@types/node": "^25.1.0",
     "typescript": "^5.9.3"
   }
