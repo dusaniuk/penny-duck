@@ -16,7 +16,12 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@workspace/ui/components/sidebar"
-import { IconArrowForward, IconDots, IconFolder, IconTrash } from "@tabler/icons-react"
+import {
+  IconArrowForward,
+  IconDots,
+  IconFolder,
+  IconTrash,
+} from "@tabler/icons-react"
 
 export function NavProjects({
   projects,
@@ -47,8 +52,7 @@ export function NavProjects({
                   showOnHover
                   className="aria-expanded:bg-muted"
                 >
-                  <IconDots
-                  />
+                  <IconDots />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>

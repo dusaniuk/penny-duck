@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,10 +13,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
+import { api } from "@/lib/api"
 
 import { AppSidebar } from "@/components/app-sidebar"
 
 export const Route = createFileRoute("/_app")({
+  beforeLoad: async () => {
+    const res = await api.get("/auth/me")
+    if (!res.ok) {
+      throw redirect({ to: "/login" })
+    }
+    return { user: await res.json() }
+  },
   component: AppLayout,
 })
 

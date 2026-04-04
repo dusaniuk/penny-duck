@@ -1,8 +1,8 @@
 import * as React from "react"
 import { Slot } from "radix-ui"
 
-import { cn } from "@workspace/ui/lib/utils"
 import { IconChevronRight, IconDots } from "@tabler/icons-react"
+import { cn } from "@workspace/ui/lib/utils"
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -82,9 +82,7 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? (
-        <IconChevronRight />
-      )}
+      {children ?? <IconChevronRight />}
     </li>
   )
 }
@@ -104,8 +102,7 @@ function BreadcrumbEllipsis({
       )}
       {...props}
     >
-      <IconDots
-      />
+      <IconDots />
       <span className="sr-only">More</span>
     </span>
   )
