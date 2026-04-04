@@ -29,6 +29,9 @@ dist
 # Debug
 npm-debug.log*
 
+# Superpowers working files
+docs/superpowers
+
 # Worktrees
 .worktrees
 
