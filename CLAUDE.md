@@ -9,7 +9,10 @@ Penny Duck is a monorepo using **TanStack Start** (React 19 + Vite + Nitro) with
 ## Monorepo Structure
 
 - `apps/web` — TanStack Start app (file-based routing via TanStack Router, Nitro server)
+- `apps/api` — NestJS API (DDD/CQRS architecture, port 3030)
 - `packages/ui` — Shared UI package: shadcn/ui components, hooks, utilities, and global styles
+- `packages/db` — Database schema and Drizzle ORM client (PostgreSQL, `app` schema namespace)
+- `packages/env` — Environment variable validation (t3-env + Zod)
 
 ## Commands
 
@@ -23,7 +26,22 @@ pnpm format       # Format with Prettier
 pnpm typecheck    # TypeScript type checking
 ```
 
-Per-package commands: `pnpm --filter web <script>` or `pnpm --filter @workspace/ui <script>`
+Per-package commands: `pnpm --filter web <script>`, `pnpm --filter api <script>`, or `pnpm --filter @workspace/ui <script>`
+
+### Database
+
+```bash
+pnpm --filter @workspace/db drizzle-kit generate   # Generate migration from schema changes
+pnpm --filter @workspace/db drizzle-kit migrate     # Apply migrations
+pnpm --filter @workspace/db drizzle-kit studio      # Open Drizzle Studio
+```
+
+### Tests
+
+```bash
+pnpm --filter api test          # Run API tests (Vitest)
+pnpm --filter api test:watch    # Watch mode
+```
 
 ## Adding shadcn/ui Components
 
@@ -45,3 +63,26 @@ This places components in `packages/ui/src/components/`. The shadcn config lives
 - **Utility functions** — `cn()` (clsx + tailwind-merge) and `cva` for component variants
 - **Route files** — `apps/web/src/routes/` using TanStack Router file-based routing. `routeTree.gen.ts` is auto-generated — do not edit manually
 - **Package exports** — `@workspace/ui` uses subpath exports (`./components/*`, `./lib/*`, `./hooks/*`)
+
+## API Architecture (DDD/CQRS)
+
+The NestJS API follows Domain-Driven Design with CQRS (`@nestjs/cqrs`):
+
+```
+apps/api/src/<module>/
+  domain/          Pure TypeScript — entities, value objects, events, repository ports, errors
+  application/     Commands, queries, event handlers (use cases)
+  infrastructure/  Repository implementations (Drizzle), services (JWT, cookies), mappers
+  presentation/    Controller, DTOs, guards, decorators, exception filters
+```
+
+- **Domain layer** has zero framework dependencies
+- **Repository ports** are abstract classes in domain, implementations in infrastructure
+- **Schema changes** must use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
+
+## Auth
+
+- JWT access token (15min, httpOnly cookie) + opaque refresh token (7d, httpOnly cookie) with rotation
+- Frontend proxies API calls through Nitro (`/api/**` → `localhost:3030/**`) for same-origin cookies
+- SSR auth checks use `createServerFn` + `getCookie` from `@tanstack/react-start/server`
+- Auth helper: `apps/web/src/lib/auth.ts` — `getAuthUser()` server function used in route `beforeLoad`
