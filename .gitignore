@@ -36,6 +36,7 @@ npm-debug.log*
 
 # Superpowers working files
 docs/superpowers
+.superpowers
 
 # Worktrees
 .worktrees
