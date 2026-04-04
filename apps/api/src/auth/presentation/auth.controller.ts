@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Res,
+  UnauthorizedException,
   UseFilters,
   UseGuards,
 } from "@nestjs/common"
@@ -76,7 +77,7 @@ export class AuthController {
     const rawToken = res.req.cookies?.refresh_token
     if (!rawToken) {
       this.cookieService.clearTokens(res)
-      return res.status(401).json({ message: "No refresh token" })
+      throw new UnauthorizedException("No refresh token")
     }
 
     const result = await this.commandBus.execute(

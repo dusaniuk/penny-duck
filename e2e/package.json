@@ -1,0 +1,19 @@
+{
+  "name": "e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:api": "playwright test --config api/playwright.config.ts",
+    "test:ui": "playwright test --config ui/playwright.config.ts",
+    "test": "pnpm test:api && pnpm test:ui"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.4.0",
+    "@playwright/test": "^1.52.0",
+    "@workspace/db": "workspace:*",
+    "dotenv": "^16.6.1",
+    "dotenv-expand": "^12.0.1",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.20.0"
+  }
+}
