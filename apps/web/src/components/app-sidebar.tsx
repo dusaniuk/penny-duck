@@ -1,138 +1,35 @@
 "use client"
 
 import * as React from "react"
-
+import { Link, useMatchRoute } from "@tanstack/react-router"
 import {
-  IconBook,
   IconCashBanknote,
-  IconChartPie,
-  IconFrame,
-  IconMap,
-  IconRobot,
-  IconSettings,
-  IconTerminal2,
+  IconCategory,
+  IconLayoutDashboard,
+  IconWallet,
 } from "@tabler/icons-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: <IconTerminal2 />,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: <IconRobot />,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: <IconBook />,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: <IconSettings />,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: <IconFrame />,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: <IconChartPie />,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: <IconMap />,
-    },
-  ],
-}
+const mainNav = [
+  { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
+]
+
+const manageNav = [
+  { title: "Accounts", url: "/accounts", icon: IconWallet },
+  { title: "Categories", url: "/categories", icon: IconCategory },
+]
 
 export function AppSidebar({
   user,
@@ -140,6 +37,8 @@ export function AppSidebar({
 }: { user: { name: string; email: string } } & React.ComponentProps<
   typeof Sidebar
 >) {
+  const matchRoute = useMatchRoute()
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -149,17 +48,50 @@ export function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#">
+              <Link to="/dashboard">
                 <IconCashBanknote className="size-5!" />
                 <span className="text-base font-semibold">Penny Duck</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <SidebarGroup>
+          <SidebarMenu>
+            {mainNav.map((item) => (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={!!matchRoute({ to: item.url })}
+                >
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Manage</SidebarGroupLabel>
+          <SidebarMenu>
+            {manageNav.map((item) => (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={!!matchRoute({ to: item.url })}
+                >
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

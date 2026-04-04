@@ -7,7 +7,7 @@ export async function runMigrations(
   await new Promise<void>((resolve, reject) => {
     const migrate = spawn(
       "pnpm",
-      ["--filter", "@workspace/db", "drizzle-kit", "migrate"],
+      ["--filter", "@workspace/db", "db:migrate"],
       {
         cwd: repoRoot,
         env: { ...process.env, DATABASE_URL: databaseUrl },
