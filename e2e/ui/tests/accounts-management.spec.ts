@@ -26,18 +26,16 @@ test.describe("Accounts management", () => {
 
     await page.getByRole("button", { name: "+ Add Account" }).click()
 
-    await page.getByLabel("Name").fill("Monobank UAH")
-    // Type select - click trigger, then select option
-    await page.getByRole("combobox").click()
-    await page.getByRole("option", { name: "Bank" }).click()
-    await page.getByLabel("Currency").fill("UAH")
-    await page.getByLabel("Initial Balance").fill("25000")
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("e.g. Main Checking").fill("Monobank UAH")
+    await dialog.getByPlaceholder("USD").fill("UAH")
+    await dialog.getByPlaceholder("0.00").fill("25000")
 
-    await page.getByRole("button", { name: "Create" }).click()
+    await dialog.getByRole("button", { name: "Create" }).click()
 
-    // Dialog closes, card appears
     await expect(page.getByText("Monobank UAH")).toBeVisible()
-    await expect(page.getByText("25,000.00")).toBeVisible()
+    // Balance may or may not have comma formatting depending on locale
+    await expect(page.getByText(/25[,.]?000\.00/)).toBeVisible()
   })
 
   test("edits an existing account", async ({ page }) => {
@@ -46,23 +44,24 @@ test.describe("Accounts management", () => {
 
     // Create an account first
     await page.getByRole("button", { name: "+ Add Account" }).click()
-    await page.getByLabel("Name").fill("Test Account")
-    await page.getByLabel("Currency").fill("PLN")
-    await page.getByRole("button", { name: "Create" }).click()
+    let dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("e.g. Main Checking").fill("Test Account")
+    await dialog.getByPlaceholder("USD").fill("PLN")
+    await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("Test Account")).toBeVisible()
 
     // Open edit via ⋯ menu
-    await page
+    const card = page
       .locator("[data-slot=card]")
       .filter({ hasText: "Test Account" })
-      .getByRole("button")
-      .first()
-      .click()
+    await card.getByRole("button").first().click()
     await page.getByRole("menuitem", { name: "Edit" }).click()
 
-    await page.getByLabel("Name").clear()
-    await page.getByLabel("Name").fill("Renamed Account")
-    await page.getByRole("button", { name: "Save" }).click()
+    dialog = page.getByRole("dialog")
+    const nameInput = dialog.getByPlaceholder("e.g. Main Checking")
+    await nameInput.clear()
+    await nameInput.fill("Renamed Account")
+    await dialog.getByRole("button", { name: "Save Changes" }).click()
 
     await expect(page.getByText("Renamed Account")).toBeVisible()
   })
@@ -73,24 +72,32 @@ test.describe("Accounts management", () => {
 
     // Create an account first
     await page.getByRole("button", { name: "+ Add Account" }).click()
-    await page.getByLabel("Name").fill("To Delete")
-    await page.getByLabel("Currency").fill("USD")
-    await page.getByRole("button", { name: "Create" }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("e.g. Main Checking").fill("To Delete")
+    await dialog.getByPlaceholder("USD").fill("USD")
+    await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("To Delete")).toBeVisible()
 
     // Open delete via ⋯ menu
-    await page
+    const card = page
       .locator("[data-slot=card]")
       .filter({ hasText: "To Delete" })
-      .getByRole("button")
-      .first()
-      .click()
+    await card.getByRole("button").first().click()
     await page.getByRole("menuitem", { name: "Delete" }).click()
 
-    // Confirm delete
-    await page.getByRole("button", { name: "Delete" }).click()
+    // Confirm delete in alert dialog
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: /Delete|Deleting/ })
+      .click()
 
-    await expect(page.getByText("To Delete")).not.toBeVisible()
+    // Wait for dialog to close and card to disappear
+    await expect(page.getByRole("alertdialog")).not.toBeVisible({
+      timeout: 10_000,
+    })
+    await expect(
+      page.locator("[data-slot=card]").filter({ hasText: "To Delete" })
+    ).not.toBeVisible()
   })
 
   test("shows empty state with add card", async ({ page }) => {

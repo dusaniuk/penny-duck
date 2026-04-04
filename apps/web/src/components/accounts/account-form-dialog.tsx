@@ -62,7 +62,7 @@ export function AccountFormDialog({
       await onSubmit({
         name,
         type,
-        currency,
+        ...(isEdit ? {} : { currency }),
         ...(!isEdit && balance !== "" ? { balance: parseFloat(balance) } : {}),
       })
       onOpenChange(false)
