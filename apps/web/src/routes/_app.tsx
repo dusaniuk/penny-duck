@@ -13,17 +13,16 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
-import { api } from "@/lib/api"
-
 import { AppSidebar } from "@/components/app-sidebar"
+import { getAuthUser } from "@/lib/auth"
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
-    const res = await api.get("/auth/me")
-    if (!res.ok) {
+    const user = await getAuthUser()
+    if (!user) {
       throw redirect({ to: "/login" })
     }
-    return { user: await res.json() }
+    return { user }
   },
   component: AppLayout,
 })

@@ -18,13 +18,13 @@ export class CookieService {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      path: "/auth/refresh",
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
   }
 
   clearTokens(res: Response): void {
     res.clearCookie("access_token", { path: "/" })
-    res.clearCookie("refresh_token", { path: "/auth/refresh" })
+    res.clearCookie("refresh_token", { path: "/" })
   }
 }

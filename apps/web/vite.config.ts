@@ -6,8 +6,15 @@ import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 
 const config = defineConfig({
+  envDir: "../../",
   plugins: [
-    nitro(),
+    nitro({
+      routeRules: {
+        "/api/**": {
+          proxy: "http://localhost:3030/**",
+        },
+      },
+    }),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
