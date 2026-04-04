@@ -6,6 +6,9 @@ export const users = appSchema.table("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  homeCurrency: varchar("home_currency", { length: 3 })
+    .notNull()
+    .default("UAH"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

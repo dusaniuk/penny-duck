@@ -1,3 +1,5 @@
 export { appSchema } from "./schema"
 export { users } from "./users"
 export { refreshTokens } from "./refresh-tokens"
+export { accounts } from "./accounts"
+export { categories } from "./categories"

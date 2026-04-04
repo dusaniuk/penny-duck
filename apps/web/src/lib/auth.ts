@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getCookie } from "@tanstack/react-start/server"
-import { api } from "./api"
 
 export interface AuthUser {
   id: string
@@ -24,5 +23,5 @@ export const getAuthUser = createServerFn().handler(
     } catch {
       return null
     }
-  },
+  }
 )
