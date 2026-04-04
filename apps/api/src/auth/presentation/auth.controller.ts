@@ -93,15 +93,13 @@ export class AuthController {
   @Post("logout")
   async logout(@Res({ passthrough: true }) res: Response) {
     const rawToken = res.req.cookies?.refresh_token
+    this.cookieService.clearTokens(res)
+
     if (rawToken) {
-      try {
-        await this.commandBus.execute(new LogoutCommand(rawToken))
-      } catch {
-        // Token already invalid — still clear cookies
-      }
+      // Fire and forget — don't block the response
+      this.commandBus.execute(new LogoutCommand(rawToken)).catch(() => {})
     }
 
-    this.cookieService.clearTokens(res)
     return { message: "Logged out" }
   }
 
