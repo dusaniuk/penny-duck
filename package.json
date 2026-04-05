@@ -18,9 +18,11 @@
     "test:e2e:api": "pnpm --filter e2e test:api",
     "test:e2e:ui": "pnpm --filter e2e test:ui",
     "test:unit": "pnpm --filter api test",
-    "test": "pnpm test:unit && pnpm test:e2e"
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.8.17",
