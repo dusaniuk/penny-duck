@@ -6,6 +6,7 @@ import {
   IconCashBanknote,
   IconCategory,
   IconLayoutDashboard,
+  IconReceipt,
   IconWallet,
 } from "@tabler/icons-react"
 import {
@@ -24,6 +25,7 @@ import { NavUser } from "@/components/nav-user"
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
+  { title: "Transactions", url: "/transactions", icon: IconReceipt },
 ]
 
 const manageNav = [

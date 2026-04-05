@@ -12,7 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin: env.WEB_URL,
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
 

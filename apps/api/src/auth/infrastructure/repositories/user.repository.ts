@@ -12,6 +12,17 @@ export class UserRepositoryImpl extends UserRepository {
     super()
   }
 
+  async findById(id: string): Promise<User | null> {
+    const rows = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1)
+
+    if (rows.length === 0) return null
+    return UserMapper.toDomain(rows[0])
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const rows = await this.db
       .select()

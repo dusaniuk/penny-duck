@@ -7,6 +7,7 @@ import {
 import { TokenReuseDetectedEvent } from "../../domain/events/token-reuse-detected.event"
 import { TokensRefreshedEvent } from "../../domain/events/tokens-refreshed.event"
 import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
+import { UserRepository } from "../../domain/repositories/user.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 
 export class RefreshTokensCommand {
@@ -22,7 +23,8 @@ export interface RefreshTokensResult {
 export class RefreshTokensHandler implements ICommandHandler<RefreshTokensCommand> {
   constructor(
     private readonly tokenRepo: RefreshTokenRepository,
-    private readonly eventBus: EventBus
+    private readonly userRepo: UserRepository,
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: RefreshTokensCommand): Promise<RefreshTokensResult> {
@@ -58,12 +60,15 @@ export class RefreshTokensHandler implements ICommandHandler<RefreshTokensComman
     )
     await this.tokenRepo.save(newToken)
 
+    const user = await this.userRepo.findById(matchedToken.userId)
+    if (!user) throw new InvalidTokenError()
+
     this.eventBus.publish(
       new TokensRefreshedEvent(matchedToken.userId, matchedToken.familyId)
     )
 
     return {
-      accessToken: { sub: matchedToken.userId, email: "" },
+      accessToken: { sub: matchedToken.userId, email: user.email },
       refreshToken: rawValue,
     }
   }

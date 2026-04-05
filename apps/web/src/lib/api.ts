@@ -1,5 +1,7 @@
 const API_URL = "/api"
 
+let refreshPromise: Promise<Response> | null = null
+
 async function fetchApi(
   path: string,
   options: RequestInit = {}
@@ -14,10 +16,16 @@ async function fetchApi(
   })
 
   if (res.status === 401 && !path.includes("/auth/refresh")) {
-    const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    })
+    if (!refreshPromise) {
+      refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      }).finally(() => {
+        refreshPromise = null
+      })
+    }
+
+    const refreshRes = await refreshPromise
 
     if (refreshRes.ok) {
       return fetch(`${API_URL}${path}`, {

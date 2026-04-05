@@ -7,15 +7,23 @@ import {
   TokenReuseDetectedError,
 } from "../../domain/errors/auth.errors"
 import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
+import { UserRepository } from "../../domain/repositories/user.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 import {
   RefreshTokensCommand,
   RefreshTokensHandler,
 } from "./refresh-tokens.command"
 
+const mockUser = {
+  id: faker.string.uuid(),
+  email: faker.internet.email(),
+  name: faker.person.fullName(),
+}
+
 describe("RefreshTokensHandler", () => {
   let handler: RefreshTokensHandler
   let tokenRepo: RefreshTokenRepository
+  let userRepo: UserRepository
   let eventBus: EventBus
 
   beforeEach(() => {
@@ -26,9 +34,15 @@ describe("RefreshTokensHandler", () => {
       findAllNonExpired: vi.fn().mockResolvedValue([]),
     } as unknown as RefreshTokenRepository
 
+    userRepo = {
+      findById: vi.fn().mockResolvedValue(mockUser),
+      findByEmail: vi.fn(),
+      save: vi.fn(),
+    } as unknown as UserRepository
+
     eventBus = { publish: vi.fn() } as unknown as EventBus
 
-    handler = new RefreshTokensHandler(tokenRepo, eventBus)
+    handler = new RefreshTokensHandler(tokenRepo, userRepo, eventBus)
   })
 
   it("rotates a valid refresh token", async () => {
@@ -43,7 +57,7 @@ describe("RefreshTokensHandler", () => {
     const command = new RefreshTokensCommand(rawValue)
     const result = await handler.execute(command)
 
-    expect(result.accessToken).toBeDefined()
+    expect(result.accessToken.email).toBe(mockUser.email)
     expect(result.refreshToken).toBeDefined()
     expect(token.revoked).toBe(true)
     expect(tokenRepo.save).toHaveBeenCalled()
