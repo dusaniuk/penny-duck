@@ -7,6 +7,8 @@ import { UpdateAccountHandler } from "./application/update-account.command"
 import { DeleteAccountHandler } from "./application/delete-account.command"
 import { GetAccountsHandler } from "./application/get-accounts.query"
 import { GetAccountHandler } from "./application/get-account.query"
+import { TransactionCreatedHandler } from "./application/event-handlers/transaction-created.handler"
+import { TransactionDeletedHandler } from "./application/event-handlers/transaction-deleted.handler"
 import { AccountRepository } from "./domain/repositories/account.repository"
 import { AccountRepositoryImpl } from "./infrastructure/repositories/account.repository"
 import { AccountsController } from "./presentation/accounts.controller"
@@ -18,6 +20,7 @@ const commandHandlers = [
   DeleteAccountHandler,
 ]
 const queryHandlers = [GetAccountsHandler, GetAccountHandler]
+const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
 
 @Module({
   imports: [DatabaseModule, CqrsModule, AuthModule],
@@ -25,8 +28,10 @@ const queryHandlers = [GetAccountsHandler, GetAccountHandler]
   providers: [
     ...commandHandlers,
     ...queryHandlers,
+    ...eventHandlers,
     { provide: AccountRepository, useClass: AccountRepositoryImpl },
     AccountsExceptionFilter,
   ],
+  exports: [AccountRepository],
 })
 export class AccountsModule {}

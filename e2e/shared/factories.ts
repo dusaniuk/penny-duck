@@ -8,6 +8,38 @@ export function createUserData() {
   }
 }
 
+export function createTransactionData(
+  overrides: Partial<{
+    accountId: string
+    type: string
+    amount: number
+    categoryId: string
+    date: string
+    note: string
+    myShare: number
+    originalAmount: number
+    originalCurrency: string
+    exchangeRate: number
+  }> = {},
+) {
+  return {
+    accountId: overrides.accountId ?? faker.string.uuid(),
+    type: overrides.type ?? "expense",
+    amount: overrides.amount ?? Number(faker.finance.amount({ min: 1, max: 500 })),
+    categoryId: overrides.categoryId ?? faker.string.uuid(),
+    date: overrides.date ?? new Date().toISOString(),
+    ...(overrides.note !== undefined ? { note: overrides.note } : {}),
+    ...(overrides.myShare !== undefined ? { myShare: overrides.myShare } : {}),
+    ...(overrides.originalAmount !== undefined
+      ? {
+          originalAmount: overrides.originalAmount,
+          originalCurrency: overrides.originalCurrency,
+          exchangeRate: overrides.exchangeRate,
+        }
+      : {}),
+  }
+}
+
 export function createAccountData(
   overrides: Partial<{
     name: string

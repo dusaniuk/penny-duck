@@ -30,6 +30,16 @@ export class AccountRepositoryImpl extends AccountRepository {
     return AccountMapper.toDomain(rows[0])
   }
 
+  async findByAccountId(id: string): Promise<Account | null> {
+    const rows = await this.db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, id))
+      .limit(1)
+    if (rows.length === 0) return null
+    return AccountMapper.toDomain(rows[0])
+  }
+
   async save(account: Account): Promise<Account> {
     if (account.id === "") {
       const rows = await this.db

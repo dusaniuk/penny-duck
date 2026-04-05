@@ -15,6 +15,13 @@
       "when": 1775333123523,
       "tag": "0001_regular_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775412786903,
+      "tag": "0002_unique_guardian",
+      "breakpoints": true
     }
   ]
 }
