@@ -1,0 +1,398 @@
+import { test, expect } from "@playwright/test"
+import { env } from "../../shared/env"
+import { createAccountData, createUserData } from "../../shared/factories"
+
+async function signupAndNavigate(page: any) {
+  const user = createUserData()
+  await page.goto("/signup")
+  await page.waitForLoadState("networkidle")
+  await page.getByLabel("Name").fill(user.name)
+  await page.getByLabel("Email").fill(user.email)
+  await page.getByLabel("Password").fill(user.password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+  await expect(page).toHaveURL(/\/dashboard/)
+  return user
+}
+
+async function createAccountViaPage(
+  page: any,
+  overrides: Parameters<typeof createAccountData>[0] = {},
+) {
+  const data = createAccountData(overrides)
+  const res = await page.request.post(`${env.WEB_BASE_URL}/api/accounts`, {
+    data,
+  })
+  return res.json()
+}
+
+async function getFirstCategory(page: any) {
+  for (let i = 0; i < 10; i++) {
+    const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
+    const categories = await res.json()
+    if (categories.length > 0) return categories[0]
+    await new Promise((r) => setTimeout(r, 300))
+  }
+  const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
+  return (await res.json())[0]
+}
+
+test.describe("Transactions management", () => {
+  test.beforeEach(async ({ page }) => {
+    await signupAndNavigate(page)
+  })
+
+  test("navigates to transactions page via sidebar", async ({ page }) => {
+    await page.getByRole("link", { name: "Transactions" }).click()
+    await expect(page).toHaveURL(/\/transactions/)
+    await expect(
+      page.getByRole("heading", { name: "Transactions" }),
+    ).toBeVisible()
+  })
+
+  test("shows empty state when no transactions", async ({ page }) => {
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    await expect(page.getByText("No transactions yet")).toBeVisible()
+  })
+
+  test("creates an expense transaction via FAB", async ({
+    page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "USD",
+    })
+    const category = await getFirstCategory(page)
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    // Open FAB menu
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    // Click Expense
+    await page.getByText("Expense").click()
+
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("42.50")
+
+    // Select account
+    await dialog.getByText("Select account").click()
+    await page.getByRole("option", { name: new RegExp(account.name) }).click()
+
+    // Select category
+    await dialog.getByText("Select category").click()
+    await page
+      .getByRole("option", { name: new RegExp(category.name) })
+      .click()
+
+    await dialog.getByRole("button", { name: "Create" }).click()
+
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+    await expect(page.getByText("-42.50").first()).toBeVisible()
+  })
+
+  test("creates an income transaction via FAB", async ({
+    page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 0,
+      currency: "UAH",
+    })
+    const category = await getFirstCategory(page)
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Income").click()
+
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("1000")
+    await dialog.getByText("Select account").click()
+    await page.getByRole("option", { name: new RegExp(account.name) }).click()
+    await dialog.getByText("Select category").click()
+    await page
+      .getByRole("option", { name: new RegExp(category.name) })
+      .click()
+
+    await dialog.getByRole("button", { name: "Create" }).click()
+
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+    await expect(page.getByText("+1000.00").first()).toBeVisible()
+  })
+
+  test("creates a shared expense and settles it", async ({
+    page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "USD",
+    })
+    const category = await getFirstCategory(page)
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    // Create shared expense
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Expense").click()
+
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("100")
+    await dialog.getByText("Select account").click()
+    await page.getByRole("option", { name: new RegExp(account.name) }).click()
+    await dialog.getByText("Select category").click()
+    await page
+      .getByRole("option", { name: new RegExp(category.name) })
+      .click()
+
+    // Expand shared expense section
+    await dialog.getByText("+ Shared expense").click()
+    await dialog.getByPlaceholder("0.00").last().fill("40")
+
+    await dialog.getByRole("button", { name: "Create" }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    // Verify unsettled indicator
+    await expect(page.getByText("my share: 40.00")).toBeVisible()
+    await expect(page.getByText(/Unsettled/)).toBeVisible()
+
+    // Click the transaction to edit, then settle
+    await page.getByText("my share: 40.00").click()
+
+    const editDialog = page.getByRole("dialog")
+    await editDialog.getByRole("button", { name: "Mark settled" }).click()
+
+    // Unsettled chip should disappear (count becomes 0)
+    await expect(page.getByText(/Unsettled/)).not.toBeVisible({
+      timeout: 5000,
+    })
+  })
+
+  test("edits a transaction", async ({ page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "USD",
+    })
+    const category = await getFirstCategory(page)
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    // Create a transaction first
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Expense").click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("50")
+    await dialog.getByText("Select account").click()
+    await page.getByRole("option", { name: new RegExp(account.name) }).click()
+    await dialog.getByText("Select category").click()
+    await page
+      .getByRole("option", { name: new RegExp(category.name) })
+      .click()
+    await dialog.getByRole("button", { name: "Create" }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    // Click the transaction row to edit
+    await page.getByRole("button", { name: /50\.00/ }).first().click()
+
+    const editDialog = page.getByRole("dialog")
+    await expect(editDialog.getByText("Edit Transaction")).toBeVisible()
+
+    const amountInput = editDialog.getByPlaceholder("0.00").first()
+    await amountInput.clear()
+    await amountInput.fill("75")
+    await editDialog.getByRole("button", { name: "Save Changes" }).click()
+
+    await expect(editDialog).not.toBeVisible({ timeout: 5000 })
+    await expect(page.getByText("-75.00").first()).toBeVisible()
+  })
+
+  test("deletes a transaction", async ({ page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "USD",
+    })
+    const category = await getFirstCategory(page)
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    // Create a transaction
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Expense").click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("99.99")
+    await dialog.getByText("Select account").click()
+    await page.getByRole("option", { name: new RegExp(account.name) }).click()
+    await dialog.getByText("Select category").click()
+    await page
+      .getByRole("option", { name: new RegExp(category.name) })
+      .click()
+    await dialog.getByPlaceholder("Optional note").fill("to delete")
+    await dialog.getByRole("button", { name: "Create" }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    // Click row to edit, then delete
+    await page.getByText("to delete").click()
+    const editDialog = page.getByRole("dialog")
+    await editDialog.getByRole("button", { name: "Delete" }).click()
+
+    // Confirm in alert dialog
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: /Delete|Deleting/ })
+      .click()
+
+    await expect(page.getByRole("alertdialog")).not.toBeVisible({
+      timeout: 5000,
+    })
+    await expect(page.getByText("to delete")).not.toBeVisible()
+  })
+})
+
+test.describe("Transfers", () => {
+  test.beforeEach(async ({ page }) => {
+    await signupAndNavigate(page)
+  })
+
+  test("creates a same-currency transfer", async ({ page }) => {
+    const acc1 = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "UAH",
+      name: "UAH Source",
+    })
+    const acc2 = await createAccountViaPage(page, {
+      balance: 0,
+      currency: "UAH",
+      name: "UAH Target",
+    })
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Transfer").click()
+
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("500")
+
+    // Select From account
+    await dialog.getByText("Source account").click()
+    await page.getByRole("option", { name: /UAH Source/ }).click()
+
+    // Select To account
+    await dialog.getByText("Destination account").click()
+    await page.getByRole("option", { name: /UAH Target/ }).click()
+
+    await dialog.getByRole("button", { name: "Create" }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    // Should show as a single row with both account names
+    const transferRows = page.getByRole("button", { name: /UAH Source|UAH Target/ })
+    await expect(transferRows).toHaveCount(1)
+    await expect(transferRows.first()).toContainText("UAH Source")
+    await expect(transferRows.first()).toContainText("UAH Target")
+  })
+
+  test("creates a cross-currency transfer with forced exchange rate", async ({
+    page }) => {
+    const usd = await createAccountViaPage(page, {
+      balance: 1000,
+      currency: "USD",
+      name: "USD Acc",
+    })
+    const uah = await createAccountViaPage(page, {
+      balance: 0,
+      currency: "UAH",
+      name: "UAH Acc",
+    })
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+
+    await page.locator(".fixed.bottom-6.right-6 > button").click()
+    await page.getByText("Transfer").click()
+
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("0.00").first().fill("100")
+
+    await dialog.getByText("Source account").click()
+    await page.getByRole("option", { name: /USD Acc/ }).click()
+
+    await dialog.getByText("Destination account").click()
+    await page.getByRole("option", { name: /UAH Acc/ }).click()
+
+    // Exchange rate section should auto-expand
+    await expect(
+      dialog.getByText("required — different currencies"),
+    ).toBeVisible()
+
+    // Fill exchange rate
+    await dialog.getByPlaceholder("41.52").fill("41.52")
+
+    // Receive amount should auto-calculate
+    await expect(dialog.getByPlaceholder("4152.00")).toHaveValue("4152.00")
+
+    await dialog.getByRole("button", { name: "Create" }).click()
+    await expect(dialog).not.toBeVisible({ timeout: 5000 })
+
+    await expect(page.getByText("100.00").first()).toBeVisible()
+  })
+})
+
+test.describe("Transactions filters", () => {
+  test.beforeEach(async ({ page }) => {
+    await signupAndNavigate(page)
+  })
+
+  test("filters by type via filter sheet", async ({ page }) => {
+    const account = await createAccountViaPage(page, {
+      balance: 5000,
+      currency: "USD",
+    })
+    const category = await getFirstCategory(page)
+
+    // Create an expense via API
+    await page.request.post(`${env.WEB_BASE_URL}/api/transactions`, {
+      data: {
+        accountId: account.id,
+        type: "expense",
+        amount: 50,
+        categoryId: category.id,
+        date: new Date().toISOString(),
+        note: "expense item",
+      },
+    })
+    // Create an income via API
+    await page.request.post(`${env.WEB_BASE_URL}/api/transactions`, {
+      data: {
+        accountId: account.id,
+        type: "income",
+        amount: 100,
+        categoryId: category.id,
+        date: new Date().toISOString(),
+        note: "income item",
+      },
+    })
+
+    await page.goto("/transactions")
+    await page.waitForLoadState("networkidle")
+    await expect(page.getByText("expense item")).toBeVisible()
+    await expect(page.getByText("income item")).toBeVisible()
+
+    // Open filter sheet
+    await page.getByRole("button", { name: "Filters" }).click()
+
+    // Select type = Expense
+    const sheet = page.locator("[data-slot=sheet-content]")
+    await sheet.getByRole("combobox").filter({ hasText: "All types" }).click()
+    await page.getByRole("option", { name: "Expense" }).click()
+    await sheet.getByRole("button", { name: "Apply" }).click()
+
+    // Only expense should be visible
+    await expect(page.getByText("expense item")).toBeVisible()
+    await expect(page.getByText("income item")).not.toBeVisible()
+
+    // Active filter badge should show
+    await expect(page.getByText("Expense").first()).toBeVisible()
+  })
+})
