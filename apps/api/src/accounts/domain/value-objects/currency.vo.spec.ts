@@ -23,4 +23,12 @@ describe("Currency", () => {
     expect(Currency.create("PLN").value).toBe("PLN")
     expect(Currency.create("EUR").value).toBe("EUR")
   })
+
+  it("rejects unknown 3-letter codes", () => {
+    expect(() => Currency.create("FOO")).toThrow("Invalid currency code: FOO")
+  })
+
+  it("rejects another unknown code", () => {
+    expect(() => Currency.create("XXX")).toThrow("Invalid currency code: XXX")
+  })
 })

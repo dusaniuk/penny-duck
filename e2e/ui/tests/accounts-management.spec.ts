@@ -28,7 +28,10 @@ test.describe("Accounts management", () => {
 
     const dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("Monobank UAH")
-    await dialog.getByPlaceholder("USD").fill("UAH")
+    // Currency combobox — click to open, search, select
+    await dialog.getByPlaceholder("Search currency...").fill("UAH")
+    await page.waitForTimeout(300)
+    await page.getByRole("option", { name: /UAH/ }).click()
     await dialog.getByPlaceholder("0.00").fill("25000")
 
     await dialog.getByRole("button", { name: "Create" }).click()
@@ -46,7 +49,9 @@ test.describe("Accounts management", () => {
     await page.getByRole("button", { name: "+ Add Account" }).click()
     let dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("Test Account")
-    await dialog.getByPlaceholder("USD").fill("PLN")
+    await dialog.getByPlaceholder("Search currency...").fill("PLN")
+    await page.waitForTimeout(300)
+    await page.getByRole("option", { name: /PLN/ }).click()
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("Test Account")).toBeVisible()
 
@@ -74,7 +79,8 @@ test.describe("Accounts management", () => {
     await page.getByRole("button", { name: "+ Add Account" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("To Delete")
-    await dialog.getByPlaceholder("USD").fill("USD")
+    await dialog.getByPlaceholder("Search currency...").fill("USD")
+    await page.getByText("USD — United States Dollar").click({ force: true })
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("To Delete")).toBeVisible()
 

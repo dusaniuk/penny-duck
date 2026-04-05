@@ -1,0 +1,9 @@
+{
+  "name": "@workspace/shared",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/currencies.ts",
+  "exports": {
+    "./currencies": "./src/currencies.ts"
+  }
+}

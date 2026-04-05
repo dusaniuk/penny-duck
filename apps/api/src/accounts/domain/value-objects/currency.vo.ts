@@ -1,3 +1,5 @@
+import { isValidCurrencyCode } from "@workspace/shared/currencies"
+
 export class Currency {
   private constructor(private readonly _value: string) {}
 
@@ -7,6 +9,8 @@ export class Currency {
     const upper = trimmed.toUpperCase()
     if (upper.length !== 3)
       throw new Error("Currency code must be 3 characters")
+    if (!isValidCurrencyCode(upper))
+      throw new Error(`Invalid currency code: ${upper}`)
     return new Currency(upper)
   }
 

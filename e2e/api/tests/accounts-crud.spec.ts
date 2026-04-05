@@ -119,6 +119,15 @@ test.describe("Accounts CRUD", () => {
     })
     expect(res.status()).toBe(400)
   })
+
+  test("returns 400 for unknown 3-letter currency code", async ({
+    request,
+  }) => {
+    const res = await request.post("/accounts", {
+      data: { name: "Test", type: "bank", currency: "FOO" },
+    })
+    expect(res.status()).toBeGreaterThanOrEqual(400)
+  })
 })
 
 test.describe("Accounts - auth required", () => {

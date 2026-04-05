@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react"
+import { CURRENCIES } from "@workspace/shared/currencies"
+import { Button } from "@workspace/ui/components/button"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@workspace/ui/components/combobox"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog"
+import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import {
   Select,
@@ -13,9 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
-import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
-import { Button } from "@workspace/ui/components/button"
+import { useEffect, useState } from "react"
 import type { AccountData } from "@/components/accounts/account-card"
+
+const currencyItems = CURRENCIES.map((c) => ({
+  ...c,
+  label: `${c.code} — ${c.name}`,
+}))
+
+type CurrencyItem = (typeof currencyItems)[number]
 
 interface AccountFormDialogProps {
   open: boolean
@@ -24,7 +40,7 @@ interface AccountFormDialogProps {
   onSubmit: (data: {
     name: string
     type: string
-    currency: string
+    currency?: string
     balance?: number
   }) => Promise<void>
 }
@@ -39,7 +55,7 @@ export function AccountFormDialog({
 
   const [name, setName] = useState("")
   const [type, setType] = useState("bank")
-  const [currency, setCurrency] = useState("")
+  const [currency, setCurrency] = useState<CurrencyItem | null>(null)
   const [balance, setBalance] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +64,11 @@ export function AccountFormDialog({
     if (open) {
       setName(account?.name ?? "")
       setType(account?.type ?? "bank")
-      setCurrency(account?.currency ?? "")
+      setCurrency(
+        account?.currency
+          ? (currencyItems.find((c) => c.code === account.currency) ?? null)
+          : null
+      )
       setBalance("")
       setError(null)
     }
@@ -62,7 +82,7 @@ export function AccountFormDialog({
       await onSubmit({
         name,
         type,
-        ...(isEdit ? {} : { currency }),
+        ...(isEdit ? {} : { currency: currency?.code ?? "" }),
         ...(!isEdit && balance !== "" ? { balance: parseFloat(balance) } : {}),
       })
       onOpenChange(false)
@@ -106,14 +126,28 @@ export function AccountFormDialog({
 
             <Field>
               <FieldLabel>Currency</FieldLabel>
-              <Input
+              <Combobox
+                items={currencyItems}
+                itemToStringValue={(item) => item.label}
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                placeholder="USD"
-                maxLength={3}
-                required
+                onValueChange={setCurrency}
                 disabled={isEdit}
-              />
+              >
+                <ComboboxInput
+                  placeholder="Search currency..."
+                  disabled={isEdit}
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No currency found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item) => (
+                      <ComboboxItem key={item.code} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
 
             {!isEdit && (

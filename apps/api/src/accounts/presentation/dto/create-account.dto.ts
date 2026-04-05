@@ -15,9 +15,9 @@ export class CreateAccountDto {
   @IsString()
   declare type: string
 
-  @IsString()
-  @MinLength(3)
-  @MaxLength(3)
+  @IsString({ message: "Currency is required" })
+  @MinLength(3, { message: "Currency is required" })
+  @MaxLength(3, { message: "Currency code must be 3 characters" })
   declare currency: string
 
   @IsOptional()

@@ -46,7 +46,7 @@ function AccountsPage() {
   async function handleFormSubmit(data: {
     name: string
     type: string
-    currency: string
+    currency?: string
     balance?: number
   }) {
     let res: Response
