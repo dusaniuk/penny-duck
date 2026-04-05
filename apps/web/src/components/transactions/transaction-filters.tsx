@@ -82,7 +82,7 @@ export function TransactionFilterSheet({
         <SheetHeader>
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="mt-6">
+        <form onSubmit={handleSubmit} className="mt-6 px-4">
           <FieldGroup className="gap-4">
             <Field>
               <FieldLabel>Account</FieldLabel>
