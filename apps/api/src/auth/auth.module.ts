@@ -18,6 +18,7 @@ import { UserRepositoryImpl } from "./infrastructure/repositories/user.repositor
 import { RefreshTokenRepositoryImpl } from "./infrastructure/repositories/refresh-token.repository"
 import { JwtService } from "./infrastructure/services/jwt.service"
 import { CookieService } from "./infrastructure/services/cookie.service"
+import { TokenCleanupService } from "./infrastructure/services/token-cleanup.service"
 
 import { AuthController } from "./presentation/auth.controller"
 import { AuthGuard } from "./presentation/auth.guard"
@@ -52,6 +53,7 @@ const eventHandlers = [TokenReuseDetectedHandler]
     { provide: RefreshTokenRepository, useClass: RefreshTokenRepositoryImpl },
     JwtService,
     CookieService,
+    TokenCleanupService,
     AuthGuard,
     AuthExceptionFilter,
   ],

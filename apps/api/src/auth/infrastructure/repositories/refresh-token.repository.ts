@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { eq, and, gt } from "drizzle-orm"
+import { eq, and, gt, lt } from "drizzle-orm"
 import { type DbClient, refreshTokens } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { RefreshToken } from "../../domain/entities/refresh-token.entity"
@@ -65,5 +65,14 @@ export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
       .where(gt(refreshTokens.expiresAt, new Date()))
 
     return rows.map(RefreshTokenMapper.toDomain)
+  }
+
+  async deleteExpired(): Promise<number> {
+    const rows = await this.db
+      .delete(refreshTokens)
+      .where(lt(refreshTokens.expiresAt, new Date()))
+      .returning({ id: refreshTokens.id })
+
+    return rows.length
   }
 }

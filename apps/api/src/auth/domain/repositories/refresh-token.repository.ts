@@ -5,4 +5,5 @@ export abstract class RefreshTokenRepository {
   abstract findNonExpiredByFamilyId(familyId: string): Promise<RefreshToken[]>
   abstract revokeAllByFamilyId(familyId: string): Promise<void>
   abstract findAllNonExpired(): Promise<RefreshToken[]>
+  abstract deleteExpired(): Promise<number>
 }
