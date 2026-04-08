@@ -3,6 +3,7 @@ import type {
   CategoryData,
   TransactionData,
 } from "./transaction-types"
+import { getCategoryIcon } from "@/lib/category-icons"
 
 interface TransactionRowProps {
   transaction: TransactionData
@@ -60,7 +61,13 @@ export function TransactionRow({
 
     return (
       <div className="flex items-center gap-2.5 overflow-hidden">
-        <span className="shrink-0 text-sm">{category?.icon ?? "📁"}</span>
+        <span className="flex size-5 shrink-0 items-center justify-center text-sm">
+          {(() => {
+            const resolved = getCategoryIcon(category?.icon ?? null)
+            if (resolved) return <resolved.component className="size-4" />
+            return category?.icon ?? "📁"
+          })()}
+        </span>
         <div className="min-w-0">
           <p
             className={`truncate text-sm font-medium ${!category ? "italic text-muted-foreground" : ""}`}

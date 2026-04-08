@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog"
-import type { CategoryData } from "@/components/categories/category-card"
+import type { CategoryData } from "@/components/categories/category-row"
 
 interface CategoryDeleteDialogProps {
   open: boolean

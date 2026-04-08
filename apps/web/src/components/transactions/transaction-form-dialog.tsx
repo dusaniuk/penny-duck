@@ -20,6 +20,7 @@ import type {
   CategoryData,
   TransactionData,
 } from "./transaction-types"
+import { getCategoryIcon } from "@/lib/category-icons"
 
 interface TransactionFormDialogProps {
   open: boolean
@@ -218,22 +219,38 @@ export function TransactionFormDialog({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {parents.map((parent) => (
-                    <div key={parent.id}>
-                      <SelectItem value={parent.id}>
-                        {parent.icon ? `${parent.icon} ` : ""}
-                        {parent.name}
-                      </SelectItem>
-                      {(childrenByParent[parent.id] ?? []).map((child) => (
-                        <SelectItem key={child.id} value={child.id}>
-                          <span className="pl-4">
-                            {child.icon ? `${child.icon} ` : ""}
-                            {child.name}
+                  {parents.map((parent) => {
+                    const parentIcon = getCategoryIcon(parent.icon)
+                    return (
+                      <div key={parent.id}>
+                        <SelectItem value={parent.id}>
+                          <span className="flex items-center gap-1.5">
+                            {parentIcon ? (
+                              <parentIcon.component className="size-4" />
+                            ) : parent.icon ? (
+                              parent.icon
+                            ) : null}
+                            {parent.name}
                           </span>
                         </SelectItem>
-                      ))}
-                    </div>
-                  ))}
+                        {(childrenByParent[parent.id] ?? []).map((child) => {
+                          const childIcon = getCategoryIcon(child.icon)
+                          return (
+                            <SelectItem key={child.id} value={child.id}>
+                              <span className="flex items-center gap-1.5 pl-4">
+                                {childIcon ? (
+                                  <childIcon.component className="size-4" />
+                                ) : child.icon ? (
+                                  child.icon
+                                ) : null}
+                                {child.name}
+                              </span>
+                            </SelectItem>
+                          )
+                        })}
+                      </div>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </Field>

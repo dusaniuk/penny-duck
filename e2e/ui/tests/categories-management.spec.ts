@@ -29,9 +29,6 @@ test.describe("Categories management", () => {
     await expect(page.getByText("Food & Drinks")).toBeVisible({
       timeout: 10_000,
     })
-
-    await expect(page.getByText("Groceries")).toBeVisible()
-    await expect(page.getByText("Restaurants")).toBeVisible()
   })
 
   test("creates a new parent category", async ({ page }) => {
@@ -41,32 +38,28 @@ test.describe("Categories management", () => {
       timeout: 10_000,
     })
 
-    await page.getByRole("button", { name: "+ Add Category" }).click()
-
-    const dialog = page.getByRole("dialog")
-    await dialog.getByPlaceholder("e.g. Food & Drink").fill("Custom Category")
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await page.getByRole("button", { name: "Add Category" }).click()
+    await page.getByPlaceholder("Category name").fill("Custom Category")
+    // Click the save (checkmark) button
+    await page.locator("button.text-green-500").click()
 
     await expect(page.getByText("Custom Category")).toBeVisible()
   })
 
-  test("creates a subcategory via + add chip", async ({ page }) => {
+  test("creates a subcategory via inline add", async ({ page }) => {
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
     await expect(page.getByText("Food & Drinks")).toBeVisible({
       timeout: 10_000,
     })
 
-    // Click the "+ add" chip inside the Food & Drinks card
-    await page
-      .locator("[data-slot=card]")
-      .filter({ hasText: "Food & Drinks" })
-      .getByText("add")
-      .click()
+    // Expand Food & Drinks by clicking it
+    await page.getByText("Food & Drinks").click()
 
-    const dialog = page.getByRole("dialog")
-    await dialog.getByPlaceholder("e.g. Food & Drink").fill("Fast Food")
-    await dialog.getByRole("button", { name: "Create" }).click()
+    // Click "Add subcategory"
+    await page.getByText("Add subcategory").first().click()
+    await page.getByPlaceholder("Category name").fill("Fast Food")
+    await page.locator("button.text-green-500").click()
 
     await expect(page.getByText("Fast Food")).toBeVisible()
   })
@@ -79,24 +72,21 @@ test.describe("Categories management", () => {
     })
 
     // Create a custom category to edit
-    await page.getByRole("button", { name: "+ Add Category" }).click()
-    let dialog = page.getByRole("dialog")
-    await dialog.getByPlaceholder("e.g. Food & Drink").fill("To Rename")
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await page.getByRole("button", { name: "Add Category" }).click()
+    await page.getByPlaceholder("Category name").fill("To Rename")
+    await page.locator("button.text-green-500").click()
     await expect(page.getByText("To Rename")).toBeVisible()
 
-    // Open ⋯ menu on the card
-    const card = page
-      .locator("[data-slot=card]")
-      .filter({ hasText: "To Rename" })
-    await card.getByRole("button").first().click()
+    // Open ⋯ menu on the row
+    const row = page.locator(".rounded-lg.border").filter({ hasText: "To Rename" })
+    await row.locator("[data-slot=dropdown-menu-trigger]").click()
     await page.getByRole("menuitem", { name: "Edit" }).click()
 
-    dialog = page.getByRole("dialog")
-    const nameInput = dialog.getByPlaceholder("e.g. Food & Drink")
+    // Edit inline
+    const nameInput = page.getByPlaceholder("Category name")
     await nameInput.clear()
     await nameInput.fill("Renamed Category")
-    await dialog.getByRole("button", { name: "Save Changes" }).click()
+    await page.locator("button.text-green-500").click()
 
     await expect(page.getByText("Renamed Category")).toBeVisible()
   })
@@ -109,17 +99,14 @@ test.describe("Categories management", () => {
     })
 
     // Create a custom category to delete
-    await page.getByRole("button", { name: "+ Add Category" }).click()
-    const dialog = page.getByRole("dialog")
-    await dialog.getByPlaceholder("e.g. Food & Drink").fill("Delete Me")
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await page.getByRole("button", { name: "Add Category" }).click()
+    await page.getByPlaceholder("Category name").fill("Delete Me")
+    await page.locator("button.text-green-500").click()
     await expect(page.getByText("Delete Me")).toBeVisible()
 
     // Open ⋯ menu and delete
-    const card = page
-      .locator("[data-slot=card]")
-      .filter({ hasText: "Delete Me" })
-    await card.getByRole("button").first().click()
+    const row = page.locator(".rounded-lg.border").filter({ hasText: "Delete Me" })
+    await row.locator("[data-slot=dropdown-menu-trigger]").click()
     await page.getByRole("menuitem", { name: "Delete" }).click()
 
     // Confirm in alert dialog
@@ -128,10 +115,9 @@ test.describe("Categories management", () => {
       .getByRole("button", { name: /Delete|Deleting/ })
       .click()
 
-    // Wait for dialog to close and card to disappear
     await expect(page.getByRole("alertdialog")).not.toBeVisible({
       timeout: 10_000,
     })
-    await expect(page.locator("[data-slot=card]").filter({ hasText: "Delete Me" })).not.toBeVisible()
+    await expect(page.getByText("Delete Me")).not.toBeVisible()
   })
 })
