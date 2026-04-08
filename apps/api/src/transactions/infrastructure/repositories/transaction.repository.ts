@@ -158,38 +158,12 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
   }
 
-  async findAllByAccountId(
-    accountId: string
-  ): Promise<Array<Transaction>> {
-    const rows = await this.db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.accountId, accountId))
-    return rows.map(TransactionMapper.toDomain)
-  }
-
   async countByAccountId(accountId: string): Promise<number> {
     const [{ total }] = await this.db
       .select({ total: count() })
       .from(transactions)
       .where(eq(transactions.accountId, accountId))
     return total
-  }
-
-  async updateAccountIdBulk(
-    accountId: string,
-    newAccountId: string | null
-  ): Promise<void> {
-    await this.db
-      .update(transactions)
-      .set({ accountId: newAccountId, updatedAt: new Date() })
-      .where(eq(transactions.accountId, accountId))
-  }
-
-  async deleteByAccountId(accountId: string): Promise<void> {
-    await this.db
-      .delete(transactions)
-      .where(eq(transactions.accountId, accountId))
   }
 
   async deleteByTransferId(transferId: string): Promise<void> {

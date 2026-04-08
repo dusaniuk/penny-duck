@@ -41,6 +41,7 @@ pnpm --filter @workspace/db drizzle-kit studio      # Open Drizzle Studio
 ```bash
 pnpm --filter api test          # Run API tests (Vitest)
 pnpm --filter api test:watch    # Watch mode
+pnpm test:e2e                   # Run e2e tests (Playwright — starts dev servers automatically)
 ```
 
 ## Adding shadcn/ui Components
@@ -63,6 +64,7 @@ This places components in `packages/ui/src/components/`. The shadcn config lives
 - **Utility functions** — `cn()` (clsx + tailwind-merge) and `cva` for component variants
 - **Route files** — `apps/web/src/routes/` using TanStack Router file-based routing. `routeTree.gen.ts` is auto-generated — do not edit manually
 - **Package exports** — `@workspace/ui` uses subpath exports (`./components/*`, `./lib/*`, `./hooks/*`)
+- **Do not commit** files under `docs/superpowers/` (specs, plans) — these are local working documents
 
 ## API Architecture (DDD/CQRS)
 

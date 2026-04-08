@@ -291,11 +291,6 @@ export class Transaction {
   get updatedAt(): Date {
     return this._updatedAt
   }
-  orphan(): void {
-    this._accountId = null
-    this._updatedAt = new Date()
-  }
-
   reassign(accountId: string): void {
     this._accountId = accountId
     this._updatedAt = new Date()

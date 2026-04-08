@@ -5,9 +5,11 @@ export class AccountNotFoundError extends Error {
   }
 }
 
-export class InvalidDeleteModeError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "InvalidDeleteModeError"
+export class AccountHasTransactionsError extends Error {
+  constructor(public readonly count: number) {
+    super(
+      `Account has ${count} transaction${count !== 1 ? "s" : ""} and cannot be deleted`
+    )
+    this.name = "AccountHasTransactionsError"
   }
 }

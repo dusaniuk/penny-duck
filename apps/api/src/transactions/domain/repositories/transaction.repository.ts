@@ -24,15 +24,7 @@ export abstract class TransactionRepository {
   abstract findAll(
     filters: ListTransactionsFilters
   ): Promise<{ data: Transaction[]; total: number }>
-  abstract findAllByAccountId(
-    accountId: string
-  ): Promise<Array<Transaction>>
   abstract countByAccountId(accountId: string): Promise<number>
-  abstract updateAccountIdBulk(
-    accountId: string,
-    newAccountId: string | null
-  ): Promise<void>
   abstract delete(id: string, userId: string): Promise<void>
-  abstract deleteByAccountId(accountId: string): Promise<void>
   abstract deleteByTransferId(transferId: string): Promise<void>
 }

@@ -78,15 +78,9 @@ function AccountsPage() {
     await refetch()
   }
 
-  async function handleDelete(
-    mode: "move" | "orphan" | "delete",
-    targetAccountId?: string
-  ) {
+  async function handleDelete() {
     if (!deleteAccount) return
-    const res = await api.del(`/accounts/${deleteAccount.id}`, {
-      mode,
-      ...(targetAccountId ? { targetAccountId } : {}),
-    })
+    const res = await api.del(`/accounts/${deleteAccount.id}`)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
       throw new Error(body?.message ?? "Request failed")
@@ -140,7 +134,6 @@ function AccountsPage() {
           if (!open) setDeleteAccount(null)
         }}
         account={deleteAccount}
-        accounts={accounts}
         transactionCount={deleteTransactionCount}
         onConfirm={handleDelete}
       />

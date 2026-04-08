@@ -2,12 +2,12 @@ import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common"
 import { Response } from "express"
 import {
   AccountNotFoundError,
-  InvalidDeleteModeError,
+  AccountHasTransactionsError,
 } from "../domain/errors/account.errors"
 
-type AccountError = AccountNotFoundError | InvalidDeleteModeError
+type AccountError = AccountNotFoundError | AccountHasTransactionsError
 
-@Catch(AccountNotFoundError, InvalidDeleteModeError)
+@Catch(AccountNotFoundError, AccountHasTransactionsError)
 export class AccountsExceptionFilter
   implements ExceptionFilter<AccountError>
 {
@@ -19,6 +19,11 @@ export class AccountsExceptionFilter
       response.status(404).json({ message: exception.message })
       return
     }
-    response.status(400).json({ message: exception.message })
+    if (exception instanceof AccountHasTransactionsError) {
+      response
+        .status(409)
+        .json({ message: exception.message, count: exception.count })
+      return
+    }
   }
 }

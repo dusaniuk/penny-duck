@@ -62,7 +62,9 @@ export function TransactionRow({
       <div className="flex items-center gap-2.5 overflow-hidden">
         <span className="shrink-0 text-sm">{category?.icon ?? "📁"}</span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">
+          <p
+            className={`truncate text-sm font-medium ${!category ? "italic text-muted-foreground" : ""}`}
+          >
             {category?.name ?? "Uncategorized"}
           </p>
           <p className="truncate text-xs text-muted-foreground">
