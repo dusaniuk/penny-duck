@@ -4,6 +4,8 @@ import { EventBus } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
 import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
+import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
 import {
   UpdateTransactionCommand,
   UpdateTransactionHandler,
@@ -35,6 +37,7 @@ const makeTransaction = (overrides = {}) =>
 describe("UpdateTransactionHandler", () => {
   let handler: UpdateTransactionHandler
   let transactionRepo: TransactionRepository
+  let eventBus: EventBus
 
   beforeEach(() => {
     transactionRepo = {
@@ -47,7 +50,7 @@ describe("UpdateTransactionHandler", () => {
       deleteByTransferId: vi.fn(),
     } as unknown as TransactionRepository
 
-    const eventBus = { publish: vi.fn() } as unknown as EventBus
+    eventBus = { publish: vi.fn() } as unknown as EventBus
     handler = new UpdateTransactionHandler(transactionRepo, eventBus)
   })
 
@@ -87,5 +90,44 @@ describe("UpdateTransactionHandler", () => {
     await expect(handler.execute(command)).rejects.toThrow(
       "Use the transfer endpoint"
     )
+  })
+
+  it("publishes balance events when amount changes", async () => {
+    const t = makeTransaction({ amount: 100 })
+    vi.mocked(transactionRepo.findById).mockResolvedValue(t)
+
+    await handler.execute(
+      new UpdateTransactionCommand(t.id, userId, { amount: 200 })
+    )
+
+    expect(eventBus.publish).toHaveBeenCalledTimes(2)
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      new TransactionDeletedEvent(t.accountId!, "expense", 100)
+    )
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      new TransactionCreatedEvent(t.accountId!, "expense", 200)
+    )
+  })
+
+  it("does not publish balance events when amount unchanged", async () => {
+    const t = makeTransaction({ amount: 50 })
+    vi.mocked(transactionRepo.findById).mockResolvedValue(t)
+
+    await handler.execute(
+      new UpdateTransactionCommand(t.id, userId, { note: "updated" })
+    )
+
+    expect(eventBus.publish).not.toHaveBeenCalled()
+  })
+
+  it("does not publish balance events for orphaned transactions", async () => {
+    const t = makeTransaction({ amount: 100, accountId: null })
+    vi.mocked(transactionRepo.findById).mockResolvedValue(t)
+
+    await handler.execute(
+      new UpdateTransactionCommand(t.id, userId, { amount: 200 })
+    )
+
+    expect(eventBus.publish).not.toHaveBeenCalled()
   })
 })

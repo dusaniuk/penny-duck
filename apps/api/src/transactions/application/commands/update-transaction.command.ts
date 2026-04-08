@@ -6,6 +6,7 @@ import {
 } from "../../domain/errors/transaction.errors"
 import { TransactionRepository } from "../../domain/repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
+import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
 
 interface UpdateFields {
   accountId?: string
@@ -59,6 +60,7 @@ export class UpdateTransactionHandler
       )
     }
 
+    const oldAmount = transaction.amount
     if (fields.amount !== undefined) transaction.updateAmount(fields.amount)
     if (fields.categoryId !== undefined)
       transaction.updateCategory(fields.categoryId)
@@ -91,6 +93,22 @@ export class UpdateTransactionHandler
       }
     }
 
-    return this.transactionRepo.save(transaction)
+    const saved = await this.transactionRepo.save(transaction)
+
+    if (
+      fields.amount !== undefined &&
+      fields.amount !== oldAmount &&
+      saved.accountId
+    ) {
+      const direction = saved.isExpense ? "expense" : "income"
+      this.eventBus.publish(
+        new TransactionDeletedEvent(saved.accountId, direction, oldAmount)
+      )
+      this.eventBus.publish(
+        new TransactionCreatedEvent(saved.accountId, direction, saved.amount)
+      )
+    }
+
+    return saved
   }
 }
