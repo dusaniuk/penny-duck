@@ -19,6 +19,23 @@ async function setupAccountAndCategory(request: any) {
   return { account, category }
 }
 
+async function waitForBalance(
+  request: any,
+  accountId: string,
+  expected: number,
+  maxRetries = 10,
+): Promise<number> {
+  for (let i = 0; i < maxRetries; i++) {
+    const res = await request.get(`/accounts/${accountId}`)
+    const body = await res.json()
+    if (body.balance === expected) return body.balance
+    await new Promise((r) => setTimeout(r, 200))
+  }
+  const res = await request.get(`/accounts/${accountId}`)
+  const body = await res.json()
+  return body.balance
+}
+
 async function waitForCategories(
   request: any,
   expectedCount: number,
@@ -290,9 +307,8 @@ test.describe("Transactions CRUD", () => {
       }),
     })
 
-    const accRes = await request.get(`/accounts/${account.id}`)
-    const updatedAccount = await accRes.json()
-    expect(updatedAccount.balance).toBe(9800)
+    const balance = await waitForBalance(request, account.id, 9800)
+    expect(balance).toBe(9800)
   })
 
   test("updates account balance on income", async ({ request }) => {
@@ -307,9 +323,8 @@ test.describe("Transactions CRUD", () => {
       }),
     })
 
-    const accRes = await request.get(`/accounts/${account.id}`)
-    const updatedAccount = await accRes.json()
-    expect(updatedAccount.balance).toBe(10500)
+    const balance = await waitForBalance(request, account.id, 10500)
+    expect(balance).toBe(10500)
   })
 
   test("reverses balance on delete", async ({ request }) => {
@@ -325,11 +340,11 @@ test.describe("Transactions CRUD", () => {
     })
     const { id } = await createRes.json()
 
+    await waitForBalance(request, account.id, 9800)
     await request.delete(`/transactions/${id}`)
 
-    const accRes = await request.get(`/accounts/${account.id}`)
-    const updatedAccount = await accRes.json()
-    expect(updatedAccount.balance).toBe(10000)
+    const balance = await waitForBalance(request, account.id, 10000)
+    expect(balance).toBe(10000)
   })
 })
 
