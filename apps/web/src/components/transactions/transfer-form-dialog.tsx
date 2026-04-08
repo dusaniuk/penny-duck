@@ -21,6 +21,7 @@ interface TransferFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   transaction?: TransactionData | null
+  pairedAccountId?: string | null
   accounts: Array<AccountData>
   onSubmit: (data: {
     fromAccountId: string
@@ -39,6 +40,7 @@ export function TransferFormDialog({
   open,
   onOpenChange,
   transaction,
+  pairedAccountId,
   accounts,
   onSubmit,
   onDelete,
@@ -80,7 +82,7 @@ export function TransferFormDialog({
   useEffect(() => {
     if (open) {
       setFromAccountId(transaction?.accountId ?? "")
-      setToAccountId("")
+      setToAccountId(pairedAccountId ?? "")
       setAmount(transaction ? transaction.amount.toString() : "")
       setDate(
         transaction?.date

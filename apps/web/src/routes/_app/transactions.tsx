@@ -406,6 +406,15 @@ function TransactionsPage() {
           if (!o) setEditTransaction(null)
         }}
         transaction={editTransaction}
+        pairedAccountId={
+          editTransaction?.transferId
+            ? (transactions.find(
+                (t) =>
+                  t.transferId === editTransaction.transferId &&
+                  t.id !== editTransaction.id
+              )?.accountId ?? null)
+            : null
+        }
         accounts={accounts}
         onSubmit={handleTransferSubmit}
         onDelete={

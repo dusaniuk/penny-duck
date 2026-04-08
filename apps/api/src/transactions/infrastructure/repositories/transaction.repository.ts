@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gte, isNull, lte } from "drizzle-orm"
+import { and, count, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
 import { type DbClient, transactions } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { Transaction } from "../../domain/entities/transaction.entity"
@@ -149,7 +149,36 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       .limit(filters.limit)
       .offset(offset)
 
-    return { data: rows.map(TransactionMapper.toDomain), total }
+    // Include paired transfer transactions not already in the result set
+    const resultIds = new Set(rows.map((r) => r.id))
+    const missingTransferIds = rows
+      .filter(
+        (r) =>
+          r.transferId &&
+          !rows.some(
+            (other) => other.transferId === r.transferId && other.id !== r.id
+          )
+      )
+      .map((r) => r.transferId!)
+
+    let pairedRows: typeof rows = []
+    if (missingTransferIds.length > 0) {
+      pairedRows = await this.db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, filters.userId),
+            inArray(transactions.transferId, missingTransferIds)
+          )
+        )
+      pairedRows = pairedRows.filter((r) => !resultIds.has(r.id))
+    }
+
+    return {
+      data: [...rows, ...pairedRows].map(TransactionMapper.toDomain),
+      total,
+    }
   }
 
   async delete(id: string, userId: string): Promise<void> {
