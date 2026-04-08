@@ -161,7 +161,7 @@ export function TransferFormDialog({
                   <SelectContent>
                     {accounts.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name} ({a.currency})
+                        {a.name} — {a.balance.toFixed(2)} {a.currency}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -181,7 +181,7 @@ export function TransferFormDialog({
                   <SelectContent>
                     {toAccountOptions.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name} ({a.currency})
+                        {a.name} — {a.balance.toFixed(2)} {a.currency}
                       </SelectItem>
                     ))}
                   </SelectContent>
