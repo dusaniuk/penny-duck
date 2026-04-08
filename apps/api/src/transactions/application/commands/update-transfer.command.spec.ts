@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { EventBus } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
 import { TransactionRepository } from "../../domain/repositories/transaction.repository"
@@ -65,7 +66,8 @@ describe("UpdateTransferHandler", () => {
       deleteByTransferId: vi.fn(),
     } as unknown as TransactionRepository
 
-    handler = new UpdateTransferHandler(transactionRepo)
+    const eventBus = { publish: vi.fn() } as unknown as EventBus
+    handler = new UpdateTransferHandler(transactionRepo, eventBus)
   })
 
   it("updates both sides of a transfer", async () => {
