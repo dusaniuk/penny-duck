@@ -198,9 +198,10 @@ function TransactionsPage() {
   }) {
     let res: Response
     if (editTransaction?.transferId) {
+      const { fromAccountId: _, toAccountId: __, ...updateData } = data
       res = await api.patch(
         `/transactions/transfers/${editTransaction.transferId}`,
-        data
+        updateData
       )
     } else {
       res = await api.post("/transactions/transfers", data)
