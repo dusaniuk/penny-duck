@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { eq, and } from "drizzle-orm"
+import { eq, and, asc } from "drizzle-orm"
 import { type DbClient, accounts } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { Account } from "../../domain/entities/account.entity"
@@ -17,6 +17,7 @@ export class AccountRepositoryImpl extends AccountRepository {
       .select()
       .from(accounts)
       .where(eq(accounts.userId, userId))
+      .orderBy(asc(accounts.name))
     return rows.map(AccountMapper.toDomain)
   }
 
