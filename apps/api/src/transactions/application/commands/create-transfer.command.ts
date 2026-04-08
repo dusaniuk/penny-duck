@@ -75,14 +75,14 @@ export class CreateTransferHandler
 
     this.eventBus.publish(
       new TransactionCreatedEvent(
-        savedOutgoing.accountId,
+        savedOutgoing.accountId!,
         "expense",
         savedOutgoing.amount
       )
     )
     this.eventBus.publish(
       new TransactionCreatedEvent(
-        savedIncoming.accountId,
+        savedIncoming.accountId!,
         "income",
         savedIncoming.amount
       )

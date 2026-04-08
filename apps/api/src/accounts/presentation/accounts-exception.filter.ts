@@ -1,12 +1,24 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common"
 import { Response } from "express"
-import { AccountNotFoundError } from "../domain/errors/account.errors"
+import {
+  AccountNotFoundError,
+  InvalidDeleteModeError,
+} from "../domain/errors/account.errors"
 
-@Catch(AccountNotFoundError)
-export class AccountsExceptionFilter implements ExceptionFilter {
-  catch(exception: AccountNotFoundError, host: ArgumentsHost): void {
+type AccountError = AccountNotFoundError | InvalidDeleteModeError
+
+@Catch(AccountNotFoundError, InvalidDeleteModeError)
+export class AccountsExceptionFilter
+  implements ExceptionFilter<AccountError>
+{
+  catch(exception: AccountError, host: ArgumentsHost): void {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
-    response.status(404).json({ message: exception.message })
+
+    if (exception instanceof AccountNotFoundError) {
+      response.status(404).json({ message: exception.message })
+      return
+    }
+    response.status(400).json({ message: exception.message })
   }
 }

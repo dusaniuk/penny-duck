@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gte, lte } from "drizzle-orm"
+import { and, count, desc, eq, gte, isNull, lte } from "drizzle-orm"
 import { type DbClient, transactions } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { Transaction } from "../../domain/entities/transaction.entity"
@@ -126,6 +126,8 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
+    if (filters.orphaned === true)
+      conditions.push(isNull(transactions.accountId))
     if (filters.dateFrom)
       conditions.push(gte(transactions.date, filters.dateFrom))
     if (filters.dateTo)
@@ -154,6 +156,40 @@ export class TransactionRepositoryImpl extends TransactionRepository {
     await this.db
       .delete(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+  }
+
+  async findAllByAccountId(
+    accountId: string
+  ): Promise<Array<Transaction>> {
+    const rows = await this.db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.accountId, accountId))
+    return rows.map(TransactionMapper.toDomain)
+  }
+
+  async countByAccountId(accountId: string): Promise<number> {
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(transactions)
+      .where(eq(transactions.accountId, accountId))
+    return total
+  }
+
+  async updateAccountIdBulk(
+    accountId: string,
+    newAccountId: string | null
+  ): Promise<void> {
+    await this.db
+      .update(transactions)
+      .set({ accountId: newAccountId, updatedAt: new Date() })
+      .where(eq(transactions.accountId, accountId))
+  }
+
+  async deleteByAccountId(accountId: string): Promise<void> {
+    await this.db
+      .delete(transactions)
+      .where(eq(transactions.accountId, accountId))
   }
 
   async deleteByTransferId(transferId: string): Promise<void> {

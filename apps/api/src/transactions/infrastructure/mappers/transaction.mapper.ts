@@ -3,7 +3,7 @@ import { Transaction } from "../../domain/entities/transaction.entity"
 interface TransactionRow {
   id: string
   userId: string
-  accountId: string
+  accountId: string | null
   type: string
   amount: string
   categoryId: string | null

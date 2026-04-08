@@ -29,6 +29,11 @@ export class ListTransactionsDto {
   declare settled?: boolean
 
   @IsOptional()
+  @Transform(({ value }) => value === "true")
+  @IsBoolean()
+  declare orphaned?: boolean
+
+  @IsOptional()
   @IsDateString()
   declare dateFrom?: string
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { AccountData } from "@/components/accounts/account-card"
-import { api } from "@/lib/api"
 import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
-import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
+import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/accounts")({
   component: AccountsPage,
@@ -17,6 +17,7 @@ function AccountsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<AccountData | null>(null)
+  const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
 
   async function refetch() {
     const res = await api.get("/accounts")
@@ -43,6 +44,19 @@ function AccountsPage() {
     setFormOpen(true)
   }
 
+  async function handleOpenDelete(account: AccountData) {
+    setDeleteAccount(account)
+    try {
+      const res = await api.get(
+        `/transactions?accountId=${account.id}&limit=1`
+      )
+      const data = await res.json()
+      setDeleteTransactionCount(data.total ?? 0)
+    } catch {
+      setDeleteTransactionCount(0)
+    }
+  }
+
   async function handleFormSubmit(data: {
     name: string
     type: string
@@ -64,9 +78,19 @@ function AccountsPage() {
     await refetch()
   }
 
-  async function handleDelete() {
+  async function handleDelete(
+    mode: "move" | "orphan" | "delete",
+    targetAccountId?: string
+  ) {
     if (!deleteAccount) return
-    await api.del(`/accounts/${deleteAccount.id}`)
+    const res = await api.del(`/accounts/${deleteAccount.id}`, {
+      mode,
+      ...(targetAccountId ? { targetAccountId } : {}),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body?.message ?? "Request failed")
+    }
     await refetch()
   }
 
@@ -92,7 +116,7 @@ function AccountsPage() {
               key={account.id}
               account={account}
               onEdit={handleEdit}
-              onDelete={setDeleteAccount}
+              onDelete={handleOpenDelete}
               onClick={() => {}}
             />
           ))}
@@ -116,6 +140,8 @@ function AccountsPage() {
           if (!open) setDeleteAccount(null)
         }}
         account={deleteAccount}
+        accounts={accounts}
+        transactionCount={deleteTransactionCount}
         onConfirm={handleDelete}
       />
     </div>

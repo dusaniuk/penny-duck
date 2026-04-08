@@ -4,3 +4,10 @@ export class AccountNotFoundError extends Error {
     this.name = "AccountNotFoundError"
   }
 }
+
+export class InvalidDeleteModeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "InvalidDeleteModeError"
+  }
+}

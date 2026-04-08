@@ -91,14 +91,14 @@ test.describe("Accounts management", () => {
     await card.getByRole("button").first().click()
     await page.getByRole("menuitem", { name: "Delete" }).click()
 
-    // Confirm delete in alert dialog
-    await page
-      .getByRole("alertdialog")
+    // Confirm delete in dialog (no transactions = simple delete)
+    const deleteDialog = page.getByRole("dialog")
+    await deleteDialog
       .getByRole("button", { name: /Delete|Deleting/ })
       .click()
 
     // Wait for dialog to close and card to disappear
-    await expect(page.getByRole("alertdialog")).not.toBeVisible({
+    await expect(deleteDialog).not.toBeVisible({
       timeout: 10_000,
     })
     await expect(

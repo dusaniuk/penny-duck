@@ -1,12 +1,14 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import {
   TransactionNotFoundError,
   TransferOperationError,
 } from "../../domain/errors/transaction.errors"
 import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
 
 interface UpdateFields {
+  accountId?: string
   amount?: number
   categoryId?: string | null
   note?: string | null
@@ -29,7 +31,10 @@ export class UpdateTransactionCommand {
 export class UpdateTransactionHandler
   implements ICommandHandler<UpdateTransactionCommand>
 {
-  constructor(private readonly transactionRepo: TransactionRepository) {}
+  constructor(
+    private readonly transactionRepo: TransactionRepository,
+    private readonly eventBus: EventBus
+  ) {}
 
   async execute(command: UpdateTransactionCommand): Promise<Transaction> {
     const transaction = await this.transactionRepo.findById(
@@ -40,6 +45,19 @@ export class UpdateTransactionHandler
     if (transaction.isTransfer) throw new TransferOperationError()
 
     const { fields } = command
+
+    // Allow setting accountId on orphaned transactions
+    if (fields.accountId !== undefined && transaction.isOrphaned) {
+      transaction.reassign(fields.accountId)
+      // Adjust balance on target account
+      this.eventBus.publish(
+        new TransactionCreatedEvent(
+          fields.accountId,
+          transaction.isExpense ? "expense" : "income",
+          transaction.amount
+        )
+      )
+    }
 
     if (fields.amount !== undefined) transaction.updateAmount(fields.amount)
     if (fields.categoryId !== undefined)

@@ -96,6 +96,7 @@ export class TransactionsController {
         type: dto.type,
         categoryId: dto.categoryId,
         settled: dto.settled,
+        orphaned: dto.orphaned,
         dateFrom: dto.dateFrom ? new Date(dto.dateFrom) : undefined,
         dateTo: dto.dateTo ? new Date(dto.dateTo) : undefined,
       })
@@ -127,6 +128,7 @@ export class TransactionsController {
   ) {
     const transaction = await this.commandBus.execute(
       new UpdateTransactionCommand(id, user.sub, {
+        accountId: dto.accountId,
         amount: dto.amount,
         categoryId: dto.categoryId,
         note: dto.note,
@@ -159,6 +161,7 @@ export class TransactionsController {
     )
     return toResponse(transaction)
   }
+
 
   @Post("transfers")
   async createTransfer(

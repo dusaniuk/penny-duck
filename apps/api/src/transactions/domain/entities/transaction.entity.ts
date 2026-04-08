@@ -30,7 +30,7 @@ interface CreateTransferSideInput {
 interface TransactionData {
   id: string
   userId: string
-  accountId: string
+  accountId: string | null
   type: string
   amount: number
   categoryId: string | null
@@ -50,7 +50,7 @@ export class Transaction {
   private constructor(
     private readonly _id: string,
     private readonly _userId: string,
-    private readonly _accountId: string,
+    private _accountId: string | null,
     private _type: TransactionType,
     private _amount: number,
     private _categoryId: string | null,
@@ -255,7 +255,7 @@ export class Transaction {
   get userId(): string {
     return this._userId
   }
-  get accountId(): string {
+  get accountId(): string | null {
     return this._accountId
   }
   get type(): string {
@@ -291,6 +291,28 @@ export class Transaction {
   get updatedAt(): Date {
     return this._updatedAt
   }
+  orphan(): void {
+    this._accountId = null
+    this._updatedAt = new Date()
+  }
+
+  reassign(accountId: string): void {
+    this._accountId = accountId
+    this._updatedAt = new Date()
+  }
+
+  breakTransferLink(): void {
+    if (!this._transferId) return
+    const newType = this._exchangeRate != null ? "expense" : "income"
+    this._type = TransactionType.create(newType)
+    this._transferId = null
+    this._updatedAt = new Date()
+  }
+
+  get isOrphaned(): boolean {
+    return this._accountId === null
+  }
+
   get isShared(): boolean {
     return this._myShare != null
   }

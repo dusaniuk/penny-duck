@@ -37,7 +37,7 @@ export class CreateTransactionHandler
 
     this.eventBus.publish(
       new TransactionCreatedEvent(
-        saved.accountId,
+        saved.accountId!,
         saved.isExpense ? "expense" : "income",
         saved.amount
       )

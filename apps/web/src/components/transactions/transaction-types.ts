@@ -1,6 +1,6 @@
 export interface TransactionData {
   id: string
-  accountId: string
+  accountId: string | null
   type: string
   amount: number
   categoryId: string | null
@@ -21,6 +21,7 @@ export interface TransactionFilters {
   type?: string
   categoryId?: string
   settled?: boolean
+  orphaned?: boolean
   dateFrom?: string
   dateTo?: string
 }

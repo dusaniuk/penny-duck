@@ -1,7 +1,8 @@
-import { Module } from "@nestjs/common"
+import { forwardRef, Module } from "@nestjs/common"
 import { CqrsModule } from "@nestjs/cqrs"
 import { DatabaseModule } from "@/database/database.module"
 import { AuthModule } from "@/auth/auth.module"
+import { TransactionsModule } from "@/transactions/transactions.module"
 import { CreateAccountHandler } from "./application/create-account.command"
 import { UpdateAccountHandler } from "./application/update-account.command"
 import { DeleteAccountHandler } from "./application/delete-account.command"
@@ -23,7 +24,7 @@ const queryHandlers = [GetAccountsHandler, GetAccountHandler]
 const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
 
 @Module({
-  imports: [DatabaseModule, CqrsModule, AuthModule],
+  imports: [DatabaseModule, CqrsModule, AuthModule, forwardRef(() => TransactionsModule)],
   controllers: [AccountsController],
   providers: [
     ...commandHandlers,

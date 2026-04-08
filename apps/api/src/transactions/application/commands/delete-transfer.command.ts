@@ -33,10 +33,10 @@ export class DeleteTransferHandler
     await this.transactionRepo.deleteByTransferId(command.transferId)
 
     this.eventBus.publish(
-      new TransactionDeletedEvent(outgoing.accountId, "expense", outgoing.amount)
+      new TransactionDeletedEvent(outgoing.accountId!, "expense", outgoing.amount)
     )
     this.eventBus.publish(
-      new TransactionDeletedEvent(incoming.accountId, "income", incoming.amount)
+      new TransactionDeletedEvent(incoming.accountId!, "income", incoming.amount)
     )
   }
 }

@@ -18,9 +18,9 @@ export const transactions = appSchema.table(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    accountId: uuid("account_id")
-      .notNull()
-      .references(() => accounts.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
     type: varchar("type", { length: 20 }).notNull(),
     amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
     categoryId: uuid("category_id").references(() => categories.id, {

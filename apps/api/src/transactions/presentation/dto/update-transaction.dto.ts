@@ -10,6 +10,10 @@ import {
 
 export class UpdateTransactionDto {
   @IsOptional()
+  @IsUUID()
+  declare accountId?: string
+
+  @IsOptional()
   @IsNumber()
   @Min(0.01)
   declare amount?: number

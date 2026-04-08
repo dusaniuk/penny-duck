@@ -42,6 +42,7 @@ function TransactionsPage() {
   const [deleteTransaction, setDeleteTransaction] =
     useState<TransactionData | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [orphanedCount, setOrphanedCount] = useState(0)
 
   function buildQuery(p: number, f: TransactionFilters) {
     const params = new URLSearchParams()
@@ -52,6 +53,7 @@ function TransactionsPage() {
     if (f.categoryId) params.set("categoryId", f.categoryId)
     if (f.settled !== undefined) params.set("settled", String(f.settled))
     if (f.dateFrom) params.set("dateFrom", new Date(f.dateFrom).toISOString())
+    if (f.orphaned === true) params.set("orphaned", "true")
     if (f.dateTo) params.set("dateTo", new Date(f.dateTo).toISOString())
     return params.toString()
   }
@@ -64,7 +66,13 @@ function TransactionsPage() {
   async function fetchUnsettledCount() {
     const res = await api.get("/transactions?settled=false&limit=1")
     const data = await res.json()
-    setUnsettledCount(data.total)
+    setUnsettledCount(data.total ?? 0)
+  }
+
+  async function fetchOrphanedCount() {
+    const res = await api.get("/transactions?orphaned=true&limit=1")
+    const data = await res.json()
+    setOrphanedCount(data.total ?? 0)
   }
 
   async function refetch() {
@@ -73,6 +81,7 @@ function TransactionsPage() {
     setTotal(data.total)
     setPage(1)
     fetchUnsettledCount()
+    fetchOrphanedCount()
   }
 
   useEffect(() => {
@@ -91,6 +100,7 @@ function TransactionsPage() {
       .finally(() => setLoading(false))
 
     fetchUnsettledCount()
+    fetchOrphanedCount()
   }, [])
 
   const [initialLoad, setInitialLoad] = useState(true)
@@ -160,8 +170,12 @@ function TransactionsPage() {
   }) {
     let res: Response
     if (editTransaction) {
-      const { accountId: _, type: __, ...updateData } = data
-      res = await api.patch(`/transactions/${editTransaction.id}`, updateData)
+      const { type: _, ...updateFields } = data
+      // Only send accountId if reassigning an orphaned transaction
+      if (editTransaction.accountId !== null) {
+        delete (updateFields as Record<string, unknown>).accountId
+      }
+      res = await api.patch(`/transactions/${editTransaction.id}`, updateFields)
     } else {
       res = await api.post("/transactions", data)
     }
@@ -233,6 +247,17 @@ function TransactionsPage() {
     }
   }
 
+  function handleToggleOrphaned() {
+    if (filters.orphaned === true) {
+      setFilters((prev) => {
+        const { orphaned: _, ...rest } = prev
+        return rest
+      })
+    } else {
+      setFilters((prev) => ({ ...prev, orphaned: true }))
+    }
+  }
+
   const activeFilterBadges: Array<{ key: string; label: string }> = []
   if (filters.accountId) {
     const acc = accounts.find((a) => a.id === filters.accountId)
@@ -259,6 +284,9 @@ function TransactionsPage() {
       key: "date",
       label: [filters.dateFrom, filters.dateTo].filter(Boolean).join(" – "),
     })
+  }
+  if (filters.orphaned) {
+    activeFilterBadges.push({ key: "orphaned", label: "Orphaned" })
   }
 
   function removeFilter(key: string) {
@@ -290,6 +318,19 @@ function TransactionsPage() {
               }`}
             >
               ⚠ Unsettled ({unsettledCount})
+            </button>
+          )}
+          {orphanedCount > 0 && (
+            <button
+              type="button"
+              onClick={handleToggleOrphaned}
+              className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                filters.orphaned === true
+                  ? "border-orange-400 bg-orange-400/20 text-orange-400"
+                  : "border-orange-400/50 text-orange-400 hover:bg-orange-400/10"
+              }`}
+            >
+              ⚠ Orphaned ({orphanedCount})
             </button>
           )}
           <Button

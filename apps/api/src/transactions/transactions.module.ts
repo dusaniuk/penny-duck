@@ -36,5 +36,6 @@ const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
     { provide: TransactionRepository, useClass: TransactionRepositoryImpl },
     TransactionsExceptionFilter,
   ],
+  exports: [TransactionRepository],
 })
 export class TransactionsModule {}

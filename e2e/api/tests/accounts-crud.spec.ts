@@ -91,11 +91,91 @@ test.describe("Accounts CRUD", () => {
     })
     const { id } = await createRes.json()
 
-    const deleteRes = await request.delete(`/accounts/${id}`)
+    const deleteRes = await request.delete(`/accounts/${id}`, {
+      data: { mode: "delete" },
+    })
     expect(deleteRes.status()).toBe(200)
 
     const getRes = await request.get(`/accounts/${id}`)
     expect(getRes.status()).toBe(404)
+  })
+
+  test("deletes account with orphan mode", async ({ request }) => {
+    const accRes = await request.post("/accounts", {
+      data: createAccountData(),
+    })
+    const acc = await accRes.json()
+
+    // Wait for seeded categories
+    let cats: Array<{ id: string }> = []
+    for (let i = 0; i < 10; i++) {
+      const catRes = await request.get("/categories")
+      cats = await catRes.json()
+      if (cats.length > 0) break
+      await new Promise((r) => setTimeout(r, 200))
+    }
+
+    await request.post("/transactions", {
+      data: {
+        accountId: acc.id,
+        type: "expense",
+        amount: 50,
+        categoryId: cats[0].id,
+        date: new Date().toISOString(),
+      },
+    })
+
+    const deleteRes = await request.delete(`/accounts/${acc.id}`, {
+      data: { mode: "orphan" },
+    })
+    expect(deleteRes.status()).toBe(200)
+
+    const txRes = await request.get("/transactions?orphaned=true")
+    const txData = await txRes.json()
+    expect(txData.total).toBeGreaterThanOrEqual(1)
+    expect(
+      txData.data.some((t: { accountId: string | null }) => t.accountId === null)
+    ).toBe(true)
+  })
+
+  test("deletes account with move mode", async ({ request }) => {
+    const acc1Res = await request.post("/accounts", {
+      data: createAccountData({ name: "Source Move" }),
+    })
+    const acc1 = await acc1Res.json()
+    const acc2Res = await request.post("/accounts", {
+      data: createAccountData({ name: "Target Move" }),
+    })
+    const acc2 = await acc2Res.json()
+
+    let cats: Array<{ id: string }> = []
+    for (let i = 0; i < 10; i++) {
+      const catRes = await request.get("/categories")
+      cats = await catRes.json()
+      if (cats.length > 0) break
+      await new Promise((r) => setTimeout(r, 200))
+    }
+
+    await request.post("/transactions", {
+      data: {
+        accountId: acc1.id,
+        type: "expense",
+        amount: 75,
+        categoryId: cats[0].id,
+        date: new Date().toISOString(),
+      },
+    })
+
+    const deleteRes = await request.delete(`/accounts/${acc1.id}`, {
+      data: { mode: "move", targetAccountId: acc2.id },
+    })
+    expect(deleteRes.status()).toBe(200)
+
+    const txRes = await request.get(`/transactions?accountId=${acc2.id}`)
+    const txData = await txRes.json()
+    expect(
+      txData.data.some((t: { amount: number }) => t.amount === 75)
+    ).toBe(true)
   })
 
   test("returns 404 for non-existent account", async ({ request }) => {

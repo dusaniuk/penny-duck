@@ -34,7 +34,7 @@ export class DeleteTransactionHandler
 
     this.eventBus.publish(
       new TransactionDeletedEvent(
-        transaction.accountId,
+        transaction.accountId!,
         transaction.isExpense ? "expense" : "income",
         transaction.amount
       )

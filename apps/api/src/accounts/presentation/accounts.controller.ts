@@ -21,6 +21,7 @@ import { GetAccountQuery } from "../application/get-account.query"
 import { AccountsExceptionFilter } from "./accounts-exception.filter"
 import { Account } from "../domain/entities/account.entity"
 import { CreateAccountDto } from "./dto/create-account.dto"
+import { DeleteAccountDto } from "./dto/delete-account.dto"
 import { UpdateAccountDto } from "./dto/update-account.dto"
 
 @Controller("accounts")
@@ -102,9 +103,17 @@ export class AccountsController {
   @Delete(":id")
   async remove(
     @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
+    @Param("id") id: string,
+    @Body() dto: DeleteAccountDto
   ) {
-    await this.commandBus.execute(new DeleteAccountCommand(id, user.sub))
+    await this.commandBus.execute(
+      new DeleteAccountCommand({
+        id,
+        userId: user.sub,
+        mode: dto.mode,
+        targetAccountId: dto.targetAccountId,
+      })
+    )
     return { message: "Account deleted" }
   }
 }
