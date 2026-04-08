@@ -100,13 +100,26 @@ export class UpdateTransactionHandler
       fields.amount !== oldAmount &&
       saved.accountId
     ) {
-      const direction = saved.isExpense ? "expense" : "income"
-      this.eventBus.publish(
-        new TransactionDeletedEvent(saved.accountId, direction, oldAmount)
-      )
-      this.eventBus.publish(
-        new TransactionCreatedEvent(saved.accountId, direction, saved.amount)
-      )
+      // Compute net balance delta as a single adjustment to avoid race conditions.
+      // For expense: old amount was subtracted, new amount should be subtracted
+      //   → net adjustment = oldAmount - newAmount (positive = add back to balance)
+      // For income: old amount was added, new amount should be added
+      //   → net adjustment = newAmount - oldAmount (positive = add to balance)
+      const delta = saved.isExpense
+        ? oldAmount - saved.amount
+        : saved.amount - oldAmount
+
+      if (delta > 0) {
+        // Balance should increase → use "deleted expense" (adds to balance)
+        this.eventBus.publish(
+          new TransactionDeletedEvent(saved.accountId, "expense", delta)
+        )
+      } else if (delta < 0) {
+        // Balance should decrease → use "created expense" (subtracts from balance)
+        this.eventBus.publish(
+          new TransactionCreatedEvent(saved.accountId, "expense", -delta)
+        )
+      }
     }
 
     return saved

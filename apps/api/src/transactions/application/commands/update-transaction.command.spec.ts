@@ -92,7 +92,7 @@ describe("UpdateTransactionHandler", () => {
     )
   })
 
-  it("publishes balance events when amount changes", async () => {
+  it("publishes balance decrease event when expense amount increases", async () => {
     const t = makeTransaction({ amount: 100 })
     vi.mocked(transactionRepo.findById).mockResolvedValue(t)
 
@@ -100,12 +100,40 @@ describe("UpdateTransactionHandler", () => {
       new UpdateTransactionCommand(t.id, userId, { amount: 200 })
     )
 
-    expect(eventBus.publish).toHaveBeenCalledTimes(2)
+    // Expense 100→200: balance should decrease by 100
+    expect(eventBus.publish).toHaveBeenCalledTimes(1)
     expect(eventBus.publish).toHaveBeenCalledWith(
-      new TransactionDeletedEvent(t.accountId!, "expense", 100)
+      new TransactionCreatedEvent(t.accountId!, "expense", 100)
     )
+  })
+
+  it("publishes balance increase event when expense amount decreases", async () => {
+    const t = makeTransaction({ amount: 6000 })
+    vi.mocked(transactionRepo.findById).mockResolvedValue(t)
+
+    await handler.execute(
+      new UpdateTransactionCommand(t.id, userId, { amount: 600 })
+    )
+
+    // Expense 6000→600: balance should increase by 5400
+    expect(eventBus.publish).toHaveBeenCalledTimes(1)
     expect(eventBus.publish).toHaveBeenCalledWith(
-      new TransactionCreatedEvent(t.accountId!, "expense", 200)
+      new TransactionDeletedEvent(t.accountId!, "expense", 5400)
+    )
+  })
+
+  it("publishes balance increase event when income amount increases", async () => {
+    const t = makeTransaction({ amount: 100, type: "income" })
+    vi.mocked(transactionRepo.findById).mockResolvedValue(t)
+
+    await handler.execute(
+      new UpdateTransactionCommand(t.id, userId, { amount: 500 })
+    )
+
+    // Income 100→500: balance should increase by 400
+    expect(eventBus.publish).toHaveBeenCalledTimes(1)
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      new TransactionDeletedEvent(t.accountId!, "expense", 400)
     )
   })
 
