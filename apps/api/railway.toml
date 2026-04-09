@@ -1,0 +1,7 @@
+[build]
+buildCommand = "cd ../.. && pnpm install && pnpm --filter api... build"
+
+[deploy]
+startCommand = "node dist/main.js"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"
