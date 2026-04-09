@@ -6,8 +6,8 @@ import {
   InvalidTokenError,
   TokenReuseDetectedError,
 } from "../../domain/errors/auth.errors"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
-import { UserRepository } from "../../domain/repositories/user.repository"
+import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
+import { UserRepository } from "../../infrastructure/repositories/user.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 import {
   RefreshTokensCommand,

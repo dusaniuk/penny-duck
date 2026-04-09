@@ -6,7 +6,7 @@ import {
   TransactionNotFoundError,
   TransferOperationError,
 } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import {
   DeleteTransactionCommand,
   DeleteTransactionHandler,

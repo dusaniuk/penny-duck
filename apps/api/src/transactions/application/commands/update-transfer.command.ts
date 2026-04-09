@@ -1,7 +1,7 @@
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
 import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
 

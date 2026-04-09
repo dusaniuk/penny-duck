@@ -5,7 +5,7 @@ import {
   TransactionNotFoundError,
   InvalidSettlementError,
 } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import {
   SettleTransactionCommand,
   SettleTransactionHandler,

@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 
 interface ListFilters {
   page: number

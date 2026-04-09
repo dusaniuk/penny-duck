@@ -2,18 +2,24 @@ import { Inject, Injectable } from "@nestjs/common"
 import { and, count, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
 import { type DbClient, transactions } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
-import { Transaction } from "../../domain/entities/transaction.entity"
-import {
-  ListTransactionsFilters,
-  TransactionRepository,
-} from "../../domain/repositories/transaction.repository"
-import { TransactionMapper } from "../mappers/transaction.mapper"
+import { Transaction } from "../domain/entities/transaction.entity"
+
+export interface ListTransactionsFilters {
+  userId: string
+  accountId?: string
+  type?: string
+  categoryId?: string
+  settled?: boolean
+  orphaned?: boolean
+  dateFrom?: Date
+  dateTo?: Date
+  page: number
+  limit: number
+}
 
 @Injectable()
-export class TransactionRepositoryImpl extends TransactionRepository {
-  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {
-    super()
-  }
+export class TransactionRepository {
+  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
   async save(transaction: Transaction): Promise<Transaction> {
     if (transaction.id === "") {
@@ -21,26 +27,26 @@ export class TransactionRepositoryImpl extends TransactionRepository {
         .insert(transactions)
         .values(this.toRow(transaction))
         .returning()
-      return TransactionMapper.toDomain(rows[0])
+      return Transaction.fromPersistence(rows[0])
     }
     const rows = await this.db
       .update(transactions)
       .set({
-        amount: transaction.amount.toString(),
+        amount: transaction.amount,
         categoryId: transaction.categoryId,
         note: transaction.note,
         date: transaction.date,
-        myShare: transaction.myShare?.toString() ?? null,
+        myShare: transaction.myShare ?? null,
         settled: transaction.settled,
         originalAmount:
-          transaction.exchangeRate?.originalAmount.toString() ?? null,
+          transaction.exchangeRate?.originalAmount ?? null,
         originalCurrency: transaction.exchangeRate?.originalCurrency ?? null,
-        exchangeRate: transaction.exchangeRate?.rate.toString() ?? null,
+        exchangeRate: transaction.exchangeRate?.rate ?? null,
         updatedAt: new Date(),
       })
       .where(eq(transactions.id, transaction.id))
       .returning()
-    return TransactionMapper.toDomain(rows[0])
+    return Transaction.fromPersistence(rows[0])
   }
 
   async saveTransferPair(
@@ -54,14 +60,14 @@ export class TransactionRepositoryImpl extends TransactionRepository {
         const [outRow] = await tx
           .update(transactions)
           .set({
-            amount: outgoing.amount.toString(),
+            amount: outgoing.amount,
             note: outgoing.note,
             date: outgoing.date,
             originalAmount:
-              outgoing.exchangeRate?.originalAmount.toString() ?? null,
+              outgoing.exchangeRate?.originalAmount ?? null,
             originalCurrency:
               outgoing.exchangeRate?.originalCurrency ?? null,
-            exchangeRate: outgoing.exchangeRate?.rate.toString() ?? null,
+            exchangeRate: outgoing.exchangeRate?.rate ?? null,
             updatedAt: new Date(),
           })
           .where(eq(transactions.id, outgoing.id))
@@ -69,7 +75,7 @@ export class TransactionRepositoryImpl extends TransactionRepository {
         const [inRow] = await tx
           .update(transactions)
           .set({
-            amount: incoming.amount.toString(),
+            amount: incoming.amount,
             note: incoming.note,
             date: incoming.date,
             updatedAt: new Date(),
@@ -91,8 +97,8 @@ export class TransactionRepositoryImpl extends TransactionRepository {
     })
 
     return [
-      TransactionMapper.toDomain(result[0]),
-      TransactionMapper.toDomain(result[1]),
+      Transaction.fromPersistence(result[0]),
+      Transaction.fromPersistence(result[1]),
     ]
   }
 
@@ -103,7 +109,7 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
       .limit(1)
     if (rows.length === 0) return null
-    return TransactionMapper.toDomain(rows[0])
+    return Transaction.fromPersistence(rows[0])
   }
 
   async findByTransferId(transferId: string): Promise<Transaction[]> {
@@ -111,7 +117,7 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       .select()
       .from(transactions)
       .where(eq(transactions.transferId, transferId))
-    return rows.map(TransactionMapper.toDomain)
+    return rows.map(Transaction.fromPersistence)
   }
 
   async findAll(
@@ -176,7 +182,7 @@ export class TransactionRepositoryImpl extends TransactionRepository {
     }
 
     return {
-      data: [...rows, ...pairedRows].map(TransactionMapper.toDomain),
+      data: [...rows, ...pairedRows].map(Transaction.fromPersistence),
       total,
     }
   }
@@ -206,15 +212,15 @@ export class TransactionRepositoryImpl extends TransactionRepository {
       userId: t.userId,
       accountId: t.accountId,
       type: t.type,
-      amount: t.amount.toString(),
+      amount: t.amount,
       categoryId: t.categoryId,
       note: t.note,
       date: t.date,
-      myShare: t.myShare?.toString() ?? null,
+      myShare: t.myShare ?? null,
       settled: t.settled,
-      originalAmount: t.exchangeRate?.originalAmount.toString() ?? null,
+      originalAmount: t.exchangeRate?.originalAmount ?? null,
       originalCurrency: t.exchangeRate?.originalCurrency ?? null,
-      exchangeRate: t.exchangeRate?.rate.toString() ?? null,
+      exchangeRate: t.exchangeRate?.rate ?? null,
       transferId: t.transferId,
     }
   }

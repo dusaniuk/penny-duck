@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { User } from "../../domain/entities/user.entity"
 import { InvalidCredentialsError } from "../../domain/errors/auth.errors"
 import { UserLoggedInEvent } from "../../domain/events/user-logged-in.event"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
-import { UserRepository } from "../../domain/repositories/user.repository"
+import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
+import { UserRepository } from "../../infrastructure/repositories/user.repository"
 import { LoginCommand, LoginHandler } from "./login.command"
 
 describe("LoginHandler", () => {

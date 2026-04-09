@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 
 export class GetTransactionQuery {
   constructor(

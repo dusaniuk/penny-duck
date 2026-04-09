@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
+import { RefreshTokenRepository } from "../repositories/refresh-token.repository"
 import { TokenCleanupService } from "./token-cleanup.service"
 
 describe("TokenCleanupService", () => {

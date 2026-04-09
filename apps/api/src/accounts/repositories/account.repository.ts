@@ -2,15 +2,11 @@ import { Inject, Injectable } from "@nestjs/common"
 import { eq, and, asc } from "drizzle-orm"
 import { type DbClient, accounts } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
-import { Account } from "../../domain/entities/account.entity"
-import { AccountRepository } from "../../domain/repositories/account.repository"
-import { AccountMapper } from "../mappers/account.mapper"
+import { Account } from "../domain/entities/account.entity"
 
 @Injectable()
-export class AccountRepositoryImpl extends AccountRepository {
-  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {
-    super()
-  }
+export class AccountRepository {
+  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
   async findAllByUserId(userId: string): Promise<Account[]> {
     const rows = await this.db
@@ -18,7 +14,7 @@ export class AccountRepositoryImpl extends AccountRepository {
       .from(accounts)
       .where(eq(accounts.userId, userId))
       .orderBy(asc(accounts.name))
-    return rows.map(AccountMapper.toDomain)
+    return rows.map(Account.fromPersistence)
   }
 
   async findById(id: string, userId: string): Promise<Account | null> {
@@ -28,7 +24,7 @@ export class AccountRepositoryImpl extends AccountRepository {
       .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
       .limit(1)
     if (rows.length === 0) return null
-    return AccountMapper.toDomain(rows[0])
+    return Account.fromPersistence(rows[0])
   }
 
   async findByAccountId(id: string): Promise<Account | null> {
@@ -38,7 +34,7 @@ export class AccountRepositoryImpl extends AccountRepository {
       .where(eq(accounts.id, id))
       .limit(1)
     if (rows.length === 0) return null
-    return AccountMapper.toDomain(rows[0])
+    return Account.fromPersistence(rows[0])
   }
 
   async save(account: Account): Promise<Account> {
@@ -50,22 +46,22 @@ export class AccountRepositoryImpl extends AccountRepository {
           name: account.name,
           type: account.type,
           currency: account.currency,
-          balance: account.balance.toString(),
+          balance: account.balance,
         })
         .returning()
-      return AccountMapper.toDomain(rows[0])
+      return Account.fromPersistence(rows[0])
     }
     const rows = await this.db
       .update(accounts)
       .set({
         name: account.name,
         type: account.type,
-        balance: account.balance.toString(),
+        balance: account.balance,
         updatedAt: new Date(),
       })
       .where(eq(accounts.id, account.id))
       .returning()
-    return AccountMapper.toDomain(rows[0])
+    return Account.fromPersistence(rows[0])
   }
 
   async delete(id: string, userId: string): Promise<void> {

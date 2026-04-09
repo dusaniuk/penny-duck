@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { InvalidTokenError } from "../../domain/errors/auth.errors"
-import { UserRepository } from "../../domain/repositories/user.repository"
+import { UserRepository } from "../../infrastructure/repositories/user.repository"
 
 export class GetCurrentUserQuery {
   constructor(

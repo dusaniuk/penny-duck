@@ -4,7 +4,7 @@ import {
   MaxCategoryDepthError,
   ParentCategoryNotFoundError,
 } from "../../domain/errors/category.errors"
-import { CategoryRepository } from "../../domain/repositories/category.repository"
+import { CategoryRepository } from "../../repositories/category.repository"
 
 export class CreateCategoryCommand {
   constructor(

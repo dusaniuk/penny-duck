@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { User } from "../../domain/entities/user.entity"
 import { InvalidTokenError } from "../../domain/errors/auth.errors"
-import { UserRepository } from "../../domain/repositories/user.repository"
+import { UserRepository } from "../../infrastructure/repositories/user.repository"
 import {
   GetCurrentUserHandler,
   GetCurrentUserQuery,

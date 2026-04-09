@@ -8,8 +8,7 @@ import { DeleteCategoryHandler } from "./application/commands/delete-category.co
 import { SeedDefaultCategoriesHandler } from "./application/commands/seed-default-categories.command"
 import { GetCategoriesHandler } from "./application/queries/get-categories.query"
 import { UserRegisteredHandler } from "./application/event-handlers/user-registered.handler"
-import { CategoryRepository } from "./domain/repositories/category.repository"
-import { CategoryRepositoryImpl } from "./infrastructure/repositories/category.repository"
+import { CategoryRepository } from "./repositories/category.repository"
 import { CategoriesController } from "./presentation/categories.controller"
 import { CategoriesExceptionFilter } from "./presentation/categories-exception.filter"
 
@@ -29,7 +28,7 @@ const eventHandlers = [UserRegisteredHandler]
     ...commandHandlers,
     ...queryHandlers,
     ...eventHandlers,
-    { provide: CategoryRepository, useClass: CategoryRepositoryImpl },
+    CategoryRepository,
     CategoriesExceptionFilter,
   ],
 })

@@ -1,6 +1,5 @@
 import {
   boolean,
-  decimal,
   index,
   timestamp,
   uuid,
@@ -10,6 +9,7 @@ import { appSchema } from "./schema"
 import { users } from "./users"
 import { accounts } from "./accounts"
 import { categories } from "./categories"
+import { money, rate } from "./custom-types"
 
 export const transactions = appSchema.table(
   "transactions",
@@ -22,17 +22,17 @@ export const transactions = appSchema.table(
       onDelete: "set null",
     }),
     type: varchar("type", { length: 20 }).notNull(),
-    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    amount: money("amount").notNull(),
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
     note: varchar("note", { length: 500 }),
     date: timestamp("date", { withTimezone: true }).notNull(),
-    myShare: decimal("my_share", { precision: 12, scale: 2 }),
+    myShare: money("my_share"),
     settled: boolean("settled").notNull().default(true),
-    originalAmount: decimal("original_amount", { precision: 12, scale: 2 }),
+    originalAmount: money("original_amount"),
     originalCurrency: varchar("original_currency", { length: 3 }),
-    exchangeRate: decimal("exchange_rate", { precision: 12, scale: 6 }),
+    exchangeRate: rate("exchange_rate"),
     transferId: uuid("transfer_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

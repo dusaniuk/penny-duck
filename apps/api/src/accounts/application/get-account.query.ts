@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { Account } from "../domain/entities/account.entity"
 import { AccountNotFoundError } from "../domain/errors/account.errors"
-import { AccountRepository } from "../domain/repositories/account.repository"
+import { AccountRepository } from "../repositories/account.repository"
 
 export class GetAccountQuery {
   constructor(

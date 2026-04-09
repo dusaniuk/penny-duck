@@ -11,11 +11,8 @@ import { LogoutHandler } from "./application/commands/logout.command"
 import { GetCurrentUserHandler } from "./application/queries/get-current-user.query"
 import { TokenReuseDetectedHandler } from "./application/event-handlers/token-reuse-detected.handler"
 
-import { UserRepository } from "./domain/repositories/user.repository"
-import { RefreshTokenRepository } from "./domain/repositories/refresh-token.repository"
-
-import { UserRepositoryImpl } from "./infrastructure/repositories/user.repository"
-import { RefreshTokenRepositoryImpl } from "./infrastructure/repositories/refresh-token.repository"
+import { UserRepository } from "./infrastructure/repositories/user.repository"
+import { RefreshTokenRepository } from "./infrastructure/repositories/refresh-token.repository"
 import { JwtService } from "./infrastructure/services/jwt.service"
 import { CookieService } from "./infrastructure/services/cookie.service"
 import { TokenCleanupService } from "./infrastructure/services/token-cleanup.service"
@@ -49,8 +46,8 @@ const eventHandlers = [TokenReuseDetectedHandler]
     ...commandHandlers,
     ...queryHandlers,
     ...eventHandlers,
-    { provide: UserRepository, useClass: UserRepositoryImpl },
-    { provide: RefreshTokenRepository, useClass: RefreshTokenRepositoryImpl },
+    UserRepository,
+    RefreshTokenRepository,
     JwtService,
     CookieService,
     TokenCleanupService,

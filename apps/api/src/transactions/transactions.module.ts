@@ -11,8 +11,7 @@ import { UpdateTransferHandler } from "./application/commands/update-transfer.co
 import { DeleteTransferHandler } from "./application/commands/delete-transfer.command"
 import { GetTransactionHandler } from "./application/queries/get-transaction.query"
 import { ListTransactionsHandler } from "./application/queries/list-transactions.query"
-import { TransactionRepository } from "./domain/repositories/transaction.repository"
-import { TransactionRepositoryImpl } from "./infrastructure/repositories/transaction.repository"
+import { TransactionRepository } from "./repositories/transaction.repository"
 import { TransactionsController } from "./presentation/transactions.controller"
 import { TransactionsExceptionFilter } from "./presentation/transactions-exception.filter"
 
@@ -33,7 +32,7 @@ const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
   providers: [
     ...commandHandlers,
     ...queryHandlers,
-    { provide: TransactionRepository, useClass: TransactionRepositoryImpl },
+    TransactionRepository,
     TransactionsExceptionFilter,
   ],
   exports: [TransactionRepository],

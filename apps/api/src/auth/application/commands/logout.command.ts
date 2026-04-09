@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { RefreshToken } from "../../domain/entities/refresh-token.entity"
 import { InvalidTokenError } from "../../domain/errors/auth.errors"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
+import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
 
 export class LogoutCommand {
   constructor(public readonly rawRefreshToken: string) {}

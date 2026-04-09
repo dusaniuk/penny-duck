@@ -3,14 +3,10 @@ import { eq } from "drizzle-orm"
 import { type DbClient, users } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { User } from "../../domain/entities/user.entity"
-import { UserRepository } from "../../domain/repositories/user.repository"
-import { UserMapper } from "../mappers/user.mapper"
 
 @Injectable()
-export class UserRepositoryImpl extends UserRepository {
-  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {
-    super()
-  }
+export class UserRepository {
+  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
   async findById(id: string): Promise<User | null> {
     const rows = await this.db
@@ -20,7 +16,7 @@ export class UserRepositoryImpl extends UserRepository {
       .limit(1)
 
     if (rows.length === 0) return null
-    return UserMapper.toDomain(rows[0])
+    return User.fromPersistence(rows[0])
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -31,7 +27,7 @@ export class UserRepositoryImpl extends UserRepository {
       .limit(1)
 
     if (rows.length === 0) return null
-    return UserMapper.toDomain(rows[0])
+    return User.fromPersistence(rows[0])
   }
 
   async save(user: User): Promise<User> {
@@ -45,7 +41,7 @@ export class UserRepositoryImpl extends UserRepository {
         })
         .returning()
 
-      return UserMapper.toDomain(rows[0])
+      return User.fromPersistence(rows[0])
     }
 
     const rows = await this.db
@@ -59,6 +55,6 @@ export class UserRepositoryImpl extends UserRepository {
       .where(eq(users.id, user.id))
       .returning()
 
-    return UserMapper.toDomain(rows[0])
+    return User.fromPersistence(rows[0])
   }
 }

@@ -1,6 +1,6 @@
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
 
 export class DeleteTransferCommand {

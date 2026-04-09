@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { EventBus } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import {
   CreateTransactionCommand,
   CreateTransactionHandler,

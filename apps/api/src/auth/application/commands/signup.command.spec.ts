@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { User } from "../../domain/entities/user.entity"
 import { EmailAlreadyExistsError } from "../../domain/errors/auth.errors"
 import { UserRegisteredEvent } from "../../domain/events/user-registered.event"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
-import { UserRepository } from "../../domain/repositories/user.repository"
+import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
+import { UserRepository } from "../../infrastructure/repositories/user.repository"
 import { SignupCommand, SignupHandler } from "./signup.command"
 
 describe("SignupHandler", () => {

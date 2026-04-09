@@ -3,14 +3,10 @@ import { eq, and, gt, lt } from "drizzle-orm"
 import { type DbClient, refreshTokens } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 import { RefreshToken } from "../../domain/entities/refresh-token.entity"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
-import { RefreshTokenMapper } from "../mappers/refresh-token.mapper"
 
 @Injectable()
-export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
-  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {
-    super()
-  }
+export class RefreshTokenRepository {
+  constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
   async save(token: RefreshToken): Promise<RefreshToken> {
     if (token.id === "") {
@@ -25,7 +21,7 @@ export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
         })
         .returning()
 
-      return RefreshTokenMapper.toDomain(rows[0])
+      return RefreshToken.fromPersistence(rows[0])
     }
 
     const rows = await this.db
@@ -34,7 +30,7 @@ export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
       .where(eq(refreshTokens.id, token.id))
       .returning()
 
-    return RefreshTokenMapper.toDomain(rows[0])
+    return RefreshToken.fromPersistence(rows[0])
   }
 
   async findNonExpiredByFamilyId(familyId: string): Promise<RefreshToken[]> {
@@ -48,7 +44,7 @@ export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
         )
       )
 
-    return rows.map(RefreshTokenMapper.toDomain)
+    return rows.map(RefreshToken.fromPersistence)
   }
 
   async revokeAllByFamilyId(familyId: string): Promise<void> {
@@ -64,7 +60,7 @@ export class RefreshTokenRepositoryImpl extends RefreshTokenRepository {
       .from(refreshTokens)
       .where(gt(refreshTokens.expiresAt, new Date()))
 
-    return rows.map(RefreshTokenMapper.toDomain)
+    return rows.map(RefreshToken.fromPersistence)
   }
 
   async deleteExpired(): Promise<number> {

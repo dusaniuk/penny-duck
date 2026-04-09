@@ -4,7 +4,7 @@ import {
   InvalidSettlementError,
   TransactionNotFoundError,
 } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 
 export class SettleTransactionCommand {
   constructor(

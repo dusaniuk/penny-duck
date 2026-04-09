@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { Category } from "../../domain/entities/category.entity"
-import { CategoryRepository } from "../../domain/repositories/category.repository"
+import { CategoryRepository } from "../../repositories/category.repository"
 
 export class GetCategoriesQuery {
   constructor(public readonly userId: string) {}

@@ -1,6 +1,6 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs"
 import { TransactionCreatedEvent } from "../../../transactions/domain/events/transaction-created.event"
-import { AccountRepository } from "../../domain/repositories/account.repository"
+import { AccountRepository } from "../../repositories/account.repository"
 
 @EventsHandler(TransactionCreatedEvent)
 export class TransactionCreatedHandler

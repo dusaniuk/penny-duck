@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { EventBus } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { InvalidTransferError } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import {
   CreateTransferCommand,
   CreateTransferHandler,

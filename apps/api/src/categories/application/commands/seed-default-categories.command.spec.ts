@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { Category } from "../../domain/entities/category.entity"
-import { CategoryRepository } from "../../domain/repositories/category.repository"
+import { CategoryRepository } from "../../repositories/category.repository"
 import {
   SeedDefaultCategoriesCommand,
   SeedDefaultCategoriesHandler,

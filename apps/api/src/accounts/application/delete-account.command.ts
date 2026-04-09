@@ -3,8 +3,8 @@ import {
   AccountNotFoundError,
   AccountHasTransactionsError,
 } from "../domain/errors/account.errors"
-import { AccountRepository } from "../domain/repositories/account.repository"
-import { TransactionRepository } from "../../transactions/domain/repositories/transaction.repository"
+import { AccountRepository } from "../repositories/account.repository"
+import { TransactionRepository } from "../../transactions/repositories/transaction.repository"
 
 export class DeleteAccountCommand {
   constructor(

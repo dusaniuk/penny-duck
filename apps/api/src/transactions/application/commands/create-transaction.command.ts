@@ -1,6 +1,6 @@
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
 
 export interface CreateTransactionInput {

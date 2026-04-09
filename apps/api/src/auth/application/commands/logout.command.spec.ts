@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { RefreshToken } from "../../domain/entities/refresh-token.entity"
 import { InvalidTokenError } from "../../domain/errors/auth.errors"
-import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository"
+import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 import { LogoutCommand, LogoutHandler } from "./logout.command"
 

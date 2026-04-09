@@ -2,7 +2,7 @@ import { randomUUID } from "crypto"
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { Transaction } from "../../domain/entities/transaction.entity"
 import { InvalidTransferError } from "../../domain/errors/transaction.errors"
-import { TransactionRepository } from "../../domain/repositories/transaction.repository"
+import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
 
 export interface CreateTransferInput {

@@ -10,8 +10,7 @@ import { GetAccountsHandler } from "./application/get-accounts.query"
 import { GetAccountHandler } from "./application/get-account.query"
 import { TransactionCreatedHandler } from "./application/event-handlers/transaction-created.handler"
 import { TransactionDeletedHandler } from "./application/event-handlers/transaction-deleted.handler"
-import { AccountRepository } from "./domain/repositories/account.repository"
-import { AccountRepositoryImpl } from "./infrastructure/repositories/account.repository"
+import { AccountRepository } from "./repositories/account.repository"
 import { AccountsController } from "./presentation/accounts.controller"
 import { AccountsExceptionFilter } from "./presentation/accounts-exception.filter"
 
@@ -30,7 +29,7 @@ const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
     ...commandHandlers,
     ...queryHandlers,
     ...eventHandlers,
-    { provide: AccountRepository, useClass: AccountRepositoryImpl },
+    AccountRepository,
     AccountsExceptionFilter,
   ],
   exports: [AccountRepository],

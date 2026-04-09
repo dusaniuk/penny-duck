@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { Account } from "../../domain/entities/account.entity"
-import { AccountRepository } from "../../domain/repositories/account.repository"
+import { AccountRepository } from "../../repositories/account.repository"
 import { TransactionCreatedEvent } from "../../../transactions/domain/events/transaction-created.event"
 import { TransactionCreatedHandler } from "./transaction-created.handler"
 

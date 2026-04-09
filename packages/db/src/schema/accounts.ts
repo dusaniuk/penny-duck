@@ -1,6 +1,7 @@
-import { decimal, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { timestamp, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { users } from "./users"
+import { money } from "./custom-types"
 
 export const accounts = appSchema.table("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -10,9 +11,7 @@ export const accounts = appSchema.table("accounts", {
   name: varchar("name", { length: 100 }).notNull(),
   type: varchar("type", { length: 20 }).notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  balance: decimal("balance", { precision: 12, scale: 2 })
-    .notNull()
-    .default("0"),
+  balance: money("balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

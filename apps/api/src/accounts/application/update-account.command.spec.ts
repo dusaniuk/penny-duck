@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { Account } from "../domain/entities/account.entity"
 import { AccountNotFoundError } from "../domain/errors/account.errors"
-import { AccountRepository } from "../domain/repositories/account.repository"
+import { AccountRepository } from "../repositories/account.repository"
 import {
   UpdateAccountCommand,
   UpdateAccountHandler,

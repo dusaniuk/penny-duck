@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { Category } from "../../domain/entities/category.entity"
-import { CategoryRepository } from "../../domain/repositories/category.repository"
+import { CategoryRepository } from "../../repositories/category.repository"
 
 export class SeedDefaultCategoriesCommand {
   constructor(public readonly userId: string) {}
