@@ -40,8 +40,7 @@ export default defineConfig({
       env: {
         ...process.env,
         PORT: String(env.WEB_PORT),
-        API_PROXY_TARGET: env.API_BASE_URL,
-        VITE_API_URL: env.API_BASE_URL,
+        API_URL: env.API_BASE_URL,
       },
     },
   ],

@@ -11,10 +11,7 @@ if (!process.env.DATABASE_URL) {
 export const env = {
   DATABASE_URL: process.env.DATABASE_URL,
   API_PORT: Number(process.env.PORT ?? 4030),
-  API_BASE_URL:
-    process.env.API_PROXY_TARGET ??
-    process.env.VITE_API_URL ??
-    "http://localhost:4030",
+  API_BASE_URL: process.env.API_URL ?? "http://localhost:4030",
   WEB_PORT: Number(process.env.WEB_PORT ?? 4000),
   WEB_BASE_URL: process.env.WEB_URL ?? "http://localhost:4000",
 }

@@ -5,7 +5,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 
-const apiUrl = process.env.API_PROXY_TARGET ?? "http://localhost:3030"
+const apiUrl = process.env.API_URL ?? "http://localhost:3030"
 
 const config = defineConfig({
   envDir: "../../",

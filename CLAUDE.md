@@ -85,9 +85,34 @@ apps/api/src/<module>/
 ## Auth
 
 - JWT access token (15min, httpOnly cookie) + opaque refresh token (7d, httpOnly cookie) with rotation
-- Frontend proxies API calls through Nitro (`/api/**` → `localhost:3030/**`) for same-origin cookies
+- Cookies set with `secure: true` in production, `sameSite: "lax"`
+- Frontend proxies API calls through Nitro (`/api/**` → `API_PROXY_TARGET`) for same-origin cookies
 - SSR auth checks use `createServerFn` + `getCookie` from `@tanstack/react-start/server`
-- Auth helper: `apps/web/src/lib/auth.ts` — `getAuthUser()` server function used in route `beforeLoad`
+- Auth helper: `apps/web/src/lib/auth.ts` — `getAuthUser()` server function, uses `API_URL` env var at runtime
+
+## Deployment (Railway)
+
+Hosted on Railway with three services: **Web**, **API** (private networking only), **Postgres**.
+
+### Build & Start
+
+```bash
+pnpm build:api    # Build API + workspace deps (tsup + nest build)
+pnpm build:web    # Build Web + workspace deps (tsup + vite build)
+pnpm start:api    # node apps/api/dist/main.js
+pnpm start:web    # node apps/web/.output/server/index.mjs
+pnpm db:deploy    # Programmatic migration (pre-deploy command)
+```
+
+### Shared Packages
+
+Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup** (ESM, no DTS). Conditional exports: `node` → `dist/*.js` (production runtime), `default` → `src/*.ts` (Vite/bundlers/TypeScript).
+
+### Environment Variables
+
+- **API service**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `WEB_URL`, `PORT=3030`
+- **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
+- **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
 
 ## graphify
 
