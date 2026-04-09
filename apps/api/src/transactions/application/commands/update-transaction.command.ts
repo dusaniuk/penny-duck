@@ -4,11 +4,8 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
+import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
-import {
-  TransactionNotFoundError,
-  TransferOperationError,
-} from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../events/transaction-created.event"
 import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
@@ -50,8 +47,11 @@ export class UpdateTransactionHandler
 
   async execute(cmd: UpdateTransactionCommand): Promise<Transaction> {
     const existing = await this.transactionRepo.findById(cmd.id, cmd.userId)
-    if (!existing) throw new TransactionNotFoundError()
-    if (existing.type === "transfer") throw new TransferOperationError()
+    if (!existing) throw new NotFoundException("Transaction not found")
+    if (existing.type === "transfer")
+      throw new BadRequestException(
+        "Use the transfer endpoint to modify transfer transactions"
+      )
 
     const { fields } = cmd
     const updateData: Record<string, unknown> = {}

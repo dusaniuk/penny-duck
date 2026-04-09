@@ -12,7 +12,6 @@ import { TransactionCreatedHandler } from "./application/event-handlers/transact
 import { TransactionDeletedHandler } from "./application/event-handlers/transaction-deleted.handler"
 import { AccountRepository } from "./repositories/account.repository"
 import { AccountsController } from "./presentation/accounts.controller"
-import { AccountsExceptionFilter } from "./presentation/accounts-exception.filter"
 
 const commandHandlers = [
   CreateAccountHandler,
@@ -30,7 +29,6 @@ const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
     ...queryHandlers,
     ...eventHandlers,
     AccountRepository,
-    AccountsExceptionFilter,
   ],
   exports: [AccountRepository],
 })

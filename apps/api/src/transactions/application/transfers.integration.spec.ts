@@ -12,7 +12,7 @@ import { CreateTransferCommand } from "./commands/create-transfer.command"
 import { UpdateTransferCommand } from "./commands/update-transfer.command"
 import { DeleteTransferCommand } from "./commands/delete-transfer.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
-import { InvalidTransferError } from "../errors/transaction.errors"
+import { BadRequestException } from "@nestjs/common"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
@@ -116,7 +116,7 @@ describe("Transfers", () => {
           date: new Date(),
         })
       )
-    ).rejects.toThrow(InvalidTransferError)
+    ).rejects.toThrow(BadRequestException)
   })
 
   it("updates a transfer", async () => {

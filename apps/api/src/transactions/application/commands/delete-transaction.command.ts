@@ -4,10 +4,7 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
-import {
-  TransactionNotFoundError,
-  TransferOperationError,
-} from "../../errors/transaction.errors"
+import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
 
@@ -31,8 +28,11 @@ export class DeleteTransactionHandler
 
   async execute(cmd: DeleteTransactionCommand): Promise<void> {
     const row = await this.transactionRepo.findById(cmd.id, cmd.userId)
-    if (!row) throw new TransactionNotFoundError()
-    if (row.type === "transfer") throw new TransferOperationError()
+    if (!row) throw new NotFoundException("Transaction not found")
+    if (row.type === "transfer")
+      throw new BadRequestException(
+        "Use the transfer endpoint to modify transfer transactions"
+      )
 
     await this.transactionRepo.delete(cmd.id, cmd.userId)
 

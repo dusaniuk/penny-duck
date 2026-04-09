@@ -5,8 +5,8 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
+import { BadRequestException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
-import { InvalidTransferError } from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../events/transaction-created.event"
 import {
@@ -49,7 +49,7 @@ export class CreateTransferHandler
     const { input } = cmd
 
     if (input.fromAccountId === input.toAccountId) {
-      throw new InvalidTransferError(
+      throw new BadRequestException(
         "Source and destination accounts must differ"
       )
     }

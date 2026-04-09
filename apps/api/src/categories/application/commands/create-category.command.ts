@@ -1,9 +1,6 @@
+import { BadRequestException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { type Category } from "@workspace/api-contract"
-import {
-  MaxCategoryDepthError,
-  ParentCategoryNotFoundError,
-} from "../../errors/category.errors"
 import { CategoryRepository } from "../../repositories/category.repository"
 
 export class CreateCategoryCommand extends Command<Category> {
@@ -26,8 +23,10 @@ export class CreateCategoryHandler
   async execute(cmd: CreateCategoryCommand): Promise<Category> {
     if (cmd.parentId !== null) {
       const parent = await this.categoryRepo.findById(cmd.parentId, cmd.userId)
-      if (parent === null) throw new ParentCategoryNotFoundError()
-      if (parent.parentId !== null) throw new MaxCategoryDepthError()
+      if (parent === null)
+        throw new BadRequestException("Parent category not found")
+      if (parent.parentId !== null)
+        throw new BadRequestException("Subcategories cannot have children")
     }
 
     const row = await this.categoryRepo.insert({

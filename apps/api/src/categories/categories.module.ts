@@ -10,7 +10,6 @@ import { GetCategoriesHandler } from "./application/queries/get-categories.query
 import { UserRegisteredHandler } from "./application/event-handlers/user-registered.handler"
 import { CategoryRepository } from "./repositories/category.repository"
 import { CategoriesController } from "./presentation/categories.controller"
-import { CategoriesExceptionFilter } from "./presentation/categories-exception.filter"
 
 const commandHandlers = [
   CreateCategoryHandler,
@@ -29,7 +28,6 @@ const eventHandlers = [UserRegisteredHandler]
     ...queryHandlers,
     ...eventHandlers,
     CategoryRepository,
-    CategoriesExceptionFilter,
   ],
 })
 export class CategoriesModule {}

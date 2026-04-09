@@ -1,4 +1,4 @@
-import { Controller, UseFilters, UseGuards } from "@nestjs/common"
+import { Controller, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { categoryContract } from "@workspace/api-contract"
@@ -9,11 +9,9 @@ import { CreateCategoryCommand } from "../application/commands/create-category.c
 import { UpdateCategoryCommand } from "../application/commands/update-category.command"
 import { DeleteCategoryCommand } from "../application/commands/delete-category.command"
 import { GetCategoriesQuery } from "../application/queries/get-categories.query"
-import { CategoriesExceptionFilter } from "./categories-exception.filter"
 
 @Controller()
 @UseGuards(AuthGuard)
-@UseFilters(CategoriesExceptionFilter)
 export class CategoriesController {
   constructor(
     private readonly commandBus: CommandBus,

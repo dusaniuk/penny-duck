@@ -1,4 +1,4 @@
-import { Controller, UseFilters, UseGuards } from "@nestjs/common"
+import { Controller, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { accountContract } from "@workspace/api-contract"
@@ -10,11 +10,9 @@ import { UpdateAccountCommand } from "../application/update-account.command"
 import { DeleteAccountCommand } from "../application/delete-account.command"
 import { GetAccountsQuery } from "../application/get-accounts.query"
 import { GetAccountQuery } from "../application/get-account.query"
-import { AccountsExceptionFilter } from "./accounts-exception.filter"
 
 @Controller()
 @UseGuards(AuthGuard)
-@UseFilters(AccountsExceptionFilter)
 export class AccountsController {
   constructor(
     private readonly commandBus: CommandBus,

@@ -1,5 +1,5 @@
+import { NotFoundException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import { CategoryNotFoundError } from "../../errors/category.errors"
 import { CategoryRepository } from "../../repositories/category.repository"
 
 export class DeleteCategoryCommand extends Command<void> {
@@ -19,7 +19,7 @@ export class DeleteCategoryHandler
 
   async execute(cmd: DeleteCategoryCommand): Promise<void> {
     const category = await this.categoryRepo.findById(cmd.id, cmd.userId)
-    if (category === null) throw new CategoryNotFoundError()
+    if (category === null) throw new NotFoundException("Category not found")
 
     await this.categoryRepo.delete(cmd.id, cmd.userId)
   }

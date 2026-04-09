@@ -1,6 +1,6 @@
+import { NotFoundException } from "@nestjs/common"
 import { Query, IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { type Account } from "@workspace/api-contract"
-import { AccountNotFoundError } from "../errors/account.errors"
 import { AccountRepository } from "../repositories/account.repository"
 
 export class GetAccountQuery extends Query<Account> {
@@ -18,7 +18,7 @@ export class GetAccountHandler implements IQueryHandler<GetAccountQuery> {
 
   async execute(query: GetAccountQuery): Promise<Account> {
     const row = await this.accountRepo.findById(query.id, query.userId)
-    if (!row) throw new AccountNotFoundError()
+    if (!row) throw new NotFoundException("Account not found")
     return {
       id: row.id,
       name: row.name,

@@ -1,6 +1,6 @@
+import { NotFoundException } from "@nestjs/common"
 import { Query, IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { type Transaction } from "@workspace/api-contract"
-import { TransactionNotFoundError } from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
 import { toResponse } from "../../helpers/transaction.helpers"
 
@@ -21,7 +21,7 @@ export class GetTransactionHandler
 
   async execute(query: GetTransactionQuery): Promise<Transaction> {
     const row = await this.transactionRepo.findById(query.id, query.userId)
-    if (!row) throw new TransactionNotFoundError()
+    if (!row) throw new NotFoundException("Transaction not found")
     return toResponse(row)
   }
 }

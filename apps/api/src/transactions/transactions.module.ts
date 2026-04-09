@@ -13,7 +13,6 @@ import { GetTransactionHandler } from "./application/queries/get-transaction.que
 import { ListTransactionsHandler } from "./application/queries/list-transactions.query"
 import { TransactionRepository } from "./repositories/transaction.repository"
 import { TransactionsController } from "./presentation/transactions.controller"
-import { TransactionsExceptionFilter } from "./presentation/transactions-exception.filter"
 
 const commandHandlers = [
   CreateTransactionHandler,
@@ -33,7 +32,6 @@ const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
     ...commandHandlers,
     ...queryHandlers,
     TransactionRepository,
-    TransactionsExceptionFilter,
   ],
   exports: [TransactionRepository],
 })

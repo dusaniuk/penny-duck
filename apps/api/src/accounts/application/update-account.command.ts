@@ -1,6 +1,6 @@
+import { NotFoundException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { type Account } from "@workspace/api-contract"
-import { AccountNotFoundError } from "../errors/account.errors"
 import { AccountRepository } from "../repositories/account.repository"
 
 export class UpdateAccountCommand extends Command<Account> {
@@ -22,7 +22,7 @@ export class UpdateAccountHandler
 
   async execute(cmd: UpdateAccountCommand): Promise<Account> {
     const existing = await this.accountRepo.findById(cmd.id, cmd.userId)
-    if (!existing) throw new AccountNotFoundError()
+    if (!existing) throw new NotFoundException("Account not found")
 
     const row = await this.accountRepo.update(cmd.id, {
       name: cmd.name,

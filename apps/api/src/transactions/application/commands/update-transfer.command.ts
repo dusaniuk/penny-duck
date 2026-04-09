@@ -4,8 +4,8 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
+import { NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
-import { TransactionNotFoundError } from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
 import { TransactionCreatedEvent } from "../../events/transaction-created.event"
 import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
@@ -48,7 +48,7 @@ export class UpdateTransferHandler
     cmd: UpdateTransferCommand
   ): Promise<[Transaction, Transaction]> {
     const pair = await this.transactionRepo.findByTransferId(cmd.transferId)
-    if (pair.length !== 2) throw new TransactionNotFoundError()
+    if (pair.length !== 2) throw new NotFoundException("Transaction not found")
 
     const outgoing =
       pair.find((t) => t.originalAmount !== null) ?? pair[0]

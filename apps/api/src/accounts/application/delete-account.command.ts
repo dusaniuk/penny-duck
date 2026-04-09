@@ -1,8 +1,5 @@
+import { ConflictException, NotFoundException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import {
-  AccountNotFoundError,
-  AccountHasTransactionsError,
-} from "../errors/account.errors"
 import { AccountRepository } from "../repositories/account.repository"
 import { TransactionRepository } from "../../transactions/repositories/transaction.repository"
 
@@ -26,10 +23,13 @@ export class DeleteAccountHandler
 
   async execute(cmd: DeleteAccountCommand): Promise<void> {
     const account = await this.accountRepo.findById(cmd.id, cmd.userId)
-    if (!account) throw new AccountNotFoundError()
+    if (!account) throw new NotFoundException("Account not found")
 
     const count = await this.transactionRepo.countByAccountId(cmd.id)
-    if (count > 0) throw new AccountHasTransactionsError(count)
+    if (count > 0)
+      throw new ConflictException(
+        `Account has ${count} transaction${count !== 1 ? "s" : ""} and cannot be deleted`
+      )
 
     await this.accountRepo.delete(cmd.id, cmd.userId)
   }

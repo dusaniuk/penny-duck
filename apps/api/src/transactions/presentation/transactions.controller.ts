@@ -1,4 +1,4 @@
-import { Controller, UseFilters, UseGuards } from "@nestjs/common"
+import { Controller, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { transactionContract } from "@workspace/api-contract"
@@ -14,11 +14,9 @@ import { UpdateTransferCommand } from "../application/commands/update-transfer.c
 import { DeleteTransferCommand } from "../application/commands/delete-transfer.command"
 import { GetTransactionQuery } from "../application/queries/get-transaction.query"
 import { ListTransactionsQuery } from "../application/queries/list-transactions.query"
-import { TransactionsExceptionFilter } from "./transactions-exception.filter"
 
 @Controller()
 @UseGuards(AuthGuard)
-@UseFilters(TransactionsExceptionFilter)
 export class TransactionsController {
   constructor(
     private readonly commandBus: CommandBus,
