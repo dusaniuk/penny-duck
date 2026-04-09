@@ -11,7 +11,7 @@
     "build": "turbo build",
     "build:api": "pnpm --filter api... build",
     "build:web": "pnpm --filter web... build",
-    "start:api": "node apps/api/dist/main.js",
+    "start:api": "pnpm db:migrate && node apps/api/dist/main.js",
     "start:web": "node apps/web/.output/server/index.mjs",
     "dev": "turbo dev",
     "lint": "turbo lint",
