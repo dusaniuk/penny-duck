@@ -1,4 +1,3 @@
-import { Email } from "../value-objects/email.vo"
 import { Password } from "../value-objects/password.vo"
 
 interface UserData {
@@ -13,7 +12,7 @@ interface UserData {
 export class User {
   private constructor(
     private readonly _id: string,
-    private readonly _email: Email,
+    private readonly _email: string,
     private readonly _name: string,
     private readonly _passwordHash: string,
     private readonly _createdAt: Date,
@@ -25,13 +24,12 @@ export class User {
     rawEmail: string,
     rawPassword: string
   ): Promise<User> {
-    const email = Email.create(rawEmail)
     const password = Password.create(rawPassword)
     const hash = await password.hash()
 
     return new User(
       "", // ID assigned by database
-      email,
+      rawEmail.trim().toLowerCase(),
       name,
       hash,
       new Date(),
@@ -42,7 +40,7 @@ export class User {
   static fromPersistence(data: UserData): User {
     return new User(
       data.id,
-      Email.create(data.email),
+      data.email,
       data.name,
       data.passwordHash,
       data.createdAt,
@@ -58,7 +56,7 @@ export class User {
     return this._id
   }
   get email(): string {
-    return this._email.value
+    return this._email
   }
   get name(): string {
     return this._name

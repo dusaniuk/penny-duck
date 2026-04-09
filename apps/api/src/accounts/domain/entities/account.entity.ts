@@ -1,6 +1,3 @@
-import { AccountType } from "../value-objects/account-type.vo"
-import { Currency } from "../value-objects/currency.vo"
-
 interface AccountData {
   id: string
   userId: string
@@ -17,8 +14,8 @@ export class Account {
     private readonly _id: string,
     private readonly _userId: string,
     private _name: string,
-    private _type: AccountType,
-    private readonly _currency: Currency,
+    private _type: string,
+    private readonly _currency: string,
     private _balance: number,
     private readonly _createdAt: Date,
     private _updatedAt: Date
@@ -35,8 +32,8 @@ export class Account {
       "",
       userId,
       name,
-      AccountType.create(type),
-      Currency.create(currency),
+      type,
+      currency,
       balance,
       new Date(),
       new Date()
@@ -48,8 +45,8 @@ export class Account {
       data.id,
       data.userId,
       data.name,
-      AccountType.create(data.type),
-      Currency.create(data.currency),
+      data.type,
+      data.currency,
       data.balance,
       data.createdAt,
       data.updatedAt
@@ -62,7 +59,7 @@ export class Account {
   }
 
   updateType(type: string): void {
-    this._type = AccountType.create(type)
+    this._type = type
     this._updatedAt = new Date()
   }
 
@@ -84,11 +81,11 @@ export class Account {
   }
 
   get type(): string {
-    return this._type.value
+    return this._type
   }
 
   get currency(): string {
-    return this._currency.value
+    return this._currency
   }
 
   get balance(): number {

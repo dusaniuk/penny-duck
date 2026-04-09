@@ -52,12 +52,6 @@ describe("User", () => {
     expect(matches).toBe(false)
   })
 
-  it("rejects invalid email during registration", async () => {
-    await expect(
-      User.register(faker.person.fullName(), "not-an-email", "validpassword1")
-    ).rejects.toThrow("Invalid email format")
-  })
-
   it("rejects short password during registration", async () => {
     await expect(
       User.register(faker.person.fullName(), faker.internet.email(), "short")

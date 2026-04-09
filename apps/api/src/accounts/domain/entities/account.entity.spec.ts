@@ -41,16 +41,6 @@ describe("Account", () => {
     expect(account.id).toBe(id)
     expect(account.userId).toBe(userId)
   })
-  it("rejects invalid currency", () => {
-    expect(() =>
-      Account.create(faker.string.uuid(), "Test", "bank", "XX")
-    ).toThrow("Currency code must be 3 characters")
-  })
-  it("rejects invalid account type", () => {
-    expect(() =>
-      Account.create(faker.string.uuid(), "Test", "crypto", "USD")
-    ).toThrow("Invalid account type")
-  })
   it("updates name", () => {
     const account = Account.create(
       faker.string.uuid(),
