@@ -1,9 +1,9 @@
-import type {
-  AccountData,
-  CategoryData,
-  TransactionData,
-} from "./transaction-types"
+import type { Account, Category, Transaction } from "@workspace/api-contract"
 import { getCategoryIcon } from "@/lib/category-icons"
+
+type AccountData = Account
+type CategoryData = Category
+type TransactionData = Transaction
 
 interface TransactionRowProps {
   transaction: TransactionData

@@ -1,15 +1,7 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseFilters,
-  UseGuards,
-} from "@nestjs/common"
+import { Controller, UseFilters, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
+import { accountContract } from "@workspace/api-contract"
 import { AuthGuard } from "../../auth/presentation/auth.guard"
 import { CurrentUser } from "../../auth/presentation/auth.decorator"
 import { type AccessTokenPayload } from "../../auth/infrastructure/services/jwt.service"
@@ -20,11 +12,8 @@ import { GetAccountsQuery } from "../application/get-accounts.query"
 import { GetAccountQuery } from "../application/get-account.query"
 import { AccountsExceptionFilter } from "./accounts-exception.filter"
 import { Account } from "../domain/entities/account.entity"
-import { CreateAccountDto } from "./dto/create-account.dto"
 
-import { UpdateAccountDto } from "./dto/update-account.dto"
-
-@Controller("accounts")
+@Controller()
 @UseGuards(AuthGuard)
 @UseFilters(AccountsExceptionFilter)
 export class AccountsController {
@@ -33,79 +22,95 @@ export class AccountsController {
     private readonly queryBus: QueryBus
   ) {}
 
-  @Get()
-  async list(@CurrentUser() user: AccessTokenPayload) {
-    const accounts = await this.queryBus.execute(new GetAccountsQuery(user.sub))
-    return accounts.map((a: Account) => ({
-      id: a.id,
-      name: a.name,
-      type: a.type,
-      currency: a.currency,
-      balance: a.balance,
-    }))
-  }
-
-  @Post()
-  async create(
-    @CurrentUser() user: AccessTokenPayload,
-    @Body() dto: CreateAccountDto
-  ) {
-    const account = await this.commandBus.execute(
-      new CreateAccountCommand(
-        user.sub,
-        dto.name,
-        dto.type,
-        dto.currency,
-        dto.balance
+  @TsRestHandler(accountContract.list)
+  handleList(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(accountContract.list, async () => {
+      const accounts = await this.queryBus.execute(
+        new GetAccountsQuery(user.sub)
       )
-    )
-    return {
-      id: account.id,
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-      balance: account.balance,
-    }
+      return {
+        status: 200 as const,
+        body: accounts.map((a: Account) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          currency: a.currency,
+          balance: a.balance,
+        })),
+      }
+    })
   }
 
-  @Get(":id")
-  async get(@CurrentUser() user: AccessTokenPayload, @Param("id") id: string) {
-    const account = await this.queryBus.execute(
-      new GetAccountQuery(id, user.sub)
-    )
-    return {
-      id: account.id,
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-      balance: account.balance,
-    }
+  @TsRestHandler(accountContract.create)
+  handleCreate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(accountContract.create, async ({ body }) => {
+      const account = await this.commandBus.execute(
+        new CreateAccountCommand(
+          user.sub,
+          body.name,
+          body.type,
+          body.currency,
+          body.balance
+        )
+      )
+      return {
+        status: 201 as const,
+        body: {
+          id: account.id,
+          name: account.name,
+          type: account.type,
+          currency: account.currency,
+          balance: account.balance,
+        },
+      }
+    })
   }
 
-  @Patch(":id")
-  async update(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string,
-    @Body() dto: UpdateAccountDto
-  ) {
-    const account = await this.commandBus.execute(
-      new UpdateAccountCommand(id, user.sub, dto.name, dto.type)
-    )
-    return {
-      id: account.id,
-      name: account.name,
-      type: account.type,
-      currency: account.currency,
-      balance: account.balance,
-    }
+  @TsRestHandler(accountContract.get)
+  handleGet(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(accountContract.get, async ({ params }) => {
+      const account = await this.queryBus.execute(
+        new GetAccountQuery(params.id, user.sub)
+      )
+      return {
+        status: 200 as const,
+        body: {
+          id: account.id,
+          name: account.name,
+          type: account.type,
+          currency: account.currency,
+          balance: account.balance,
+        },
+      }
+    })
   }
 
-  @Delete(":id")
-  async remove(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
-  ) {
-    await this.commandBus.execute(new DeleteAccountCommand(id, user.sub))
-    return { message: "Account deleted" }
+  @TsRestHandler(accountContract.update)
+  handleUpdate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(accountContract.update, async ({ params, body }) => {
+      const account = await this.commandBus.execute(
+        new UpdateAccountCommand(params.id, user.sub, body.name, body.type)
+      )
+      return {
+        status: 200 as const,
+        body: {
+          id: account.id,
+          name: account.name,
+          type: account.type,
+          currency: account.currency,
+          balance: account.balance,
+        },
+      }
+    })
+  }
+
+  @TsRestHandler(accountContract.delete)
+  handleDelete(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(accountContract.delete, async ({ params }) => {
+      await this.commandBus.execute(
+        new DeleteAccountCommand(params.id, user.sub)
+      )
+      return { status: 200 as const, body: { message: "Account deleted" } }
+    })
   }
 }

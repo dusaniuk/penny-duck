@@ -14,11 +14,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import type {
-  AccountData,
-  CategoryData,
-  TransactionFilters,
-} from "./transaction-types"
+import type { Account, Category } from "@workspace/api-contract"
+
+type AccountData = Account
+type CategoryData = Category
+
+interface TransactionFilters {
+  accountId?: string
+  type?: string
+  categoryId?: string
+  settled?: boolean
+  orphaned?: boolean
+  dateFrom?: string
+  dateTo?: string
+}
 
 interface TransactionFilterSheetProps {
   open: boolean

@@ -1,65 +1,65 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { CategoryData } from "@/components/categories/category-row"
 import { CategoryList } from "@/components/categories/category-list"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
-import { api } from "@/lib/api"
+import { queryClient, tsr } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/categories")({
   component: CategoriesPage,
 })
 
 function CategoriesPage() {
-  const [categories, setCategories] = useState<Array<CategoryData>>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } =
+    tsr.categories.list.useQuery({ queryKey: ["categories"] })
+  const categories = data?.body ?? []
+
   const [deleteCategory, setDeleteCategory] = useState<CategoryData | null>(
     null
   )
 
-  async function refetch() {
-    const res = await api.get("/categories")
-    const data = await res.json()
-    setCategories(data)
-  }
+  const updateMutation = tsr.categories.update.useMutation({
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories"] }),
+  })
 
-  useEffect(() => {
-    api
-      .get("/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch(() => setCategories([]))
-      .finally(() => setLoading(false))
-  }, [])
+  const createMutation = tsr.categories.create.useMutation({
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories"] }),
+  })
+
+  const deleteMutation = tsr.categories.delete.useMutation({
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories"] }),
+  })
 
   async function handleEdit(
     id: string,
-    data: { name: string; icon?: string }
+    formData: { name: string; icon?: string }
   ) {
-    const res = await api.patch(`/categories/${id}`, data)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-    await refetch()
+    await updateMutation.mutateAsync({
+      params: { id },
+      body: formData,
+    })
   }
 
-  async function handleCreate(data: {
+  async function handleCreate(formData: {
     name: string
     icon?: string
     parentId: string | null
   }) {
-    const res = await api.post("/categories", data)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-    await refetch()
+    await createMutation.mutateAsync({
+      body: {
+        name: formData.name,
+        icon: formData.icon,
+        parentId: formData.parentId ?? undefined,
+      },
+    })
   }
 
   async function handleDelete() {
     if (!deleteCategory) return
-    await api.del(`/categories/${deleteCategory.id}`)
-    await refetch()
+    await deleteMutation.mutateAsync({ params: { id: deleteCategory.id } })
   }
 
   return (

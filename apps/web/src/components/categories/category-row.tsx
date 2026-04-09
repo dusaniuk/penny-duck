@@ -22,14 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import { IconPicker } from "./icon-picker"
+import type { Category } from "@workspace/api-contract"
 import { getCategoryIcon } from "@/lib/category-icons"
 
-export interface CategoryData {
-  id: string
-  parentId: string | null
-  name: string
-  icon: string | null
-}
+export type CategoryData = Category
 
 interface CategoryRowProps {
   parent: CategoryData

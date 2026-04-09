@@ -15,7 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
-import type { AccountData, TransactionData } from "./transaction-types"
+import type { Account, Transaction } from "@workspace/api-contract"
+
+type AccountData = Account
+type TransactionData = Transaction
 
 interface TransferFormDialogProps {
   open: boolean

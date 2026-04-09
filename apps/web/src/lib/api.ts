@@ -1,23 +1,17 @@
-const API_URL = "/api"
+import { initTsrReactQuery } from "@ts-rest/react-query/v5"
+import { tsRestFetchApi } from "@ts-rest/core"
+import { QueryClient } from "@tanstack/react-query"
+import { contract } from "@workspace/api-contract"
+import type { ApiFetcherArgs } from "@ts-rest/core"
 
 let refreshPromise: Promise<Response> | null = null
 
-async function fetchApi(
-  path: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  })
+async function fetchWithRefresh(args: ApiFetcherArgs) {
+  const res = await tsRestFetchApi(args)
 
-  if (res.status === 401 && !path.includes("/auth/refresh")) {
+  if (res.status === 401 && !args.path.includes("/auth/refresh")) {
     if (!refreshPromise) {
-      refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      refreshPromise = fetch("/api/auth/refresh", {
         method: "POST",
         credentials: "include",
       }).finally(() => {
@@ -28,35 +22,25 @@ async function fetchApi(
     const refreshRes = await refreshPromise
 
     if (refreshRes.ok) {
-      return fetch(`${API_URL}${path}`, {
-        ...options,
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...options.headers,
-        },
-      })
+      return tsRestFetchApi(args)
     }
   }
 
   return res
 }
 
-export const api = {
-  get: (path: string) => fetchApi(path),
-  post: (path: string, body?: unknown) =>
-    fetchApi(path, {
-      method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-  patch: (path: string, body?: unknown) =>
-    fetchApi(path, {
-      method: "PATCH",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-  del: (path: string, body?: unknown) =>
-    fetchApi(path, {
-      method: "DELETE",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-}
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+
+export const tsr = initTsrReactQuery(contract, {
+  baseUrl: "/api",
+  credentials: "include",
+  baseHeaders: { "Content-Type": "application/json" },
+  api: fetchWithRefresh,
+})

@@ -1,9 +1,9 @@
 import { TransactionRow } from "./transaction-row"
-import type {
-  AccountData,
-  CategoryData,
-  TransactionData,
-} from "./transaction-types"
+import type { Account, Category, Transaction } from "@workspace/api-contract"
+
+type AccountData = Account
+type CategoryData = Category
+type TransactionData = Transaction
 
 interface TransactionListProps {
   transactions: Array<TransactionData>

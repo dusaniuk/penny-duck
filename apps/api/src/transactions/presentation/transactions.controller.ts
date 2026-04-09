@@ -1,16 +1,7 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseFilters,
-  UseGuards,
-} from "@nestjs/common"
+import { Controller, UseFilters, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
+import { transactionContract } from "@workspace/api-contract"
 import { AuthGuard } from "../../auth/presentation/auth.guard"
 import { CurrentUser } from "../../auth/presentation/auth.decorator"
 import { type AccessTokenPayload } from "../../auth/infrastructure/services/jwt.service"
@@ -25,11 +16,6 @@ import { DeleteTransferCommand } from "../application/commands/delete-transfer.c
 import { GetTransactionQuery } from "../application/queries/get-transaction.query"
 import { ListTransactionsQuery } from "../application/queries/list-transactions.query"
 import { TransactionsExceptionFilter } from "./transactions-exception.filter"
-import { CreateTransactionDto } from "./dto/create-transaction.dto"
-import { UpdateTransactionDto } from "./dto/update-transaction.dto"
-import { CreateTransferDto } from "./dto/create-transfer.dto"
-import { UpdateTransferDto } from "./dto/update-transfer.dto"
-import { ListTransactionsDto } from "./dto/list-transactions.dto"
 
 function toResponse(t: Transaction) {
   return {
@@ -39,19 +25,19 @@ function toResponse(t: Transaction) {
     amount: t.amount,
     categoryId: t.categoryId,
     note: t.note,
-    date: t.date,
+    date: t.date.toISOString(),
     myShare: t.myShare,
     settled: t.settled,
     originalAmount: t.exchangeRate?.originalAmount ?? null,
     originalCurrency: t.exchangeRate?.originalCurrency ?? null,
     exchangeRate: t.exchangeRate?.rate ?? null,
     transferId: t.transferId,
-    createdAt: t.createdAt,
-    updatedAt: t.updatedAt,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
   }
 }
 
-@Controller("transactions")
+@Controller()
 @UseGuards(AuthGuard)
 @UseFilters(TransactionsExceptionFilter)
 export class TransactionsController {
@@ -60,163 +46,177 @@ export class TransactionsController {
     private readonly queryBus: QueryBus
   ) {}
 
-  @Post()
-  async create(
-    @CurrentUser() user: AccessTokenPayload,
-    @Body() dto: CreateTransactionDto
-  ) {
-    const transaction = await this.commandBus.execute(
-      new CreateTransactionCommand({
-        userId: user.sub,
-        accountId: dto.accountId,
-        type: dto.type,
-        amount: dto.amount,
-        categoryId: dto.categoryId,
-        date: new Date(dto.date),
-        note: dto.note,
-        myShare: dto.myShare,
-        originalAmount: dto.originalAmount,
-        originalCurrency: dto.originalCurrency,
-        exchangeRate: dto.exchangeRate,
-      })
-    )
-    return toResponse(transaction)
+  @TsRestHandler(transactionContract.create)
+  handleCreate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(transactionContract.create, async ({ body }) => {
+      const transaction = await this.commandBus.execute(
+        new CreateTransactionCommand({
+          userId: user.sub,
+          accountId: body.accountId,
+          type: body.type,
+          amount: body.amount,
+          categoryId: body.categoryId,
+          date: new Date(body.date),
+          note: body.note,
+          myShare: body.myShare,
+          originalAmount: body.originalAmount,
+          originalCurrency: body.originalCurrency,
+          exchangeRate: body.exchangeRate,
+        })
+      )
+      return { status: 201 as const, body: toResponse(transaction) }
+    })
   }
 
-  @Get()
-  async list(
-    @CurrentUser() user: AccessTokenPayload,
-    @Query() dto: ListTransactionsDto
-  ) {
-    const { data, total } = await this.queryBus.execute(
-      new ListTransactionsQuery(user.sub, {
-        page: dto.page ?? 1,
-        limit: dto.limit ?? 50,
-        accountId: dto.accountId,
-        type: dto.type,
-        categoryId: dto.categoryId,
-        settled: dto.settled,
-        orphaned: dto.orphaned,
-        dateFrom: dto.dateFrom ? new Date(dto.dateFrom) : undefined,
-        dateTo: dto.dateTo ? new Date(dto.dateTo) : undefined,
-      })
-    )
-    return {
-      data: data.map(toResponse),
-      total,
-      page: dto.page ?? 1,
-      limit: dto.limit ?? 50,
-    }
+  @TsRestHandler(transactionContract.list)
+  handleList(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(transactionContract.list, async ({ query }) => {
+      const page = query.page ?? 1
+      const limit = query.limit ?? 50
+      const { data, total } = await this.queryBus.execute(
+        new ListTransactionsQuery(user.sub, {
+          page,
+          limit,
+          accountId: query.accountId,
+          type: query.type,
+          categoryId: query.categoryId,
+          settled: query.settled,
+          orphaned: query.orphaned,
+          dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+          dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+        })
+      )
+      return {
+        status: 200 as const,
+        body: { data: data.map(toResponse), total, page, limit },
+      }
+    })
   }
 
-  @Get(":id")
-  async get(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
-  ) {
-    const transaction = await this.queryBus.execute(
-      new GetTransactionQuery(id, user.sub)
-    )
-    return toResponse(transaction)
+  @TsRestHandler(transactionContract.get)
+  handleGet(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(transactionContract.get, async ({ params }) => {
+      const transaction = await this.queryBus.execute(
+        new GetTransactionQuery(params.id, user.sub)
+      )
+      return { status: 200 as const, body: toResponse(transaction) }
+    })
   }
 
-  @Patch(":id")
-  async update(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string,
-    @Body() dto: UpdateTransactionDto
-  ) {
-    const transaction = await this.commandBus.execute(
-      new UpdateTransactionCommand(id, user.sub, {
-        accountId: dto.accountId,
-        amount: dto.amount,
-        categoryId: dto.categoryId,
-        note: dto.note,
-        date: dto.date ? new Date(dto.date) : undefined,
-        myShare: dto.myShare,
-        originalAmount: dto.originalAmount,
-        originalCurrency: dto.originalCurrency,
-        exchangeRate: dto.exchangeRate,
-      })
+  @TsRestHandler(transactionContract.update)
+  handleUpdate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.update,
+      async ({ params, body }) => {
+        const transaction = await this.commandBus.execute(
+          new UpdateTransactionCommand(params.id, user.sub, {
+            accountId: body.accountId,
+            amount: body.amount,
+            categoryId: body.categoryId,
+            note: body.note,
+            date: body.date ? new Date(body.date) : undefined,
+            myShare: body.myShare,
+            originalAmount: body.originalAmount,
+            originalCurrency: body.originalCurrency,
+            exchangeRate: body.exchangeRate,
+          })
+        )
+        return { status: 200 as const, body: toResponse(transaction) }
+      }
     )
-    return toResponse(transaction)
   }
 
-  @Delete(":id")
-  async remove(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
-  ) {
-    await this.commandBus.execute(new DeleteTransactionCommand(id, user.sub))
-    return { message: "Transaction deleted" }
+  @TsRestHandler(transactionContract.delete)
+  handleDelete(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(transactionContract.delete, async ({ params }) => {
+      await this.commandBus.execute(
+        new DeleteTransactionCommand(params.id, user.sub)
+      )
+      return {
+        status: 200 as const,
+        body: { message: "Transaction deleted" },
+      }
+    })
   }
 
-  @Patch(":id/settle")
-  async settle(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
-  ) {
-    const transaction = await this.commandBus.execute(
-      new SettleTransactionCommand(id, user.sub)
-    )
-    return toResponse(transaction)
+  @TsRestHandler(transactionContract.settle)
+  handleSettle(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(transactionContract.settle, async ({ params }) => {
+      const transaction = await this.commandBus.execute(
+        new SettleTransactionCommand(params.id, user.sub)
+      )
+      return { status: 200 as const, body: toResponse(transaction) }
+    })
   }
 
-
-  @Post("transfers")
-  async createTransfer(
-    @CurrentUser() user: AccessTokenPayload,
-    @Body() dto: CreateTransferDto
-  ) {
-    const [outgoing, incoming] = await this.commandBus.execute(
-      new CreateTransferCommand({
-        userId: user.sub,
-        fromAccountId: dto.fromAccountId,
-        toAccountId: dto.toAccountId,
-        amount: dto.amount,
-        date: new Date(dto.date),
-        note: dto.note,
-        originalAmount: dto.originalAmount,
-        originalCurrency: dto.originalCurrency,
-        exchangeRate: dto.exchangeRate,
-      })
+  @TsRestHandler(transactionContract.createTransfer)
+  handleCreateTransfer(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.createTransfer,
+      async ({ body }) => {
+        const [outgoing, incoming] = await this.commandBus.execute(
+          new CreateTransferCommand({
+            userId: user.sub,
+            fromAccountId: body.fromAccountId,
+            toAccountId: body.toAccountId,
+            amount: body.amount,
+            date: new Date(body.date),
+            note: body.note,
+            originalAmount: body.originalAmount,
+            originalCurrency: body.originalCurrency,
+            exchangeRate: body.exchangeRate,
+          })
+        )
+        return {
+          status: 201 as const,
+          body: {
+            outgoing: toResponse(outgoing),
+            incoming: toResponse(incoming),
+          },
+        }
+      }
     )
-    return {
-      outgoing: toResponse(outgoing),
-      incoming: toResponse(incoming),
-    }
   }
 
-  @Patch("transfers/:transferId")
-  async updateTransfer(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("transferId") transferId: string,
-    @Body() dto: UpdateTransferDto
-  ) {
-    const [outgoing, incoming] = await this.commandBus.execute(
-      new UpdateTransferCommand(transferId, user.sub, {
-        amount: dto.amount,
-        date: dto.date ? new Date(dto.date) : undefined,
-        note: dto.note,
-        originalAmount: dto.originalAmount,
-        originalCurrency: dto.originalCurrency,
-        exchangeRate: dto.exchangeRate,
-      })
+  @TsRestHandler(transactionContract.updateTransfer)
+  handleUpdateTransfer(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.updateTransfer,
+      async ({ params, body }) => {
+        const [outgoing, incoming] = await this.commandBus.execute(
+          new UpdateTransferCommand(params.transferId, user.sub, {
+            amount: body.amount,
+            date: body.date ? new Date(body.date) : undefined,
+            note: body.note,
+            originalAmount: body.originalAmount,
+            originalCurrency: body.originalCurrency,
+            exchangeRate: body.exchangeRate,
+          })
+        )
+        return {
+          status: 200 as const,
+          body: {
+            outgoing: toResponse(outgoing),
+            incoming: toResponse(incoming),
+          },
+        }
+      }
     )
-    return {
-      outgoing: toResponse(outgoing),
-      incoming: toResponse(incoming),
-    }
   }
 
-  @Delete("transfers/:transferId")
-  async removeTransfer(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("transferId") transferId: string
-  ) {
-    await this.commandBus.execute(
-      new DeleteTransferCommand(transferId, user.sub)
+  @TsRestHandler(transactionContract.deleteTransfer)
+  handleDeleteTransfer(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.deleteTransfer,
+      async ({ params }) => {
+        await this.commandBus.execute(
+          new DeleteTransferCommand(params.transferId, user.sub)
+        )
+        return {
+          status: 200 as const,
+          body: { message: "Transfer deleted" },
+        }
+      }
     )
-    return { message: "Transfer deleted" }
   }
 }

@@ -1,15 +1,7 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseFilters,
-  UseGuards,
-} from "@nestjs/common"
+import { Controller, UseFilters, UseGuards } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
+import { categoryContract } from "@workspace/api-contract"
 import { AuthGuard } from "../../auth/presentation/auth.guard"
 import { CurrentUser } from "../../auth/presentation/auth.decorator"
 import { type AccessTokenPayload } from "../../auth/infrastructure/services/jwt.service"
@@ -19,10 +11,8 @@ import { DeleteCategoryCommand } from "../application/commands/delete-category.c
 import { GetCategoriesQuery } from "../application/queries/get-categories.query"
 import { Category } from "../domain/entities/category.entity"
 import { CategoriesExceptionFilter } from "./categories-exception.filter"
-import { CreateCategoryDto } from "./dto/create-category.dto"
-import { UpdateCategoryDto } from "./dto/update-category.dto"
 
-@Controller("categories")
+@Controller()
 @UseGuards(AuthGuard)
 @UseFilters(CategoriesExceptionFilter)
 export class CategoriesController {
@@ -31,63 +21,72 @@ export class CategoriesController {
     private readonly queryBus: QueryBus
   ) {}
 
-  @Get()
-  async list(@CurrentUser() user: AccessTokenPayload) {
-    const categories = await this.queryBus.execute(
-      new GetCategoriesQuery(user.sub)
-    )
-    return categories.map((c: Category) => ({
-      id: c.id,
-      parentId: c.parentId,
-      name: c.name,
-      icon: c.icon,
-    }))
-  }
-
-  @Post()
-  async create(
-    @CurrentUser() user: AccessTokenPayload,
-    @Body() dto: CreateCategoryDto
-  ) {
-    const category = await this.commandBus.execute(
-      new CreateCategoryCommand(
-        user.sub,
-        dto.name,
-        dto.parentId ?? null,
-        dto.icon ?? null
+  @TsRestHandler(categoryContract.list)
+  handleList(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(categoryContract.list, async () => {
+      const categories = await this.queryBus.execute(
+        new GetCategoriesQuery(user.sub)
       )
-    )
-    return {
-      id: category.id,
-      parentId: category.parentId,
-      name: category.name,
-      icon: category.icon,
-    }
+      return {
+        status: 200 as const,
+        body: categories.map((c: Category) => ({
+          id: c.id,
+          parentId: c.parentId,
+          name: c.name,
+          icon: c.icon,
+        })),
+      }
+    })
   }
 
-  @Patch(":id")
-  async update(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string,
-    @Body() dto: UpdateCategoryDto
-  ) {
-    const category = await this.commandBus.execute(
-      new UpdateCategoryCommand(id, user.sub, dto.name, dto.icon)
-    )
-    return {
-      id: category.id,
-      parentId: category.parentId,
-      name: category.name,
-      icon: category.icon,
-    }
+  @TsRestHandler(categoryContract.create)
+  handleCreate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(categoryContract.create, async ({ body }) => {
+      const category = await this.commandBus.execute(
+        new CreateCategoryCommand(
+          user.sub,
+          body.name,
+          body.parentId ?? null,
+          body.icon ?? null
+        )
+      )
+      return {
+        status: 201 as const,
+        body: {
+          id: category.id,
+          parentId: category.parentId,
+          name: category.name,
+          icon: category.icon,
+        },
+      }
+    })
   }
 
-  @Delete(":id")
-  async remove(
-    @CurrentUser() user: AccessTokenPayload,
-    @Param("id") id: string
-  ) {
-    await this.commandBus.execute(new DeleteCategoryCommand(id, user.sub))
-    return { message: "Category deleted" }
+  @TsRestHandler(categoryContract.update)
+  handleUpdate(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(categoryContract.update, async ({ params, body }) => {
+      const category = await this.commandBus.execute(
+        new UpdateCategoryCommand(params.id, user.sub, body.name, body.icon)
+      )
+      return {
+        status: 200 as const,
+        body: {
+          id: category.id,
+          parentId: category.parentId,
+          name: category.name,
+          icon: category.icon,
+        },
+      }
+    })
+  }
+
+  @TsRestHandler(categoryContract.delete)
+  handleDelete(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(categoryContract.delete, async ({ params }) => {
+      await this.commandBus.execute(
+        new DeleteCategoryCommand(params.id, user.sub)
+      )
+      return { status: 200 as const, body: { message: "Category deleted" } }
+    })
   }
 }

@@ -15,7 +15,7 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
-import { api } from "@/lib/api"
+import { tsr } from "@/lib/api"
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
@@ -24,27 +24,25 @@ export const Route = createFileRoute("/_auth/login")({
 function LoginPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+
+  const loginMutation = tsr.auth.login.useMutation()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
-    setLoading(true)
 
     const formData = new FormData(e.currentTarget)
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    const res = await api.post("/auth/login", { email, password })
-
-    if (!res.ok) {
-      const body = await res.json()
-      setError(body.message || "Login failed")
-      setLoading(false)
-      return
+    try {
+      await loginMutation.mutateAsync({
+        body: { email, password },
+      })
+      navigate({ to: "/dashboard" })
+    } catch {
+      setError("Login failed")
     }
-
-    navigate({ to: "/dashboard" })
   }
 
   return (
@@ -75,8 +73,8 @@ function LoginPage() {
                 <Input id="password" name="password" type="password" required />
               </Field>
               <Field>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Logging in..." : "Login"}
+                <Button type="submit" disabled={loginMutation.isPending}>
+                  {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <Link to="/signup">Sign up</Link>

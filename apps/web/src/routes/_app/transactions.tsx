@@ -1,21 +1,26 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import type {
-  AccountData,
-  CategoryData,
-  TransactionData,
-  TransactionFilters,
-} from "@/components/transactions/transaction-types"
-import { api } from "@/lib/api"
+import type { Account, Category, Transaction } from "@workspace/api-contract"
+import { queryClient, tsr } from "@/lib/api"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
 import { TransactionFilterSheet } from "@/components/transactions/transaction-filters"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 import { TransactionList } from "@/components/transactions/transaction-list"
 import { TransferFormDialog } from "@/components/transactions/transfer-form-dialog"
+
+interface TransactionFilters {
+  accountId?: string
+  type?: string
+  categoryId?: string
+  settled?: boolean
+  orphaned?: boolean
+  dateFrom?: string
+  dateTo?: string
+}
 
 export const Route = createFileRoute("/_app/transactions")({
   component: TransactionsPage,
@@ -24,115 +29,130 @@ export const Route = createFileRoute("/_app/transactions")({
 const PAGE_SIZE = 50
 
 function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Array<TransactionData>>([])
-  const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [accounts, setAccounts] = useState<Array<AccountData>>([])
-  const [categories, setCategories] = useState<Array<CategoryData>>([])
   const [filters, setFilters] = useState<TransactionFilters>({})
-  const [unsettledCount, setUnsettledCount] = useState(0)
 
   const [formOpen, setFormOpen] = useState(false)
   const [formType, setFormType] = useState<"expense" | "income">("expense")
   const [transferFormOpen, setTransferFormOpen] = useState(false)
   const [editTransaction, setEditTransaction] =
-    useState<TransactionData | null>(null)
+    useState<Transaction | null>(null)
   const [deleteTransaction, setDeleteTransaction] =
-    useState<TransactionData | null>(null)
+    useState<Transaction | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
-  const [orphanedCount, setOrphanedCount] = useState(0)
 
-  function buildQuery(p: number, f: TransactionFilters) {
-    const params = new URLSearchParams()
-    params.set("page", String(p))
-    params.set("limit", String(PAGE_SIZE))
-    if (f.accountId) params.set("accountId", f.accountId)
-    if (f.type) params.set("type", f.type)
-    if (f.categoryId) params.set("categoryId", f.categoryId)
-    if (f.settled !== undefined) params.set("settled", String(f.settled))
-    if (f.dateFrom) params.set("dateFrom", new Date(f.dateFrom).toISOString())
-    if (f.orphaned === true) params.set("orphaned", "true")
-    if (f.dateTo) params.set("dateTo", new Date(f.dateTo).toISOString())
-    return params.toString()
+  const { data: txData, isLoading: loading } =
+    tsr.transactions.list.useQuery({
+      queryKey: ["transactions", filters, page],
+      queryData: {
+        query: {
+          page,
+          limit: PAGE_SIZE,
+          accountId: filters.accountId,
+          type: filters.type as "expense" | "income" | "transfer" | undefined,
+          categoryId: filters.categoryId,
+          settled: filters.settled,
+          orphaned: filters.orphaned,
+          dateFrom: filters.dateFrom
+            ? new Date(filters.dateFrom).toISOString()
+            : undefined,
+          dateTo: filters.dateTo
+            ? new Date(filters.dateTo).toISOString()
+            : undefined,
+        },
+      },
+    })
+
+  const transactions = txData?.body.data ?? []
+  const total = txData?.body.total ?? 0
+
+  const { data: unsettledData } = tsr.transactions.list.useQuery({
+    queryKey: ["transactions", "unsettled-count"],
+    queryData: { query: { settled: false, limit: 1 } },
+  })
+  const unsettledCount = unsettledData?.body.total ?? 0
+
+  const { data: orphanedData } = tsr.transactions.list.useQuery({
+    queryKey: ["transactions", "orphaned-count"],
+    queryData: { query: { orphaned: true, limit: 1 } },
+  })
+  const orphanedCount = orphanedData?.body.total ?? 0
+
+  const { data: accountsData } = tsr.accounts.list.useQuery({
+    queryKey: ["accounts"],
+  })
+  const accounts: Array<Account> = accountsData?.body ?? []
+
+  const { data: categoriesData } = tsr.categories.list.useQuery({
+    queryKey: ["categories"],
+  })
+  const categories: Array<Category> = categoriesData?.body ?? []
+
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [extraTransactions, setExtraTransactions] = useState<Array<Transaction>>([])
+
+  const allTransactions =
+    page === 1 ? transactions : [...transactions, ...extraTransactions]
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] })
+    queryClient.invalidateQueries({ queryKey: ["accounts"] })
   }
 
-  async function fetchTransactions(p: number, f: TransactionFilters) {
-    const res = await api.get(`/transactions?${buildQuery(p, f)}`)
-    return res.json()
-  }
-
-  async function fetchUnsettledCount() {
-    const res = await api.get("/transactions?settled=false&limit=1")
-    const data = await res.json()
-    setUnsettledCount(data.total ?? 0)
-  }
-
-  async function fetchOrphanedCount() {
-    const res = await api.get("/transactions?orphaned=true&limit=1")
-    const data = await res.json()
-    setOrphanedCount(data.total ?? 0)
-  }
-
-  async function refetch() {
-    const data = await fetchTransactions(1, filters)
-    setTransactions(data.data)
-    setTotal(data.total)
-    setPage(1)
-    fetchUnsettledCount()
-    fetchOrphanedCount()
-  }
-
-  useEffect(() => {
-    Promise.all([
-      fetchTransactions(1, filters),
-      api.get("/accounts").then((r) => r.json()),
-      api.get("/categories").then((r) => r.json()),
-    ])
-      .then(([txData, accs, cats]) => {
-        setTransactions(txData.data ?? [])
-        setTotal(txData.total ?? 0)
-        setAccounts(Array.isArray(accs) ? accs : [])
-        setCategories(Array.isArray(cats) ? cats : [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
-    fetchUnsettledCount()
-    fetchOrphanedCount()
-  }, [])
-
-  const [initialLoad, setInitialLoad] = useState(true)
-
-  useEffect(() => {
-    if (initialLoad) {
-      setInitialLoad(false)
-      return
-    }
-    setLoading(true)
-    fetchTransactions(1, filters)
-      .then((data) => {
-        setTransactions(data.data ?? [])
-        setTotal(data.total ?? 0)
-        setPage(1)
-      })
-      .finally(() => setLoading(false))
-  }, [filters])
+  const createMutation = tsr.transactions.create.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const updateMutation = tsr.transactions.update.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const deleteMutation = tsr.transactions.delete.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const settleMutation = tsr.transactions.settle.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const createTransferMutation = tsr.transactions.createTransfer.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const updateTransferMutation = tsr.transactions.updateTransfer.useMutation({
+    onSuccess: invalidateAll,
+  })
+  const deleteTransferMutation = tsr.transactions.deleteTransfer.useMutation({
+    onSuccess: invalidateAll,
+  })
 
   async function handleLoadMore() {
     setLoadingMore(true)
     try {
       const nextPage = page + 1
-      const data = await fetchTransactions(nextPage, filters)
-      setTransactions((prev) => [...prev, ...data.data])
+      const result = await tsr.transactions.list.query({
+        query: {
+          page: nextPage,
+          limit: PAGE_SIZE,
+          accountId: filters.accountId,
+          type: filters.type as "expense" | "income" | "transfer" | undefined,
+          categoryId: filters.categoryId,
+          settled: filters.settled,
+          orphaned: filters.orphaned,
+          dateFrom: filters.dateFrom
+            ? new Date(filters.dateFrom).toISOString()
+            : undefined,
+          dateTo: filters.dateTo
+            ? new Date(filters.dateTo).toISOString()
+            : undefined,
+        },
+      })
+      setExtraTransactions((prev) => [
+        ...prev,
+        ...(result.body as { data: Array<Transaction> }).data,
+      ])
       setPage(nextPage)
     } finally {
       setLoadingMore(false)
     }
   }
 
-  function handleClickTransaction(t: TransactionData) {
+  function handleClickTransaction(t: Transaction) {
     setEditTransaction(t)
     if (t.transferId) {
       setTransferFormOpen(true)
@@ -168,22 +188,25 @@ function TransactionsPage() {
     originalCurrency?: string
     exchangeRate?: number
   }) {
-    let res: Response
     if (editTransaction) {
       const { type: _, ...updateFields } = data
-      // Only send accountId if reassigning an orphaned transaction
       if (editTransaction.accountId !== null) {
         delete (updateFields as Record<string, unknown>).accountId
       }
-      res = await api.patch(`/transactions/${editTransaction.id}`, updateFields)
+      await updateMutation.mutateAsync({
+        params: { id: editTransaction.id },
+        body: updateFields,
+      })
     } else {
-      res = await api.post("/transactions", data)
+      await createMutation.mutateAsync({
+        body: {
+          ...data,
+          type: data.type as "expense" | "income",
+        },
+      })
     }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-    await refetch()
+    setExtraTransactions([])
+    setPage(1)
   }
 
   async function handleTransferSubmit(data: {
@@ -196,45 +219,41 @@ function TransactionsPage() {
     originalCurrency?: string
     exchangeRate?: number
   }) {
-    let res: Response
     if (editTransaction?.transferId) {
       const { fromAccountId: _, toAccountId: __, ...updateData } = data
-      res = await api.patch(
-        `/transactions/transfers/${editTransaction.transferId}`,
-        updateData
-      )
+      await updateTransferMutation.mutateAsync({
+        params: { transferId: editTransaction.transferId },
+        body: updateData,
+      })
     } else {
-      res = await api.post("/transactions/transfers", data)
+      await createTransferMutation.mutateAsync({ body: data })
     }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-    await refetch()
+    setExtraTransactions([])
+    setPage(1)
   }
 
   async function handleDelete() {
     if (!deleteTransaction) return
     if (deleteTransaction.transferId) {
-      await api.del(
-        `/transactions/transfers/${deleteTransaction.transferId}`
-      )
+      await deleteTransferMutation.mutateAsync({
+        params: { transferId: deleteTransaction.transferId },
+      })
     } else {
-      await api.del(`/transactions/${deleteTransaction.id}`)
+      await deleteMutation.mutateAsync({
+        params: { id: deleteTransaction.id },
+      })
     }
-    await refetch()
+    setExtraTransactions([])
+    setPage(1)
   }
 
   async function handleSettle() {
     if (!editTransaction) return
-    const res = await api.patch(`/transactions/${editTransaction.id}/settle`)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
+    await settleMutation.mutateAsync({
+      params: { id: editTransaction.id },
+    })
     setFormOpen(false)
     setEditTransaction(null)
-    await refetch()
   }
 
   function handleToggleUnsettled() {
@@ -246,6 +265,8 @@ function TransactionsPage() {
     } else {
       setFilters((prev) => ({ ...prev, settled: false }))
     }
+    setExtraTransactions([])
+    setPage(1)
   }
 
   function handleToggleOrphaned() {
@@ -257,6 +278,8 @@ function TransactionsPage() {
     } else {
       setFilters((prev) => ({ ...prev, orphaned: true }))
     }
+    setExtraTransactions([])
+    setPage(1)
   }
 
   const activeFilterBadges: Array<{ key: string; label: string }> = []
@@ -301,6 +324,8 @@ function TransactionsPage() {
       }
       return next
     })
+    setExtraTransactions([])
+    setPage(1)
   }
 
   return (
@@ -362,11 +387,11 @@ function TransactionsPage() {
       )}
 
       <TransactionList
-        transactions={transactions}
+        transactions={allTransactions}
         accounts={accounts}
         categories={categories}
         loading={loading}
-        hasMore={transactions.length < total}
+        hasMore={allTransactions.length < total}
         onLoadMore={handleLoadMore}
         loadingMore={loadingMore}
         onClickTransaction={handleClickTransaction}
@@ -409,7 +434,7 @@ function TransactionsPage() {
         transaction={editTransaction}
         pairedAccountId={
           editTransaction?.transferId
-            ? (transactions.find(
+            ? (allTransactions.find(
                 (t) =>
                   t.transferId === editTransaction.transferId &&
                   t.id !== editTransaction.id
@@ -441,7 +466,11 @@ function TransactionsPage() {
         open={filterSheetOpen}
         onOpenChange={setFilterSheetOpen}
         filters={filters}
-        onApply={setFilters}
+        onApply={(f) => {
+          setFilters(f)
+          setExtraTransactions([])
+          setPage(1)
+        }}
         accounts={accounts}
         categories={categories}
       />

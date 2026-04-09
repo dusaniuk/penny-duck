@@ -6,14 +6,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
+import type { Account } from "@workspace/api-contract"
 
-export interface AccountData {
-  id: string
-  name: string
-  type: string
-  currency: string
-  balance: number
-}
+export type AccountData = Account
 
 interface AccountCardProps {
   account: AccountData

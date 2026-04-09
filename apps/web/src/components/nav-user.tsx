@@ -23,7 +23,7 @@ import {
   IconSelector,
   IconSparkles,
 } from "@tabler/icons-react"
-import { api } from "@/lib/api"
+import { tsr } from "@/lib/api"
 
 function getInitials(name: string): string {
   return name
@@ -44,9 +44,10 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
+  const logoutMutation = tsr.auth.logout.useMutation()
 
   async function handleLogout() {
-    await api.post("/auth/logout")
+    await logoutMutation.mutateAsync({})
     navigate({ to: "/login" })
   }
 

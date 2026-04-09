@@ -1,38 +1,36 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
-import { api } from "@/lib/api"
+import { queryClient, tsr } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/accounts")({
   component: AccountsPage,
 })
 
 function AccountsPage() {
-  const [accounts, setAccounts] = useState<Array<AccountData>>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading } =
+    tsr.accounts.list.useQuery({ queryKey: ["accounts"] })
+  const accounts = data?.body ?? []
 
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<AccountData | null>(null)
   const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
 
-  async function refetch() {
-    const res = await api.get("/accounts")
-    const data = await res.json()
-    setAccounts(data)
-  }
+  const createMutation = tsr.accounts.create.useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
 
-  useEffect(() => {
-    api
-      .get("/accounts")
-      .then((res) => res.json())
-      .then((data) => setAccounts(data))
-      .catch(() => setAccounts([]))
-      .finally(() => setLoading(false))
-  }, [])
+  const updateMutation = tsr.accounts.update.useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
+
+  const deleteMutation = tsr.accounts.delete.useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
 
   function handleOpenCreate() {
     setEditAccount(null)
@@ -47,45 +45,44 @@ function AccountsPage() {
   async function handleOpenDelete(account: AccountData) {
     setDeleteAccount(account)
     try {
-      const res = await api.get(
-        `/transactions?accountId=${account.id}&limit=1`
-      )
-      const data = await res.json()
-      setDeleteTransactionCount(data.total ?? 0)
+      const result = await tsr.transactions.list.query({
+        query: { accountId: account.id, limit: 1 },
+      })
+      const body = result.status === 200 ? result.body : null
+      setDeleteTransactionCount(body?.total ?? 0)
     } catch {
       setDeleteTransactionCount(0)
     }
   }
 
-  async function handleFormSubmit(data: {
+  async function handleFormSubmit(formData: {
     name: string
     type: string
     currency?: string
     balance?: number
   }) {
-    let res: Response
     if (editAccount) {
-      res = await api.patch(`/accounts/${editAccount.id}`, data)
+      await updateMutation.mutateAsync({
+        params: { id: editAccount.id },
+        body: { name: formData.name, type: formData.type },
+      })
     } else {
-      res = await api.post("/accounts", data)
+      await createMutation.mutateAsync({
+        body: {
+          name: formData.name,
+          type: formData.type,
+          currency: formData.currency!,
+          balance: formData.balance,
+        },
+      })
     }
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-
-    await refetch()
   }
 
   async function handleDelete() {
     if (!deleteAccount) return
-    const res = await api.del(`/accounts/${deleteAccount.id}`)
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body?.message ?? "Request failed")
-    }
-    await refetch()
+    await deleteMutation.mutateAsync({
+      params: { id: deleteAccount.id },
+    })
   }
 
   return (
