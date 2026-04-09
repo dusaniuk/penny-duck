@@ -1,0 +1,154 @@
+import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import {
+  createTestApp,
+  closeTestApp,
+  truncateAll,
+  signupUser,
+  flushEvents,
+} from "../../test/setup"
+import { SignupCommand } from "./commands/signup.command"
+import { LoginCommand } from "./commands/login.command"
+import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
+import { LogoutCommand } from "./commands/logout.command"
+import { GetCurrentUserQuery } from "./queries/get-current-user.query"
+import { GetCategoriesQuery } from "../../categories/application/queries/get-categories.query"
+import {
+  EmailAlreadyExistsError,
+  InvalidCredentialsError,
+} from "../domain/errors/auth.errors"
+
+let commandBus: CommandBus
+let queryBus: QueryBus
+
+beforeAll(async () => {
+  const ctx = await createTestApp()
+  commandBus = ctx.commandBus
+  queryBus = ctx.queryBus
+})
+
+afterAll(() => closeTestApp())
+beforeEach(async () => {
+  await flushEvents() // drain async event handlers from previous test
+  await truncateAll()
+})
+
+describe("Auth", () => {
+  it("signs up a user and returns tokens", async () => {
+    const result = await commandBus.execute(
+      new SignupCommand("John Doe", "john@example.com", "securePassword123")
+    )
+
+    expect(result.user.id).toBeDefined()
+    expect(result.user.email).toBe("john@example.com")
+    expect(result.user.name).toBe("John Doe")
+    expect(result.accessToken.sub).toBe(result.user.id)
+    expect(result.refreshToken).toBeDefined()
+  })
+
+  it("signup seeds default categories via event", async () => {
+    const result = await signupUser()
+    await flushEvents()
+
+    const categories = await queryBus.execute(
+      new GetCategoriesQuery(result.user.id)
+    )
+
+    expect(categories.length).toBeGreaterThan(0)
+  })
+
+  it("rejects duplicate email", async () => {
+    await commandBus.execute(
+      new SignupCommand("User 1", "dupe@example.com", "password12345678")
+    )
+
+    await expect(
+      commandBus.execute(
+        new SignupCommand("User 2", "dupe@example.com", "password12345678")
+      )
+    ).rejects.toThrow(EmailAlreadyExistsError)
+  })
+
+  it("logs in with correct credentials", async () => {
+    await commandBus.execute(
+      new SignupCommand("User", "login@example.com", "myPassword12345")
+    )
+
+    const result = await commandBus.execute(
+      new LoginCommand("login@example.com", "myPassword12345")
+    )
+
+    expect(result.user.email).toBe("login@example.com")
+    expect(result.accessToken).toBeDefined()
+    expect(result.refreshToken).toBeDefined()
+  })
+
+  it("rejects login with wrong password", async () => {
+    await commandBus.execute(
+      new SignupCommand("User", "wrong@example.com", "correctPassword1")
+    )
+
+    await expect(
+      commandBus.execute(new LoginCommand("wrong@example.com", "wrongPassword1"))
+    ).rejects.toThrow(InvalidCredentialsError)
+  })
+
+  it("rejects login for non-existent user", async () => {
+    await expect(
+      commandBus.execute(
+        new LoginCommand("noone@example.com", "password12345")
+      )
+    ).rejects.toThrow(InvalidCredentialsError)
+  })
+
+  it("refreshes tokens", async () => {
+    const signup = await signupUser()
+
+    const result = await commandBus.execute(
+      new RefreshTokensCommand(signup.refreshToken)
+    )
+
+    expect(result.accessToken.sub).toBe(signup.user.id)
+    expect(result.refreshToken).toBeDefined()
+    expect(result.refreshToken).not.toBe(signup.refreshToken)
+  })
+
+  it("rejects reused refresh token", async () => {
+    const signup = await signupUser()
+    const oldToken = signup.refreshToken
+
+    // Use the token once (rotates it)
+    await commandBus.execute(new RefreshTokensCommand(oldToken))
+
+    // Try to use the old token again
+    await expect(
+      commandBus.execute(new RefreshTokensCommand(oldToken))
+    ).rejects.toThrow()
+  })
+
+  it("logs out and invalidates refresh token", async () => {
+    const signup = await signupUser()
+
+    // Rotate the token first so we have a fresh one to test against
+    const refreshed = await commandBus.execute(
+      new RefreshTokensCommand(signup.refreshToken)
+    )
+
+    await commandBus.execute(new LogoutCommand(refreshed.refreshToken))
+
+    // After logout, the token family is revoked — any token in that family fails
+    await expect(
+      commandBus.execute(new RefreshTokensCommand(refreshed.refreshToken))
+    ).rejects.toThrow()
+  })
+
+  it("gets current user", async () => {
+    const signup = await signupUser()
+
+    const user = await queryBus.execute(
+      new GetCurrentUserQuery(signup.user.id, signup.user.email)
+    )
+
+    expect(user.id).toBe(signup.user.id)
+    expect(user.email).toBe(signup.user.email)
+  })
+})
