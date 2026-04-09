@@ -3,7 +3,7 @@ import { Response } from "express"
 import {
   AccountNotFoundError,
   AccountHasTransactionsError,
-} from "../domain/errors/account.errors"
+} from "../errors/account.errors"
 
 type AccountError = AccountNotFoundError | AccountHasTransactionsError
 

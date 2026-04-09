@@ -4,7 +4,7 @@ import {
   CategoryNotFoundError,
   MaxCategoryDepthError,
   ParentCategoryNotFoundError,
-} from "../domain/errors/category.errors"
+} from "../errors/category.errors"
 
 type CategoryError =
   | CategoryNotFoundError

@@ -1,9 +1,18 @@
 import { randomUUID } from "crypto"
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
-import { InvalidTransferError } from "../../domain/errors/transaction.errors"
+import {
+  Command,
+  CommandHandler,
+  EventBus,
+  ICommandHandler,
+} from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
+import { InvalidTransferError } from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
-import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
+import { TransactionCreatedEvent } from "../../events/transaction-created.event"
+import {
+  toResponse,
+  validateExchangeRate,
+} from "../../helpers/transaction.helpers"
 
 export interface CreateTransferInput {
   userId: string
@@ -17,8 +26,12 @@ export interface CreateTransferInput {
   exchangeRate?: number | null
 }
 
-export class CreateTransferCommand {
-  constructor(public readonly input: CreateTransferInput) {}
+export class CreateTransferCommand extends Command<
+  [Transaction, Transaction]
+> {
+  constructor(public readonly input: CreateTransferInput) {
+    super()
+  }
 }
 
 @CommandHandler(CreateTransferCommand)
@@ -31,63 +44,73 @@ export class CreateTransferHandler
   ) {}
 
   async execute(
-    command: CreateTransferCommand
+    cmd: CreateTransferCommand
   ): Promise<[Transaction, Transaction]> {
-    if (command.input.fromAccountId === command.input.toAccountId)
+    const { input } = cmd
+
+    if (input.fromAccountId === input.toAccountId) {
       throw new InvalidTransferError(
         "Source and destination accounts must differ"
       )
+    }
+    if (input.amount <= 0) throw new Error("Amount must be greater than 0")
+    validateExchangeRate(
+      input.originalAmount,
+      input.originalCurrency,
+      input.exchangeRate
+    )
 
     const transferId = randomUUID()
 
     const hasExchangeRate =
-      command.input.originalAmount != null &&
-      command.input.originalCurrency != null &&
-      command.input.exchangeRate != null
+      input.originalAmount != null &&
+      input.originalCurrency != null &&
+      input.exchangeRate != null
 
     const incomingAmount = hasExchangeRate
-      ? command.input.originalAmount!
-      : command.input.amount
+      ? input.originalAmount!
+      : input.amount
 
-    const outgoing = Transaction.createTransferSide({
-      userId: command.input.userId,
-      accountId: command.input.fromAccountId,
-      amount: command.input.amount,
-      date: command.input.date,
-      note: command.input.note,
-      transferId,
-      originalAmount: command.input.originalAmount,
-      originalCurrency: command.input.originalCurrency,
-      exchangeRate: command.input.exchangeRate,
-    })
-
-    const incoming = Transaction.createTransferSide({
-      userId: command.input.userId,
-      accountId: command.input.toAccountId,
-      amount: incomingAmount,
-      date: command.input.date,
-      note: command.input.note,
-      transferId,
-    })
-
-    const [savedOutgoing, savedIncoming] =
-      await this.transactionRepo.saveTransferPair(outgoing, incoming)
-
-    this.eventBus.publish(
-      new TransactionCreatedEvent(
-        savedOutgoing.accountId!,
-        "expense",
-        savedOutgoing.amount
-      )
-    )
-    this.eventBus.publish(
-      new TransactionCreatedEvent(
-        savedIncoming.accountId!,
-        "income",
-        savedIncoming.amount
-      )
+    const [outRow, inRow] = await this.transactionRepo.insertTransferPair(
+      {
+        userId: input.userId,
+        accountId: input.fromAccountId,
+        type: "transfer",
+        amount: input.amount,
+        categoryId: null,
+        note: input.note ?? null,
+        date: input.date,
+        myShare: null,
+        settled: true,
+        originalAmount: input.originalAmount ?? null,
+        originalCurrency: input.originalCurrency ?? null,
+        exchangeRate: input.exchangeRate ?? null,
+        transferId,
+      },
+      {
+        userId: input.userId,
+        accountId: input.toAccountId,
+        type: "transfer",
+        amount: incomingAmount,
+        categoryId: null,
+        note: input.note ?? null,
+        date: input.date,
+        myShare: null,
+        settled: true,
+        originalAmount: null,
+        originalCurrency: null,
+        exchangeRate: null,
+        transferId,
+      }
     )
 
-    return [savedOutgoing, savedIncoming]
+    this.eventBus.publish(
+      new TransactionCreatedEvent(outRow.accountId!, "expense", outRow.amount)
+    )
+    this.eventBus.publish(
+      new TransactionCreatedEvent(inRow.accountId!, "income", inRow.amount)
+    )
+
+    return [toResponse(outRow), toResponse(inRow)]
   }
 }

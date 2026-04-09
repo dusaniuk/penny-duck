@@ -1,12 +1,21 @@
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
+import {
+  Command,
+  CommandHandler,
+  EventBus,
+  ICommandHandler,
+} from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
 import {
   TransactionNotFoundError,
   TransferOperationError,
-} from "../../domain/errors/transaction.errors"
+} from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
-import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
-import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
+import { TransactionCreatedEvent } from "../../events/transaction-created.event"
+import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
+import {
+  toResponse,
+  validateExchangeRate,
+} from "../../helpers/transaction.helpers"
 
 interface UpdateFields {
   accountId?: string
@@ -20,12 +29,14 @@ interface UpdateFields {
   exchangeRate?: number | null
 }
 
-export class UpdateTransactionCommand {
+export class UpdateTransactionCommand extends Command<Transaction> {
   constructor(
     public readonly id: string,
     public readonly userId: string,
     public readonly fields: UpdateFields
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @CommandHandler(UpdateTransactionCommand)
@@ -37,40 +48,52 @@ export class UpdateTransactionHandler
     private readonly eventBus: EventBus
   ) {}
 
-  async execute(command: UpdateTransactionCommand): Promise<Transaction> {
-    const transaction = await this.transactionRepo.findById(
-      command.id,
-      command.userId
-    )
-    if (!transaction) throw new TransactionNotFoundError()
-    if (transaction.isTransfer) throw new TransferOperationError()
+  async execute(cmd: UpdateTransactionCommand): Promise<Transaction> {
+    const existing = await this.transactionRepo.findById(cmd.id, cmd.userId)
+    if (!existing) throw new TransactionNotFoundError()
+    if (existing.type === "transfer") throw new TransferOperationError()
 
-    const { fields } = command
+    const { fields } = cmd
+    const updateData: Record<string, unknown> = {}
 
-    // Allow setting accountId on orphaned transactions
-    if (fields.accountId !== undefined && transaction.isOrphaned) {
-      transaction.reassign(fields.accountId)
-      // Adjust balance on target account
+    if (fields.accountId !== undefined && existing.accountId === null) {
+      updateData.accountId = fields.accountId
       this.eventBus.publish(
         new TransactionCreatedEvent(
           fields.accountId,
-          transaction.isExpense ? "expense" : "income",
-          transaction.amount
+          existing.type === "expense" ? "expense" : "income",
+          existing.amount
         )
       )
     }
 
-    const oldAmount = transaction.amount
-    if (fields.amount !== undefined) transaction.updateAmount(fields.amount)
-    if (fields.categoryId !== undefined)
-      transaction.updateCategory(fields.categoryId)
-    if (fields.note !== undefined) transaction.updateNote(fields.note)
-    if (fields.date !== undefined) transaction.updateDate(fields.date)
+    const oldAmount = existing.amount
+    if (fields.amount !== undefined) {
+      if (fields.amount <= 0) throw new Error("Amount must be greater than 0")
+      updateData.amount = fields.amount
+    }
+    if (fields.categoryId !== undefined) {
+      if (existing.type !== "transfer" && fields.categoryId === null) {
+        throw new Error(
+          "Category is required for expense and income transactions"
+        )
+      }
+      updateData.categoryId = fields.categoryId
+    }
+    if (fields.note !== undefined) updateData.note = fields.note
+    if (fields.date !== undefined) updateData.date = fields.date
 
     if (fields.myShare === null) {
-      transaction.clearMyShare()
+      updateData.myShare = null
+      updateData.settled = true
     } else if (fields.myShare !== undefined) {
-      transaction.updateMyShare(fields.myShare)
+      const effectiveAmount = fields.amount ?? existing.amount
+      if (fields.myShare <= 0)
+        throw new Error("My share must be greater than 0")
+      if (fields.myShare >= effectiveAmount)
+        throw new Error("My share must be less than the total amount")
+      updateData.myShare = fields.myShare
+      updateData.settled = false
     }
 
     if (
@@ -83,45 +106,44 @@ export class UpdateTransactionHandler
         fields.originalCurrency === null ||
         fields.exchangeRate === null
       ) {
-        transaction.clearExchangeRate()
+        updateData.originalAmount = null
+        updateData.originalCurrency = null
+        updateData.exchangeRate = null
       } else {
-        transaction.updateExchangeRate(
+        validateExchangeRate(
           fields.originalAmount,
           fields.originalCurrency,
           fields.exchangeRate
         )
+        updateData.originalAmount = fields.originalAmount
+        updateData.originalCurrency = fields.originalCurrency
+        updateData.exchangeRate = fields.exchangeRate
       }
     }
 
-    const saved = await this.transactionRepo.save(transaction)
+    const row = await this.transactionRepo.update(cmd.id, updateData)
 
     if (
       fields.amount !== undefined &&
       fields.amount !== oldAmount &&
-      saved.accountId
+      row.accountId
     ) {
-      // Compute net balance delta as a single adjustment to avoid race conditions.
-      // For expense: old amount was subtracted, new amount should be subtracted
-      //   → net adjustment = oldAmount - newAmount (positive = add back to balance)
-      // For income: old amount was added, new amount should be added
-      //   → net adjustment = newAmount - oldAmount (positive = add to balance)
-      const delta = saved.isExpense
-        ? oldAmount - saved.amount
-        : saved.amount - oldAmount
+      const delta =
+        row.type === "expense"
+          ? oldAmount - row.amount
+          : row.amount - oldAmount
 
       if (delta > 0) {
-        // Balance should increase → use "deleted expense" (adds to balance)
         this.eventBus.publish(
-          new TransactionDeletedEvent(saved.accountId, "expense", delta)
+          new TransactionDeletedEvent(row.accountId, "expense", delta)
         )
       } else if (delta < 0) {
-        // Balance should decrease → use "created expense" (subtracts from balance)
         this.eventBus.publish(
-          new TransactionCreatedEvent(saved.accountId, "expense", -delta)
+          new TransactionCreatedEvent(row.accountId, "expense", -delta)
         )
       }
     }
 
-    return saved
+    return toResponse(row)
   }
 }

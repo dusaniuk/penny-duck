@@ -12,7 +12,7 @@ import { CreateTransferCommand } from "./commands/create-transfer.command"
 import { UpdateTransferCommand } from "./commands/update-transfer.command"
 import { DeleteTransferCommand } from "./commands/delete-transfer.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
-import { InvalidTransferError } from "../domain/errors/transaction.errors"
+import { InvalidTransferError } from "../errors/transaction.errors"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
@@ -90,7 +90,7 @@ describe("Transfers", () => {
     )
 
     expect(outgoing.amount).toBe(100)
-    expect(outgoing.exchangeRate?.rate).toBe(41.52)
+    expect(outgoing.exchangeRate).toBe(41.52)
     expect(incoming.amount).toBe(4152)
 
     await flushEvents()

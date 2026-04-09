@@ -11,7 +11,6 @@ import { DeleteAccountCommand } from "../application/delete-account.command"
 import { GetAccountsQuery } from "../application/get-accounts.query"
 import { GetAccountQuery } from "../application/get-account.query"
 import { AccountsExceptionFilter } from "./accounts-exception.filter"
-import { Account } from "../domain/entities/account.entity"
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -28,16 +27,7 @@ export class AccountsController {
       const accounts = await this.queryBus.execute(
         new GetAccountsQuery(user.sub)
       )
-      return {
-        status: 200 as const,
-        body: accounts.map((a: Account) => ({
-          id: a.id,
-          name: a.name,
-          type: a.type,
-          currency: a.currency,
-          balance: a.balance,
-        })),
-      }
+      return { status: 200 as const, body: accounts }
     })
   }
 
@@ -53,16 +43,7 @@ export class AccountsController {
           body.balance
         )
       )
-      return {
-        status: 201 as const,
-        body: {
-          id: account.id,
-          name: account.name,
-          type: account.type,
-          currency: account.currency,
-          balance: account.balance,
-        },
-      }
+      return { status: 201 as const, body: account }
     })
   }
 
@@ -72,16 +53,7 @@ export class AccountsController {
       const account = await this.queryBus.execute(
         new GetAccountQuery(params.id, user.sub)
       )
-      return {
-        status: 200 as const,
-        body: {
-          id: account.id,
-          name: account.name,
-          type: account.type,
-          currency: account.currency,
-          balance: account.balance,
-        },
-      }
+      return { status: 200 as const, body: account }
     })
   }
 
@@ -91,16 +63,7 @@ export class AccountsController {
       const account = await this.commandBus.execute(
         new UpdateAccountCommand(params.id, user.sub, body.name, body.type)
       )
-      return {
-        status: 200 as const,
-        body: {
-          id: account.id,
-          name: account.name,
-          type: account.type,
-          currency: account.currency,
-          balance: account.balance,
-        },
-      }
+      return { status: 200 as const, body: account }
     })
   }
 

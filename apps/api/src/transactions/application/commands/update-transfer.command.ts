@@ -1,9 +1,18 @@
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
-import { TransactionNotFoundError } from "../../domain/errors/transaction.errors"
+import {
+  Command,
+  CommandHandler,
+  EventBus,
+  ICommandHandler,
+} from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
+import { TransactionNotFoundError } from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
-import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
-import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
+import { TransactionCreatedEvent } from "../../events/transaction-created.event"
+import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
+import {
+  toResponse,
+  validateExchangeRate,
+} from "../../helpers/transaction.helpers"
 
 interface UpdateTransferFields {
   amount?: number
@@ -14,12 +23,16 @@ interface UpdateTransferFields {
   exchangeRate?: number | null
 }
 
-export class UpdateTransferCommand {
+export class UpdateTransferCommand extends Command<
+  [Transaction, Transaction]
+> {
   constructor(
     public readonly transferId: string,
     public readonly userId: string,
     public readonly fields: UpdateTransferFields
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @CommandHandler(UpdateTransferCommand)
@@ -32,30 +45,29 @@ export class UpdateTransferHandler
   ) {}
 
   async execute(
-    command: UpdateTransferCommand
+    cmd: UpdateTransferCommand
   ): Promise<[Transaction, Transaction]> {
-    const pair = await this.transactionRepo.findByTransferId(
-      command.transferId
-    )
+    const pair = await this.transactionRepo.findByTransferId(cmd.transferId)
     if (pair.length !== 2) throw new TransactionNotFoundError()
 
-    // The side with exchange rate info is the outgoing side.
-    // For same-currency transfers, either order works — pick first as outgoing.
     const outgoing =
-      pair.find((t) => t.exchangeRate !== null) ?? pair[0]
+      pair.find((t) => t.originalAmount !== null) ?? pair[0]
     const incoming = pair.find((t) => t !== outgoing)!
 
-    const { fields } = command
+    const { fields } = cmd
     const oldOutgoingAmount = outgoing.amount
     const oldIncomingAmount = incoming.amount
 
+    const outgoingUpdate: Record<string, unknown> = {}
+    const incomingUpdate: Record<string, unknown> = {}
+
     if (fields.note !== undefined) {
-      outgoing.updateNote(fields.note)
-      incoming.updateNote(fields.note)
+      outgoingUpdate.note = fields.note
+      incomingUpdate.note = fields.note
     }
     if (fields.date !== undefined) {
-      outgoing.updateDate(fields.date)
-      incoming.updateDate(fields.date)
+      outgoingUpdate.date = fields.date
+      incomingUpdate.date = fields.date
     }
 
     const hasNewExchangeRate =
@@ -64,11 +76,12 @@ export class UpdateTransferHandler
       fields.exchangeRate != null
 
     if (fields.amount !== undefined) {
-      outgoing.updateAmount(fields.amount)
+      if (fields.amount <= 0) throw new Error("Amount must be greater than 0")
+      outgoingUpdate.amount = fields.amount
       if (hasNewExchangeRate) {
-        incoming.updateAmount(fields.originalAmount!)
+        incomingUpdate.amount = fields.originalAmount!
       } else {
-        incoming.updateAmount(fields.amount)
+        incomingUpdate.amount = fields.amount
       }
     }
 
@@ -82,36 +95,45 @@ export class UpdateTransferHandler
         fields.originalCurrency === null ||
         fields.exchangeRate === null
       ) {
-        outgoing.clearExchangeRate()
+        outgoingUpdate.originalAmount = null
+        outgoingUpdate.originalCurrency = null
+        outgoingUpdate.exchangeRate = null
       } else {
-        outgoing.updateExchangeRate(
+        validateExchangeRate(
           fields.originalAmount,
           fields.originalCurrency,
           fields.exchangeRate
         )
+        outgoingUpdate.originalAmount = fields.originalAmount
+        outgoingUpdate.originalCurrency = fields.originalCurrency
+        outgoingUpdate.exchangeRate = fields.exchangeRate
         if (fields.amount === undefined) {
-          incoming.updateAmount(fields.originalAmount)
+          incomingUpdate.amount = fields.originalAmount
         }
       }
     }
 
-    const saved = await this.transactionRepo.saveTransferPair(outgoing, incoming)
+    const [outRow, inRow] = await this.transactionRepo.updateTransferPair(
+      outgoing.id,
+      outgoingUpdate,
+      incoming.id,
+      incomingUpdate
+    )
 
-    // Publish balance delta events for each side that changed
     this.publishBalanceDelta(
       outgoing.accountId,
       oldOutgoingAmount,
-      outgoing.amount,
+      outRow.amount,
       "expense"
     )
     this.publishBalanceDelta(
       incoming.accountId,
       oldIncomingAmount,
-      incoming.amount,
+      inRow.amount,
       "income"
     )
 
-    return saved
+    return [toResponse(outRow), toResponse(inRow)]
   }
 
   private publishBalanceDelta(
@@ -122,10 +144,6 @@ export class UpdateTransferHandler
   ): void {
     if (!accountId || oldAmount === newAmount) return
 
-    // For expense (outgoing): old subtracted oldAmount, new subtracts newAmount
-    //   → delta = oldAmount - newAmount (positive = balance increases)
-    // For income (incoming): old added oldAmount, new adds newAmount
-    //   → delta = newAmount - oldAmount (positive = balance increases)
     const delta =
       direction === "expense"
         ? oldAmount - newAmount

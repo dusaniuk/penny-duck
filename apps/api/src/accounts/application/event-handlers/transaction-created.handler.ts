@@ -1,5 +1,5 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs"
-import { TransactionCreatedEvent } from "../../../transactions/domain/events/transaction-created.event"
+import { TransactionCreatedEvent } from "../../../transactions/events/transaction-created.event"
 import { AccountRepository } from "../../repositories/account.repository"
 
 @EventsHandler(TransactionCreatedEvent)
@@ -14,7 +14,8 @@ export class TransactionCreatedHandler
 
     const adjustment =
       event.direction === "expense" ? -event.amount : event.amount
-    account.adjustBalance(adjustment)
-    await this.accountRepo.save(account)
+    await this.accountRepo.update(account.id, {
+      balance: account.balance + adjustment,
+    })
   }
 }

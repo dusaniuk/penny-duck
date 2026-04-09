@@ -1,13 +1,15 @@
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
-import { Account } from "../domain/entities/account.entity"
-import { AccountNotFoundError } from "../domain/errors/account.errors"
+import { Query, IQueryHandler, QueryHandler } from "@nestjs/cqrs"
+import { type Account } from "@workspace/api-contract"
+import { AccountNotFoundError } from "../errors/account.errors"
 import { AccountRepository } from "../repositories/account.repository"
 
-export class GetAccountQuery {
+export class GetAccountQuery extends Query<Account> {
   constructor(
     public readonly id: string,
     public readonly userId: string
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @QueryHandler(GetAccountQuery)
@@ -15,8 +17,14 @@ export class GetAccountHandler implements IQueryHandler<GetAccountQuery> {
   constructor(private readonly accountRepo: AccountRepository) {}
 
   async execute(query: GetAccountQuery): Promise<Account> {
-    const account = await this.accountRepo.findById(query.id, query.userId)
-    if (!account) throw new AccountNotFoundError()
-    return account
+    const row = await this.accountRepo.findById(query.id, query.userId)
+    if (!row) throw new AccountNotFoundError()
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      currency: row.currency,
+      balance: row.balance,
+    }
   }
 }

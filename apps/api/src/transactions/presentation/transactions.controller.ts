@@ -5,7 +5,6 @@ import { transactionContract } from "@workspace/api-contract"
 import { AuthGuard } from "../../auth/presentation/auth.guard"
 import { CurrentUser } from "../../auth/presentation/auth.decorator"
 import { type AccessTokenPayload } from "../../auth/infrastructure/services/jwt.service"
-import { Transaction } from "../domain/entities/transaction.entity"
 import { CreateTransactionCommand } from "../application/commands/create-transaction.command"
 import { UpdateTransactionCommand } from "../application/commands/update-transaction.command"
 import { DeleteTransactionCommand } from "../application/commands/delete-transaction.command"
@@ -16,26 +15,6 @@ import { DeleteTransferCommand } from "../application/commands/delete-transfer.c
 import { GetTransactionQuery } from "../application/queries/get-transaction.query"
 import { ListTransactionsQuery } from "../application/queries/list-transactions.query"
 import { TransactionsExceptionFilter } from "./transactions-exception.filter"
-
-function toResponse(t: Transaction) {
-  return {
-    id: t.id,
-    accountId: t.accountId,
-    type: t.type,
-    amount: t.amount,
-    categoryId: t.categoryId,
-    note: t.note,
-    date: t.date.toISOString(),
-    myShare: t.myShare,
-    settled: t.settled,
-    originalAmount: t.exchangeRate?.originalAmount ?? null,
-    originalCurrency: t.exchangeRate?.originalCurrency ?? null,
-    exchangeRate: t.exchangeRate?.rate ?? null,
-    transferId: t.transferId,
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-  }
-}
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -64,7 +43,7 @@ export class TransactionsController {
           exchangeRate: body.exchangeRate,
         })
       )
-      return { status: 201 as const, body: toResponse(transaction) }
+      return { status: 201 as const, body: transaction }
     })
   }
 
@@ -88,7 +67,7 @@ export class TransactionsController {
       )
       return {
         status: 200 as const,
-        body: { data: data.map(toResponse), total, page, limit },
+        body: { data, total, page, limit },
       }
     })
   }
@@ -99,7 +78,7 @@ export class TransactionsController {
       const transaction = await this.queryBus.execute(
         new GetTransactionQuery(params.id, user.sub)
       )
-      return { status: 200 as const, body: toResponse(transaction) }
+      return { status: 200 as const, body: transaction }
     })
   }
 
@@ -121,7 +100,7 @@ export class TransactionsController {
             exchangeRate: body.exchangeRate,
           })
         )
-        return { status: 200 as const, body: toResponse(transaction) }
+        return { status: 200 as const, body: transaction }
       }
     )
   }
@@ -145,7 +124,7 @@ export class TransactionsController {
       const transaction = await this.commandBus.execute(
         new SettleTransactionCommand(params.id, user.sub)
       )
-      return { status: 200 as const, body: toResponse(transaction) }
+      return { status: 200 as const, body: transaction }
     })
   }
 
@@ -169,10 +148,7 @@ export class TransactionsController {
         )
         return {
           status: 201 as const,
-          body: {
-            outgoing: toResponse(outgoing),
-            incoming: toResponse(incoming),
-          },
+          body: { outgoing, incoming },
         }
       }
     )
@@ -195,10 +171,7 @@ export class TransactionsController {
         )
         return {
           status: 200 as const,
-          body: {
-            outgoing: toResponse(outgoing),
-            incoming: toResponse(incoming),
-          },
+          body: { outgoing, incoming },
         }
       }
     )

@@ -1,16 +1,23 @@
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
+import {
+  Command,
+  CommandHandler,
+  EventBus,
+  ICommandHandler,
+} from "@nestjs/cqrs"
 import {
   TransactionNotFoundError,
   TransferOperationError,
-} from "../../domain/errors/transaction.errors"
+} from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
-import { TransactionDeletedEvent } from "../../domain/events/transaction-deleted.event"
+import { TransactionDeletedEvent } from "../../events/transaction-deleted.event"
 
-export class DeleteTransactionCommand {
+export class DeleteTransactionCommand extends Command<void> {
   constructor(
     public readonly id: string,
     public readonly userId: string
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @CommandHandler(DeleteTransactionCommand)
@@ -22,21 +29,18 @@ export class DeleteTransactionHandler
     private readonly eventBus: EventBus
   ) {}
 
-  async execute(command: DeleteTransactionCommand): Promise<void> {
-    const transaction = await this.transactionRepo.findById(
-      command.id,
-      command.userId
-    )
-    if (!transaction) throw new TransactionNotFoundError()
-    if (transaction.isTransfer) throw new TransferOperationError()
+  async execute(cmd: DeleteTransactionCommand): Promise<void> {
+    const row = await this.transactionRepo.findById(cmd.id, cmd.userId)
+    if (!row) throw new TransactionNotFoundError()
+    if (row.type === "transfer") throw new TransferOperationError()
 
-    await this.transactionRepo.delete(command.id, command.userId)
+    await this.transactionRepo.delete(cmd.id, cmd.userId)
 
     this.eventBus.publish(
       new TransactionDeletedEvent(
-        transaction.accountId!,
-        transaction.isExpense ? "expense" : "income",
-        transaction.amount
+        row.accountId!,
+        row.type === "expense" ? "expense" : "income",
+        row.amount
       )
     )
   }

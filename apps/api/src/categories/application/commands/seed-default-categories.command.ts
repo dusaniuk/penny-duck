@@ -1,9 +1,10 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import { Category } from "../../domain/entities/category.entity"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { CategoryRepository } from "../../repositories/category.repository"
 
-export class SeedDefaultCategoriesCommand {
-  constructor(public readonly userId: string) {}
+export class SeedDefaultCategoriesCommand extends Command<void> {
+  constructor(public readonly userId: string) {
+    super()
+  }
 }
 
 interface DefaultCategory {
@@ -71,23 +72,28 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
 }
 
 @CommandHandler(SeedDefaultCategoriesCommand)
-export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefaultCategoriesCommand> {
+export class SeedDefaultCategoriesHandler
+  implements ICommandHandler<SeedDefaultCategoriesCommand>
+{
   constructor(private readonly categoryRepo: CategoryRepository) {}
 
-  async execute(command: SeedDefaultCategoriesCommand): Promise<void> {
+  async execute(cmd: SeedDefaultCategoriesCommand): Promise<void> {
     for (const [parentName, category] of Object.entries(DEFAULT_CATEGORIES)) {
-      const parentCategory = Category.create(
-        command.userId,
-        parentName,
-        null,
-        category.icon
-      )
-      const savedParent = await this.categoryRepo.save(parentCategory)
+      const savedParent = await this.categoryRepo.insert({
+        userId: cmd.userId,
+        parentId: null,
+        name: parentName,
+        icon: category.icon,
+      })
 
-      const subcategories = category.children.map((child) =>
-        Category.create(command.userId, child.name, savedParent.id, child.icon)
+      await this.categoryRepo.insertMany(
+        category.children.map((child) => ({
+          userId: cmd.userId,
+          parentId: savedParent.id,
+          name: child.name,
+          icon: child.icon,
+        }))
       )
-      await this.categoryRepo.saveMany(subcategories)
     }
   }
 }

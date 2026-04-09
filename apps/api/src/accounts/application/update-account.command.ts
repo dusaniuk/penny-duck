@@ -1,28 +1,39 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import { Account } from "../domain/entities/account.entity"
-import { AccountNotFoundError } from "../domain/errors/account.errors"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import { type Account } from "@workspace/api-contract"
+import { AccountNotFoundError } from "../errors/account.errors"
 import { AccountRepository } from "../repositories/account.repository"
 
-export class UpdateAccountCommand {
+export class UpdateAccountCommand extends Command<Account> {
   constructor(
     public readonly id: string,
     public readonly userId: string,
     public readonly name?: string,
     public readonly type?: string
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @CommandHandler(UpdateAccountCommand)
-export class UpdateAccountHandler implements ICommandHandler<UpdateAccountCommand> {
+export class UpdateAccountHandler
+  implements ICommandHandler<UpdateAccountCommand>
+{
   constructor(private readonly accountRepo: AccountRepository) {}
 
-  async execute(command: UpdateAccountCommand): Promise<Account> {
-    const account = await this.accountRepo.findById(command.id, command.userId)
-    if (!account) throw new AccountNotFoundError()
+  async execute(cmd: UpdateAccountCommand): Promise<Account> {
+    const existing = await this.accountRepo.findById(cmd.id, cmd.userId)
+    if (!existing) throw new AccountNotFoundError()
 
-    if (command.name !== undefined) account.updateName(command.name)
-    if (command.type !== undefined) account.updateType(command.type)
-
-    return this.accountRepo.save(account)
+    const row = await this.accountRepo.update(cmd.id, {
+      name: cmd.name,
+      type: cmd.type,
+    })
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      currency: row.currency,
+      balance: row.balance,
+    }
   }
 }

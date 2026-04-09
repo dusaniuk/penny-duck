@@ -1,16 +1,19 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
 import {
   InvalidSettlementError,
   TransactionNotFoundError,
-} from "../../domain/errors/transaction.errors"
+} from "../../errors/transaction.errors"
 import { TransactionRepository } from "../../repositories/transaction.repository"
+import { toResponse } from "../../helpers/transaction.helpers"
 
-export class SettleTransactionCommand {
+export class SettleTransactionCommand extends Command<Transaction> {
   constructor(
     public readonly id: string,
     public readonly userId: string
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @CommandHandler(SettleTransactionCommand)
@@ -19,15 +22,12 @@ export class SettleTransactionHandler
 {
   constructor(private readonly transactionRepo: TransactionRepository) {}
 
-  async execute(command: SettleTransactionCommand): Promise<Transaction> {
-    const transaction = await this.transactionRepo.findById(
-      command.id,
-      command.userId
-    )
-    if (!transaction) throw new TransactionNotFoundError()
-    if (!transaction.isShared) throw new InvalidSettlementError()
+  async execute(cmd: SettleTransactionCommand): Promise<Transaction> {
+    const row = await this.transactionRepo.findById(cmd.id, cmd.userId)
+    if (!row) throw new TransactionNotFoundError()
+    if (row.myShare == null) throw new InvalidSettlementError()
 
-    transaction.markAsSettled()
-    return this.transactionRepo.save(transaction)
+    const updated = await this.transactionRepo.update(cmd.id, { settled: true })
+    return toResponse(updated)
   }
 }

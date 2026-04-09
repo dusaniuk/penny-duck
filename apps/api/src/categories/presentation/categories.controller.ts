@@ -9,7 +9,6 @@ import { CreateCategoryCommand } from "../application/commands/create-category.c
 import { UpdateCategoryCommand } from "../application/commands/update-category.command"
 import { DeleteCategoryCommand } from "../application/commands/delete-category.command"
 import { GetCategoriesQuery } from "../application/queries/get-categories.query"
-import { Category } from "../domain/entities/category.entity"
 import { CategoriesExceptionFilter } from "./categories-exception.filter"
 
 @Controller()
@@ -27,15 +26,7 @@ export class CategoriesController {
       const categories = await this.queryBus.execute(
         new GetCategoriesQuery(user.sub)
       )
-      return {
-        status: 200 as const,
-        body: categories.map((c: Category) => ({
-          id: c.id,
-          parentId: c.parentId,
-          name: c.name,
-          icon: c.icon,
-        })),
-      }
+      return { status: 200 as const, body: categories }
     })
   }
 
@@ -50,15 +41,7 @@ export class CategoriesController {
           body.icon ?? null
         )
       )
-      return {
-        status: 201 as const,
-        body: {
-          id: category.id,
-          parentId: category.parentId,
-          name: category.name,
-          icon: category.icon,
-        },
-      }
+      return { status: 201 as const, body: category }
     })
   }
 
@@ -68,15 +51,7 @@ export class CategoriesController {
       const category = await this.commandBus.execute(
         new UpdateCategoryCommand(params.id, user.sub, body.name, body.icon)
       )
-      return {
-        status: 200 as const,
-        body: {
-          id: category.id,
-          parentId: category.parentId,
-          name: category.name,
-          icon: category.icon,
-        },
-      }
+      return { status: 200 as const, body: category }
     })
   }
 

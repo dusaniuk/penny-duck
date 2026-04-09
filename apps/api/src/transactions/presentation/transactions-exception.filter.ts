@@ -5,7 +5,7 @@ import {
   InvalidTransferError,
   TransactionNotFoundError,
   TransferOperationError,
-} from "../domain/errors/transaction.errors"
+} from "../errors/transaction.errors"
 
 type TransactionError =
   | TransactionNotFoundError

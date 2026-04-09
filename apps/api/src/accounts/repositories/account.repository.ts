@@ -2,66 +2,69 @@ import { Inject, Injectable } from "@nestjs/common"
 import { eq, and, asc } from "drizzle-orm"
 import { type DbClient, accounts } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
-import { Account } from "../domain/entities/account.entity"
+
+export type AccountRow = typeof accounts.$inferSelect
 
 @Injectable()
 export class AccountRepository {
   constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
-  async findAllByUserId(userId: string): Promise<Account[]> {
-    const rows = await this.db
+  async findAllByUserId(userId: string): Promise<AccountRow[]> {
+    return this.db
       .select()
       .from(accounts)
       .where(eq(accounts.userId, userId))
       .orderBy(asc(accounts.name))
-    return rows.map(Account.fromPersistence)
   }
 
-  async findById(id: string, userId: string): Promise<Account | null> {
+  async findById(id: string, userId: string): Promise<AccountRow | null> {
     const rows = await this.db
       .select()
       .from(accounts)
       .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
       .limit(1)
-    if (rows.length === 0) return null
-    return Account.fromPersistence(rows[0])
+    return rows[0] ?? null
   }
 
-  async findByAccountId(id: string): Promise<Account | null> {
+  async findByAccountId(id: string): Promise<AccountRow | null> {
     const rows = await this.db
       .select()
       .from(accounts)
       .where(eq(accounts.id, id))
       .limit(1)
-    if (rows.length === 0) return null
-    return Account.fromPersistence(rows[0])
+    return rows[0] ?? null
   }
 
-  async save(account: Account): Promise<Account> {
-    if (account.id === "") {
-      const rows = await this.db
-        .insert(accounts)
-        .values({
-          userId: account.userId,
-          name: account.name,
-          type: account.type,
-          currency: account.currency,
-          balance: account.balance,
-        })
-        .returning()
-      return Account.fromPersistence(rows[0])
-    }
-    const rows = await this.db
-      .update(accounts)
-      .set({
-        name: account.name,
-        type: account.type,
-        balance: account.balance,
-        updatedAt: new Date(),
+  async insert(data: {
+    userId: string
+    name: string
+    type: string
+    currency: string
+    balance?: number
+  }): Promise<AccountRow> {
+    const [row] = await this.db
+      .insert(accounts)
+      .values({
+        userId: data.userId,
+        name: data.name,
+        type: data.type,
+        currency: data.currency,
+        balance: data.balance ?? 0,
       })
-      .where(eq(accounts.id, account.id))
       .returning()
-    return Account.fromPersistence(rows[0])
+    return row
+  }
+
+  async update(
+    id: string,
+    data: { name?: string; type?: string; balance?: number }
+  ): Promise<AccountRow> {
+    const [row] = await this.db
+      .update(accounts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(accounts.id, id))
+      .returning()
+    return row
   }
 
   async delete(id: string, userId: string): Promise<void> {

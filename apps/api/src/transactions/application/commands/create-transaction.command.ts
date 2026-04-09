@@ -1,7 +1,16 @@
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
+import {
+  Command,
+  CommandHandler,
+  EventBus,
+  ICommandHandler,
+} from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../../repositories/transaction.repository"
-import { TransactionCreatedEvent } from "../../domain/events/transaction-created.event"
+import { TransactionCreatedEvent } from "../../events/transaction-created.event"
+import {
+  toResponse,
+  validateExchangeRate,
+} from "../../helpers/transaction.helpers"
 
 export interface CreateTransactionInput {
   userId: string
@@ -17,8 +26,10 @@ export interface CreateTransactionInput {
   exchangeRate?: number | null
 }
 
-export class CreateTransactionCommand {
-  constructor(public readonly input: CreateTransactionInput) {}
+export class CreateTransactionCommand extends Command<Transaction> {
+  constructor(public readonly input: CreateTransactionInput) {
+    super()
+  }
 }
 
 @CommandHandler(CreateTransactionCommand)
@@ -30,19 +41,53 @@ export class CreateTransactionHandler
     private readonly eventBus: EventBus
   ) {}
 
-  async execute(command: CreateTransactionCommand): Promise<Transaction> {
-    const transaction = Transaction.create(command.input)
+  async execute(cmd: CreateTransactionCommand): Promise<Transaction> {
+    const { input } = cmd
 
-    const saved = await this.transactionRepo.save(transaction)
+    if (input.amount <= 0) throw new Error("Amount must be greater than 0")
+    if (input.type !== "transfer" && !input.categoryId) {
+      throw new Error(
+        "Category is required for expense and income transactions"
+      )
+    }
+    if (input.myShare != null) {
+      if (input.myShare <= 0)
+        throw new Error("My share must be greater than 0")
+      if (input.myShare >= input.amount)
+        throw new Error("My share must be less than the total amount")
+    }
+    validateExchangeRate(
+      input.originalAmount,
+      input.originalCurrency,
+      input.exchangeRate
+    )
+
+    const settled = input.myShare != null ? false : true
+
+    const row = await this.transactionRepo.insert({
+      userId: input.userId,
+      accountId: input.accountId,
+      type: input.type,
+      amount: input.amount,
+      categoryId: input.categoryId ?? null,
+      note: input.note ?? null,
+      date: input.date,
+      myShare: input.myShare ?? null,
+      settled,
+      originalAmount: input.originalAmount ?? null,
+      originalCurrency: input.originalCurrency ?? null,
+      exchangeRate: input.exchangeRate ?? null,
+      transferId: null,
+    })
 
     this.eventBus.publish(
       new TransactionCreatedEvent(
-        saved.accountId!,
-        saved.isExpense ? "expense" : "income",
-        saved.amount
+        row.accountId!,
+        input.type === "expense" ? "expense" : "income",
+        row.amount
       )
     )
 
-    return saved
+    return toResponse(row)
   }
 }

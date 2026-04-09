@@ -1,6 +1,7 @@
-import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
-import { Transaction } from "../../domain/entities/transaction.entity"
+import { Query, IQueryHandler, QueryHandler } from "@nestjs/cqrs"
+import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../../repositories/transaction.repository"
+import { toResponse } from "../../helpers/transaction.helpers"
 
 interface ListFilters {
   page: number
@@ -14,11 +15,16 @@ interface ListFilters {
   dateTo?: Date
 }
 
-export class ListTransactionsQuery {
+export class ListTransactionsQuery extends Query<{
+  data: Transaction[]
+  total: number
+}> {
   constructor(
     public readonly userId: string,
     public readonly filters: ListFilters
-  ) {}
+  ) {
+    super()
+  }
 }
 
 @QueryHandler(ListTransactionsQuery)
@@ -30,9 +36,10 @@ export class ListTransactionsHandler
   async execute(
     query: ListTransactionsQuery
   ): Promise<{ data: Transaction[]; total: number }> {
-    return this.transactionRepo.findAll({
+    const { data, total } = await this.transactionRepo.findAll({
       userId: query.userId,
       ...query.filters,
     })
+    return { data: data.map(toResponse), total }
   }
 }

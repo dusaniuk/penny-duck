@@ -115,9 +115,9 @@ describe("Transactions", () => {
       })
     )
 
-    expect(tx.exchangeRate?.originalAmount).toBe(4152)
-    expect(tx.exchangeRate?.originalCurrency).toBe("UAH")
-    expect(tx.exchangeRate?.rate).toBe(41.52)
+    expect(tx.originalAmount).toBe(4152)
+    expect(tx.originalCurrency).toBe("UAH")
+    expect(tx.exchangeRate).toBe(41.52)
   })
 
   it("gets a single transaction", async () => {
