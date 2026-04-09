@@ -1,6 +1,0 @@
-[build]
-buildCommand = "cd ../.. && pnpm install && pnpm --filter web... build"
-
-[deploy]
-startCommand = "node .output/server/index.mjs"
-restartPolicyType = "ON_FAILURE"

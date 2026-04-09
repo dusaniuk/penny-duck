@@ -9,6 +9,8 @@
     "db:migrate": "pnpm --filter @workspace/db db:migrate",
     "db:studio": "pnpm --filter @workspace/db db:studio",
     "build": "turbo build",
+    "build:api": "pnpm --filter api... build",
+    "build:web": "pnpm --filter web... build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "lint:fix": "turbo lint -- --fix",
