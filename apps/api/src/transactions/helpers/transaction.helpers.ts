@@ -1,5 +1,5 @@
 import { type Transaction } from "@workspace/api-contract"
-import { type TransactionRow } from "../repositories/transaction.repository"
+import { type TransactionRow } from "../transaction.repository"
 
 export function toResponse(row: TransactionRow): Transaction {
   return {

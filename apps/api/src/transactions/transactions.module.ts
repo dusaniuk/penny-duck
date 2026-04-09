@@ -2,17 +2,17 @@ import { Module } from "@nestjs/common"
 import { CqrsModule } from "@nestjs/cqrs"
 import { DatabaseModule } from "@/database/database.module"
 import { AuthModule } from "@/auth/auth.module"
-import { CreateTransactionHandler } from "./application/commands/create-transaction.command"
-import { UpdateTransactionHandler } from "./application/commands/update-transaction.command"
-import { DeleteTransactionHandler } from "./application/commands/delete-transaction.command"
-import { SettleTransactionHandler } from "./application/commands/settle-transaction.command"
-import { CreateTransferHandler } from "./application/commands/create-transfer.command"
-import { UpdateTransferHandler } from "./application/commands/update-transfer.command"
-import { DeleteTransferHandler } from "./application/commands/delete-transfer.command"
-import { GetTransactionHandler } from "./application/queries/get-transaction.query"
-import { ListTransactionsHandler } from "./application/queries/list-transactions.query"
-import { TransactionRepository } from "./repositories/transaction.repository"
-import { TransactionsController } from "./presentation/transactions.controller"
+import { CreateTransactionHandler } from "./commands/create-transaction.command"
+import { UpdateTransactionHandler } from "./commands/update-transaction.command"
+import { DeleteTransactionHandler } from "./commands/delete-transaction.command"
+import { SettleTransactionHandler } from "./commands/settle-transaction.command"
+import { CreateTransferHandler } from "./commands/create-transfer.command"
+import { UpdateTransferHandler } from "./commands/update-transfer.command"
+import { DeleteTransferHandler } from "./commands/delete-transfer.command"
+import { GetTransactionHandler } from "./queries/get-transaction.query"
+import { ListTransactionsHandler } from "./queries/list-transactions.query"
+import { TransactionRepository } from "./transaction.repository"
+import { TransactionsController } from "./transactions.controller"
 
 const commandHandlers = [
   CreateTransactionHandler,
@@ -28,11 +28,7 @@ const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
 @Module({
   imports: [DatabaseModule, CqrsModule, AuthModule],
   controllers: [TransactionsController],
-  providers: [
-    ...commandHandlers,
-    ...queryHandlers,
-    TransactionRepository,
-  ],
+  providers: [...commandHandlers, ...queryHandlers, TransactionRepository],
   exports: [TransactionRepository],
 })
 export class TransactionsModule {}

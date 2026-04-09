@@ -11,7 +11,7 @@ import { LoginCommand } from "./commands/login.command"
 import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
 import { GetCurrentUserQuery } from "./queries/get-current-user.query"
-import { GetCategoriesQuery } from "../../categories/application/queries/get-categories.query"
+import { GetCategoriesQuery } from "../../categories/queries/get-categories.query"
 import {
   EmailAlreadyExistsError,
   InvalidCredentialsError,
@@ -88,15 +88,15 @@ describe("Auth", () => {
     )
 
     await expect(
-      commandBus.execute(new LoginCommand("wrong@example.com", "wrongPassword1"))
+      commandBus.execute(
+        new LoginCommand("wrong@example.com", "wrongPassword1")
+      )
     ).rejects.toThrow(InvalidCredentialsError)
   })
 
   it("rejects login for non-existent user", async () => {
     await expect(
-      commandBus.execute(
-        new LoginCommand("noone@example.com", "password12345")
-      )
+      commandBus.execute(new LoginCommand("noone@example.com", "password12345"))
     ).rejects.toThrow(InvalidCredentialsError)
   })
 

@@ -3,15 +3,15 @@ import { CqrsModule } from "@nestjs/cqrs"
 import { DatabaseModule } from "@/database/database.module"
 import { AuthModule } from "@/auth/auth.module"
 import { TransactionsModule } from "@/transactions/transactions.module"
-import { CreateAccountHandler } from "./application/create-account.command"
-import { UpdateAccountHandler } from "./application/update-account.command"
-import { DeleteAccountHandler } from "./application/delete-account.command"
-import { GetAccountsHandler } from "./application/get-accounts.query"
-import { GetAccountHandler } from "./application/get-account.query"
-import { TransactionCreatedHandler } from "./application/event-handlers/transaction-created.handler"
-import { TransactionDeletedHandler } from "./application/event-handlers/transaction-deleted.handler"
-import { AccountRepository } from "./repositories/account.repository"
-import { AccountsController } from "./presentation/accounts.controller"
+import { CreateAccountHandler } from "./commands/create-account.command"
+import { UpdateAccountHandler } from "./commands/update-account.command"
+import { DeleteAccountHandler } from "./commands/delete-account.command"
+import { GetAccountsHandler } from "./queries/get-accounts.query"
+import { GetAccountHandler } from "./queries/get-account.query"
+import { TransactionCreatedHandler } from "./event-handlers/transaction-created.handler"
+import { TransactionDeletedHandler } from "./event-handlers/transaction-deleted.handler"
+import { AccountRepository } from "./account.repository"
+import { AccountsController } from "./accounts.controller"
 
 const commandHandlers = [
   CreateAccountHandler,
@@ -22,7 +22,12 @@ const queryHandlers = [GetAccountsHandler, GetAccountHandler]
 const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
 
 @Module({
-  imports: [DatabaseModule, CqrsModule, AuthModule, forwardRef(() => TransactionsModule)],
+  imports: [
+    DatabaseModule,
+    CqrsModule,
+    AuthModule,
+    forwardRef(() => TransactionsModule),
+  ],
   controllers: [AccountsController],
   providers: [
     ...commandHandlers,
