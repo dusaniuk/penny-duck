@@ -12,7 +12,7 @@
   "tsup": {
     "entry": ["src/api.ts", "src/web.ts"],
     "format": ["esm"],
-    "dts": true,
+    "dts": false,
     "sourcemap": true
   },
   "dependencies": {

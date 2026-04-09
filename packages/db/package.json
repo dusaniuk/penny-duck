@@ -8,6 +8,7 @@
     "build": "tsup",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:deploy": "node dist/migrate.js",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
@@ -15,9 +16,14 @@
     "format": "prettier --write \"**/*.ts\""
   },
   "tsup": {
-    "entry": ["src/index.ts"],
-    "format": ["esm"],
-    "dts": true,
+    "entry": [
+      "src/index.ts",
+      "src/migrate.ts"
+    ],
+    "format": [
+      "esm"
+    ],
+    "dts": false,
     "sourcemap": true
   },
   "dependencies": {

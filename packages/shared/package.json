@@ -9,7 +9,7 @@
   "tsup": {
     "entry": ["src/currencies.ts"],
     "format": ["esm"],
-    "dts": true,
+    "dts": false,
     "sourcemap": true
   },
   "exports": {

@@ -7,6 +7,7 @@
     "db:push": "pnpm --filter @workspace/db db:push",
     "db:generate": "pnpm --filter @workspace/db db:generate",
     "db:migrate": "pnpm --filter @workspace/db db:migrate",
+    "db:deploy": "pnpm --filter @workspace/db db:deploy",
     "db:studio": "pnpm --filter @workspace/db db:studio",
     "build": "turbo build",
     "build:api": "pnpm --filter api... build",

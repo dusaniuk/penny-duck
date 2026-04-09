@@ -13,7 +13,12 @@ let commandBus: CommandBus
 let queryBus: QueryBus
 let db: DbClient
 
-export async function createTestApp() {
+export async function createTestApp(): Promise<{
+  app: INestApplication
+  commandBus: CommandBus
+  queryBus: QueryBus
+  db: DbClient
+}> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   }).compile()
