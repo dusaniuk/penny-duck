@@ -2,10 +2,18 @@
   "name": "@workspace/env",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "build": "tsup",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\"",
     "typecheck": "tsc --noEmit"
+  },
+  "tsup": {
+    "entry": ["src/api.ts", "src/web.ts"],
+    "format": ["esm"],
+    "dts": true,
+    "sourcemap": true
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.8",
@@ -20,9 +28,12 @@
   },
   "exports": {
     "./api": {
-      "import": "./src/api.ts",
-      "require": "./src/api.ts"
+      "node": "./dist/api.js",
+      "default": "./src/api.ts"
     },
-    "./web": "./src/web.ts"
+    "./web": {
+      "node": "./dist/web.js",
+      "default": "./src/web.ts"
+    }
   }
 }

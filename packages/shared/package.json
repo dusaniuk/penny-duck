@@ -2,8 +2,20 @@
   "name": "@workspace/shared",
   "version": "0.0.0",
   "private": true,
-  "main": "./src/currencies.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsup"
+  },
+  "tsup": {
+    "entry": ["src/currencies.ts"],
+    "format": ["esm"],
+    "dts": true,
+    "sourcemap": true
+  },
   "exports": {
-    "./currencies": "./src/currencies.ts"
+    "./currencies": {
+      "node": "./dist/currencies.js",
+      "default": "./src/currencies.ts"
+    }
   }
 }
