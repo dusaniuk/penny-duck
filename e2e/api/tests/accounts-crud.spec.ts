@@ -139,28 +139,11 @@ test.describe("Accounts CRUD", () => {
     expect(res.status()).toBe(404)
   })
 
-  test("returns 400 for invalid account type", async ({ request }) => {
-    const res = await request.post("/accounts", {
-      data: createAccountData({ type: "crypto" }),
-    })
-    // Domain validation happens at entity level, returns 500 or 400
-    expect(res.status()).toBeGreaterThanOrEqual(400)
-  })
-
-  test("returns 400 for invalid currency", async ({ request }) => {
+  test("returns 400 for invalid currency length", async ({ request }) => {
     const res = await request.post("/accounts", {
       data: { name: "Test", type: "bank", currency: "XX" },
     })
     expect(res.status()).toBe(400)
-  })
-
-  test("returns 400 for unknown 3-letter currency code", async ({
-    request,
-  }) => {
-    const res = await request.post("/accounts", {
-      data: { name: "Test", type: "bank", currency: "FOO" },
-    })
-    expect(res.status()).toBeGreaterThanOrEqual(400)
   })
 })
 

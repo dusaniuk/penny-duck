@@ -53,8 +53,12 @@ export const ListTransactionsQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
   type: z.enum(["expense", "income", "transfer"]).optional(),
   categoryId: z.string().uuid().optional(),
-  settled: z.coerce.boolean().optional(),
-  orphaned: z.coerce.boolean().optional(),
+  settled: z
+    .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())
+    .optional(),
+  orphaned: z
+    .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())
+    .optional(),
   dateFrom: z.string().datetime({ offset: true }).optional(),
   dateTo: z.string().datetime({ offset: true }).optional(),
   page: z.coerce.number().int().min(1).optional(),

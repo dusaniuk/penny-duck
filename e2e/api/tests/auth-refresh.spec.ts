@@ -10,7 +10,7 @@ test.describe("POST /auth/refresh", () => {
     // Signup sets cookies; now call refresh
     const res = await request.post("/auth/refresh")
 
-    expect(res.status()).toBe(201)
+    expect(res.status()).toBe(200)
 
     const cookies = res.headers()["set-cookie"]
     expect(cookies).toBeDefined()

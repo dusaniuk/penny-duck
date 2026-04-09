@@ -41,8 +41,13 @@ function SignupPage() {
         body: { name, email, password },
       })
       navigate({ to: "/dashboard" })
-    } catch {
-      setError("Signup failed")
+    } catch (err) {
+      if (err && typeof err === "object" && "body" in err) {
+        const body = (err as { body: { message?: string } }).body
+        setError(body.message || "Signup failed")
+      } else {
+        setError("Signup failed")
+      }
     }
   }
 

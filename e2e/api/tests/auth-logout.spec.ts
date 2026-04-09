@@ -8,7 +8,7 @@ test.describe("POST /auth/logout", () => {
 
     const res = await request.post("/auth/logout")
 
-    expect(res.status()).toBe(201)
+    expect(res.status()).toBe(200)
 
     const body = await res.json()
     expect(body.message).toBe("Logged out")

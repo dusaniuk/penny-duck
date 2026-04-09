@@ -40,8 +40,13 @@ function LoginPage() {
         body: { email, password },
       })
       navigate({ to: "/dashboard" })
-    } catch {
-      setError("Login failed")
+    } catch (err) {
+      if (err && typeof err === "object" && "body" in err) {
+        const body = (err as { body: { message?: string } }).body
+        setError(body.message || "Login failed")
+      } else {
+        setError("Login failed")
+      }
     }
   }
 
