@@ -88,3 +88,12 @@ apps/api/src/<module>/
 - Frontend proxies API calls through Nitro (`/api/**` → `localhost:3030/**`) for same-origin cookies
 - SSR auth checks use `createServerFn` + `getCookie` from `@tanstack/react-start/server`
 - Auth helper: `apps/web/src/lib/auth.ts` — `getAuthUser()` server function used in route `beforeLoad`
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current

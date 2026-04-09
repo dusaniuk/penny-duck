@@ -41,6 +41,9 @@ docs/superpowers
 # Worktrees
 .worktrees
 
+# Graphify
+graphify-out
+
 # Misc
 .DS_Store
 *.pem
