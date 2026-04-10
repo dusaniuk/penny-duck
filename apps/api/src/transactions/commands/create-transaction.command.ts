@@ -4,6 +4,7 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
+import { BadRequestException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
 import { TransactionCreatedEvent } from "../events/transaction-created.event"
@@ -42,16 +43,20 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
   async execute(cmd: CreateTransactionCommand): Promise<Transaction> {
     const { input } = cmd
 
-    if (input.amount <= 0) throw new Error("Amount must be greater than 0")
+    if (input.amount <= 0)
+      throw new BadRequestException("Amount must be greater than 0")
     if (input.type !== "transfer" && !input.categoryId) {
-      throw new Error(
+      throw new BadRequestException(
         "Category is required for expense and income transactions"
       )
     }
     if (input.myShare != null) {
-      if (input.myShare <= 0) throw new Error("My share must be greater than 0")
+      if (input.myShare <= 0)
+        throw new BadRequestException("My share must be greater than 0")
       if (input.myShare >= input.amount)
-        throw new Error("My share must be less than the total amount")
+        throw new BadRequestException(
+          "My share must be less than the total amount"
+        )
     }
     validateExchangeRate(
       input.originalAmount,

@@ -13,6 +13,9 @@ export const env = createEnv({
     JWT_EXPIRATION: z.string().default("15m"),
     REFRESH_TOKEN_EXPIRATION: z.string().default("7d"),
     WEB_URL: z.string().url().default("http://localhost:3000"),
+    RAILWAY_ENVIRONMENT_NAME: z.string().optional(),
   },
   runtimeEnv: process.env,
 })
+
+export const isProduction = env.RAILWAY_ENVIRONMENT_NAME === "production"

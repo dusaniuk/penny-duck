@@ -51,7 +51,8 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         "Source and destination accounts must differ"
       )
     }
-    if (input.amount <= 0) throw new Error("Amount must be greater than 0")
+    if (input.amount <= 0)
+      throw new BadRequestException("Amount must be greater than 0")
     validateExchangeRate(
       input.originalAmount,
       input.originalCurrency,

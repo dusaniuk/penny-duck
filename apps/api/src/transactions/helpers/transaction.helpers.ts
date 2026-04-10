@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { type TransactionRow } from "../transaction.repository"
 
@@ -29,7 +30,7 @@ export function validateExchangeRate(
   const fields = [originalAmount, originalCurrency, exchangeRate]
   const provided = fields.filter((f) => f != null).length
   if (provided !== 0 && provided !== 3) {
-    throw new Error(
+    throw new BadRequestException(
       "Exchange rate fields must all be provided or all omitted"
     )
   }

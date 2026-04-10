@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common"
 import { Response } from "express"
+import { isProduction } from "@workspace/env/api"
 
 @Injectable()
 export class CookieService {
   setAccessToken(res: Response, token: string): void {
     res.cookie("access_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       sameSite: "lax",
       path: "/",
       maxAge: 15 * 60 * 1000,
@@ -16,7 +17,7 @@ export class CookieService {
   setRefreshToken(res: Response, token: string): void {
     res.cookie("refresh_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,

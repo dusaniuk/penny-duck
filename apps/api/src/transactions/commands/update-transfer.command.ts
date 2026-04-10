@@ -4,7 +4,7 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
-import { NotFoundException } from "@nestjs/common"
+import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
 import { TransactionCreatedEvent } from "../events/transaction-created.event"
@@ -71,7 +71,8 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
       fields.exchangeRate != null
 
     if (fields.amount !== undefined) {
-      if (fields.amount <= 0) throw new Error("Amount must be greater than 0")
+      if (fields.amount <= 0)
+        throw new BadRequestException("Amount must be greater than 0")
       outgoingUpdate.amount = fields.amount
       if (hasNewExchangeRate) {
         incomingUpdate.amount = fields.originalAmount!
