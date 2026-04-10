@@ -14,6 +14,11 @@ export const env = createEnv({
     REFRESH_TOKEN_EXPIRATION: z.string().default("7d"),
     WEB_URL: z.string().url().default("http://localhost:3000"),
     RAILWAY_ENVIRONMENT_NAME: z.string().optional(),
+    MAX_BODY_SIZE_MB: z.coerce
+      .number()
+      .positive()
+      .default(1)
+      .transform((mb) => `${mb}mb`),
   },
   runtimeEnv: process.env,
 })
