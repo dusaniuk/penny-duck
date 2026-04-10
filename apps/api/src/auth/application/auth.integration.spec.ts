@@ -141,6 +141,21 @@ describe("Auth", () => {
     ).rejects.toThrow()
   })
 
+  it("rejects concurrent refresh with the same token (race condition)", async () => {
+    const signup = await signupUser()
+
+    const results = await Promise.allSettled([
+      commandBus.execute(new RefreshTokensCommand(signup.refreshToken)),
+      commandBus.execute(new RefreshTokensCommand(signup.refreshToken)),
+    ])
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled")
+    const rejected = results.filter((r) => r.status === "rejected")
+
+    expect(fulfilled).toHaveLength(1)
+    expect(rejected).toHaveLength(1)
+  })
+
   it("gets current user", async () => {
     const signup = await signupUser()
 

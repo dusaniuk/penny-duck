@@ -63,6 +63,49 @@ export class RefreshTokenRepository {
     return rows.map(RefreshToken.fromPersistence)
   }
 
+  async atomicRotate(
+    tokenId: string,
+    newTokenData: {
+      userId: string
+      tokenHash: string
+      familyId: string
+      expiresAt: Date
+    },
+  ): Promise<
+    | { rotated: true; newRow: typeof refreshTokens.$inferSelect }
+    | { rotated: false }
+  > {
+    return this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.id, tokenId))
+        .for("update")
+
+      if (!existing || existing.revoked) {
+        return { rotated: false }
+      }
+
+      await tx
+        .update(refreshTokens)
+        .set({ revoked: true })
+        .where(eq(refreshTokens.id, tokenId))
+
+      const [newRow] = await tx
+        .insert(refreshTokens)
+        .values({
+          userId: newTokenData.userId,
+          tokenHash: newTokenData.tokenHash,
+          familyId: newTokenData.familyId,
+          revoked: false,
+          expiresAt: newTokenData.expiresAt,
+        })
+        .returning()
+
+      return { rotated: true, newRow }
+    })
+  }
+
   async deleteExpired(): Promise<number> {
     const rows = await this.db
       .delete(refreshTokens)
