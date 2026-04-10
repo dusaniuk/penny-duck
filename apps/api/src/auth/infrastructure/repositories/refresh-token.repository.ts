@@ -106,6 +106,13 @@ export class RefreshTokenRepository {
     })
   }
 
+  async revokeAllByUserId(userId: string): Promise<void> {
+    await this.db
+      .update(refreshTokens)
+      .set({ revoked: true })
+      .where(eq(refreshTokens.userId, userId))
+  }
+
   async deleteExpired(): Promise<number> {
     const rows = await this.db
       .delete(refreshTokens)
