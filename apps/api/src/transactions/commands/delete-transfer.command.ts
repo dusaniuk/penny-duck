@@ -25,13 +25,13 @@ export class DeleteTransferHandler implements ICommandHandler<DeleteTransferComm
   ) {}
 
   async execute(cmd: DeleteTransferCommand): Promise<void> {
-    const pair = await this.transactionRepo.findByTransferId(cmd.transferId)
+    const pair = await this.transactionRepo.findByTransferId(cmd.transferId, cmd.userId)
     if (pair.length !== 2) throw new NotFoundException("Transaction not found")
 
     const outgoing = pair.find((t) => t.originalAmount !== null) ?? pair[0]
     const incoming = pair.find((t) => t !== outgoing)!
 
-    await this.transactionRepo.deleteByTransferId(cmd.transferId)
+    await this.transactionRepo.deleteByTransferId(cmd.transferId, cmd.userId)
 
     this.eventBus.publish(
       new TransactionDeletedEvent(

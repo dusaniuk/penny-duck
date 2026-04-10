@@ -5,8 +5,9 @@ import {
   EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs"
-import { BadRequestException } from "@nestjs/common"
+import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
+import { AccountRepository } from "../../accounts/account.repository"
 import { TransactionRepository } from "../transaction.repository"
 import { TransactionCreatedEvent } from "../events/transaction-created.event"
 import {
@@ -36,6 +37,7 @@ export class CreateTransferCommand extends Command<[Transaction, Transaction]> {
 export class CreateTransferHandler implements ICommandHandler<CreateTransferCommand> {
   constructor(
     private readonly transactionRepo: TransactionRepository,
+    private readonly accountRepo: AccountRepository,
     private readonly eventBus: EventBus
   ) {}
 
@@ -55,6 +57,13 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
       input.originalCurrency,
       input.exchangeRate
     )
+
+    const [fromAccount, toAccount] = await Promise.all([
+      this.accountRepo.findById(input.fromAccountId, input.userId),
+      this.accountRepo.findById(input.toAccountId, input.userId),
+    ])
+    if (!fromAccount || !toAccount)
+      throw new NotFoundException("Account not found")
 
     const transferId = randomUUID()
 

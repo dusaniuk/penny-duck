@@ -43,7 +43,7 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
   async execute(
     cmd: UpdateTransferCommand
   ): Promise<[Transaction, Transaction]> {
-    const pair = await this.transactionRepo.findByTransferId(cmd.transferId)
+    const pair = await this.transactionRepo.findByTransferId(cmd.transferId, cmd.userId)
     if (pair.length !== 2) throw new NotFoundException("Transaction not found")
 
     const outgoing = pair.find((t) => t.originalAmount !== null) ?? pair[0]

@@ -116,11 +116,19 @@ export class TransactionRepository {
     return rows[0] ?? null
   }
 
-  async findByTransferId(transferId: string): Promise<TransactionRow[]> {
+  async findByTransferId(
+    transferId: string,
+    userId: string
+  ): Promise<TransactionRow[]> {
     return this.db
       .select()
       .from(transactions)
-      .where(eq(transactions.transferId, transferId))
+      .where(
+        and(
+          eq(transactions.transferId, transferId),
+          eq(transactions.userId, userId)
+        )
+      )
   }
 
   async findAll(
@@ -200,9 +208,14 @@ export class TransactionRepository {
     return total
   }
 
-  async deleteByTransferId(transferId: string): Promise<void> {
+  async deleteByTransferId(transferId: string, userId: string): Promise<void> {
     await this.db
       .delete(transactions)
-      .where(eq(transactions.transferId, transferId))
+      .where(
+        and(
+          eq(transactions.transferId, transferId),
+          eq(transactions.userId, userId)
+        )
+      )
   }
 }
