@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getCookie, setCookie } from "@tanstack/react-start/server"
+import { parse as parseSetCookie } from "set-cookie-parser"
 
 export interface AuthUser {
   id: string
@@ -17,26 +18,21 @@ async function refreshTokens(apiUrl: string): Promise<string | undefined> {
   })
   if (!res.ok) return undefined
 
-  const setCookieHeaders = res.headers.getSetCookie()
+  const cookies = parseSetCookie(res.headers.getSetCookie())
   let newAccessToken: string | undefined
 
-  for (const header of setCookieHeaders) {
-    const [nameValue] = header.split(";")
-    const eqIndex = nameValue.indexOf("=")
-    const name = nameValue.slice(0, eqIndex)
-    const value = nameValue.slice(eqIndex + 1)
-
-    if (name === "access_token") {
-      newAccessToken = value
-      setCookie(name, value, {
+  for (const cookie of cookies) {
+    if (cookie.name === "access_token") {
+      newAccessToken = cookie.value
+      setCookie(cookie.name, cookie.value, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
         maxAge: 15 * 60,
       })
-    } else if (name === "refresh_token") {
-      setCookie(name, value, {
+    } else if (cookie.name === "refresh_token") {
+      setCookie(cookie.name, cookie.value, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
