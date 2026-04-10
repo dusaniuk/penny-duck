@@ -78,12 +78,12 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         categoryId: null,
         note: input.note ?? null,
         date: input.date,
-        myShare: null,
         settled: true,
         originalAmount: input.originalAmount ?? null,
         originalCurrency: input.originalCurrency ?? null,
         exchangeRate: input.exchangeRate ?? null,
         transferId,
+        reimbursementId: null,
       },
       {
         userId: input.userId,
@@ -92,12 +92,12 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         categoryId: null,
         note: input.note ?? null,
         date: input.date,
-        myShare: null,
         settled: true,
         originalAmount: null,
         originalCurrency: null,
         exchangeRate: null,
         transferId,
+        reimbursementId: null,
       }
     )
 

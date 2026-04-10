@@ -10,6 +10,7 @@ import { TransactionFab } from "@/components/transactions/transaction-fab"
 import { TransactionFilterSheet } from "@/components/transactions/transaction-filters"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 import { TransactionList } from "@/components/transactions/transaction-list"
+import { ReimbursementDialog } from "@/components/transactions/reimbursement-dialog"
 import { TransferFormDialog } from "@/components/transactions/transfer-form-dialog"
 
 interface TransactionFilters {
@@ -37,6 +38,8 @@ function TransactionsPage() {
   const [editTransaction, setEditTransaction] =
     useState<Transaction | null>(null)
   const [deleteTransaction, setDeleteTransaction] =
+    useState<Transaction | null>(null)
+  const [reimburseTransaction, setReimburseTransaction] =
     useState<Transaction | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
@@ -112,6 +115,10 @@ function TransactionsPage() {
   const deleteTransferMutation = tsr.transactions.deleteTransfer.useMutation({
     onSuccess: invalidateAll,
   })
+  const createReimbursementMutation =
+    tsr.transactions.createReimbursement.useMutation({
+      onSuccess: invalidateAll,
+    })
 
   async function handleLoadMore() {
     setLoadingMore(true)
@@ -174,7 +181,7 @@ function TransactionsPage() {
     categoryId: string
     date: string
     note?: string
-    myShare?: number
+    settled?: boolean
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
@@ -233,15 +240,6 @@ function TransactionsPage() {
     }
     setExtraTransactions([])
     setPage(1)
-  }
-
-  async function handleSettle() {
-    if (!editTransaction) return
-    await settleMutation.mutateAsync({
-      params: { id: editTransaction.id },
-    })
-    setFormOpen(false)
-    setEditTransaction(null)
   }
 
   function handleToggleUnsettled() {
@@ -352,7 +350,12 @@ function TransactionsPage() {
         hasMore={allTransactions.length < total}
         onLoadMore={handleLoadMore}
         loadingMore={loadingMore}
-        onClickTransaction={handleClickTransaction}
+        onEdit={handleClickTransaction}
+        onReimburse={(t) => setReimburseTransaction(t)}
+        onSettle={(t) => {
+          settleMutation.mutate({ params: { id: t.id } })
+        }}
+        onDelete={(t) => setDeleteTransaction(t)}
       />
 
       <TransactionFab
@@ -380,7 +383,6 @@ function TransactionsPage() {
               }
             : undefined
         }
-        onSettle={handleSettle}
       />
 
       <TransferFormDialog
@@ -409,6 +411,26 @@ function TransactionsPage() {
               }
             : undefined
         }
+      />
+
+      <ReimbursementDialog
+        open={!!reimburseTransaction}
+        onOpenChange={(o) => {
+          if (!o) setReimburseTransaction(null)
+        }}
+        transaction={reimburseTransaction}
+        accounts={accounts}
+        onSubmit={async (data) => {
+          await createReimbursementMutation.mutateAsync({
+            params: { id: data.transactionId },
+            body: {
+              accountId: data.accountId,
+              amount: data.amount,
+              date: data.date,
+              exchangeRate: data.exchangeRate,
+            },
+          })
+        }}
       />
 
       <TransactionDeleteDialog

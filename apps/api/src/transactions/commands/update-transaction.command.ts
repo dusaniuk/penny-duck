@@ -13,7 +13,6 @@ interface UpdateFields {
   categoryId?: string | null
   note?: string | null
   date?: Date
-  myShare?: number | null
   originalAmount?: number | null
   originalCurrency?: string | null
   exchangeRate?: number | null
@@ -63,19 +62,6 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
     }
     if (fields.note !== undefined) updateData.note = fields.note
     if (fields.date !== undefined) updateData.date = fields.date
-
-    if (fields.myShare === null) {
-      updateData.myShare = null
-      updateData.settled = true
-    } else if (fields.myShare !== undefined) {
-      const effectiveAmount = fields.amount ?? Math.abs(existing.amount)
-      if (fields.myShare <= 0)
-        throw new BadRequestException("My share must be greater than 0")
-      if (fields.myShare >= effectiveAmount)
-        throw new BadRequestException("My share must be less than the total amount")
-      updateData.myShare = fields.myShare
-      updateData.settled = false
-    }
 
     if (
       fields.originalAmount !== undefined &&

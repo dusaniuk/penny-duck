@@ -36,7 +36,7 @@ interface TransactionFormDialogProps {
     categoryId: string
     date: string
     note?: string
-    myShare?: number
+    settled?: boolean
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
@@ -64,8 +64,7 @@ export function TransactionFormDialog({
   const [categoryId, setCategoryId] = useState("")
   const [date, setDate] = useState("")
   const [note, setNote] = useState("")
-  const [showShared, setShowShared] = useState(false)
-  const [myShare, setMyShare] = useState("")
+  const [unsettled, setUnsettled] = useState(false)
   const [showExchangeRate, setShowExchangeRate] = useState(false)
   const [exchangeRate, setExchangeRate] = useState("")
   const [originalAmount, setOriginalAmount] = useState("")
@@ -99,8 +98,7 @@ export function TransactionFormDialog({
           : new Date().toISOString().split("T")[0]
       )
       setNote(transaction?.note ?? "")
-      setShowShared(transaction?.myShare != null)
-      setMyShare(transaction?.myShare?.toString() ?? "")
+      setUnsettled(transaction ? !transaction.settled : false)
       setShowExchangeRate(transaction?.exchangeRate != null)
       setExchangeRate(transaction?.exchangeRate?.toString() ?? "")
       setOriginalAmount(transaction?.originalAmount?.toString() ?? "")
@@ -121,7 +119,7 @@ export function TransactionFormDialog({
         categoryId,
         date: new Date(date).toISOString(),
         ...(note ? { note } : {}),
-        ...(showShared && myShare ? { myShare: parseFloat(myShare) } : {}),
+        ...(!isEdit && unsettled ? { settled: false } : {}),
         ...(showExchangeRate &&
         exchangeRate &&
         originalAmount &&
@@ -141,8 +139,7 @@ export function TransactionFormDialog({
     }
   }
 
-  const canSettle =
-    isEdit && transaction.myShare != null && !transaction.settled
+  const canToggleSettle = isEdit && onSettle
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -276,13 +273,17 @@ export function TransactionFormDialog({
             </Field>
 
             <div className="flex gap-3 border-t pt-3">
-              {!showShared && (
+              {!isEdit && (
                 <button
                   type="button"
-                  onClick={() => setShowShared(true)}
-                  className="text-xs text-primary hover:underline"
+                  onClick={() => setUnsettled(!unsettled)}
+                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                    unsettled
+                      ? "border-amber-400 bg-amber-400/20 text-amber-400"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  + Shared expense
+                  {unsettled ? "Unsettled" : "Mark unsettled"}
                 </button>
               )}
               {!showExchangeRate && (
@@ -295,37 +296,6 @@ export function TransactionFormDialog({
                 </button>
               )}
             </div>
-
-            {showShared && (
-              <div className="rounded-md border border-amber-400/30 bg-amber-400/5 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-amber-400">
-                    Shared expense
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowShared(false)
-                      setMyShare("")
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <Field>
-                  <FieldLabel>My share</FieldLabel>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    value={myShare}
-                    onChange={(e) => setMyShare(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </Field>
-              </div>
-            )}
 
             {showExchangeRate && (
               <div className="rounded-md border border-blue-400/30 bg-blue-400/5 p-3">
@@ -397,7 +367,7 @@ export function TransactionFormDialog({
                     Delete
                   </Button>
                 )}
-                {canSettle && onSettle && (
+                {canToggleSettle && (
                   <Button
                     type="button"
                     variant="outline"
@@ -405,7 +375,7 @@ export function TransactionFormDialog({
                     onClick={onSettle}
                     disabled={loading}
                   >
-                    Mark settled
+                    {transaction.settled ? "Mark unsettled" : "Mark settled"}
                   </Button>
                 )}
               </div>

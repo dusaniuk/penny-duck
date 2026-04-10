@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   boolean,
   index,
   timestamp,
@@ -29,8 +30,11 @@ export const transactions = appSchema.table(
     }),
     note: varchar("note", { length: 500 }),
     date: timestamp("date", { withTimezone: true }).notNull(),
-    myShare: money("my_share"),
     settled: boolean("settled").notNull().default(true),
+    reimbursementId: uuid("reimbursement_id").references(
+      (): AnyPgColumn => transactions.id,
+      { onDelete: "cascade" }
+    ),
     originalAmount: money("original_amount"),
     originalCurrency: varchar("original_currency", { length: 3 }),
     exchangeRate: rate("exchange_rate"),
@@ -47,5 +51,6 @@ export const transactions = appSchema.table(
     index("transactions_account_date_idx").on(table.accountId, table.date),
     index("transactions_transfer_id_idx").on(table.transferId),
     index("transactions_user_settled_idx").on(table.userId, table.settled),
+    index("transactions_reimbursement_id_idx").on(table.reimbursementId),
   ]
 )

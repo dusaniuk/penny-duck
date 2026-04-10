@@ -15,7 +15,7 @@ export interface CreateTransactionInput {
   categoryId: string | null
   date: Date
   note?: string | null
-  myShare?: number | null
+  settled?: boolean
   originalAmount?: number | null
   originalCurrency?: string | null
   exchangeRate?: number | null
@@ -41,21 +41,12 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
         "Category is required for expense and income transactions"
       )
     }
-    if (input.myShare != null) {
-      if (input.myShare <= 0)
-        throw new BadRequestException("My share must be greater than 0")
-      if (input.myShare >= input.amount)
-        throw new BadRequestException(
-          "My share must be less than the total amount"
-        )
-    }
     validateExchangeRate(
       input.originalAmount,
       input.originalCurrency,
       input.exchangeRate
     )
 
-    const settled = input.myShare != null ? false : true
     const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
     const row = await this.transactionRepo.insert({
@@ -65,12 +56,12 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
       categoryId: input.categoryId ?? null,
       note: input.note ?? null,
       date: input.date,
-      myShare: input.myShare ?? null,
-      settled,
+      settled: input.settled ?? true,
       originalAmount: input.originalAmount ?? null,
       originalCurrency: input.originalCurrency ?? null,
       exchangeRate: input.exchangeRate ?? null,
       transferId: null,
+      reimbursementId: null,
     })
 
     return toResponse(row)

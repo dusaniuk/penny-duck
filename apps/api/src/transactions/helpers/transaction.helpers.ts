@@ -11,12 +11,12 @@ export function toResponse(row: TransactionRow): Transaction {
     categoryId: row.categoryId ?? null,
     note: row.note ?? null,
     date: row.date.toISOString(),
-    myShare: row.myShare ?? null,
     settled: row.settled,
     originalAmount: row.originalAmount ?? null,
     originalCurrency: row.originalCurrency ?? null,
     exchangeRate: row.exchangeRate ?? null,
     transferId: row.transferId ?? null,
+    reimbursementId: row.reimbursementId ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }

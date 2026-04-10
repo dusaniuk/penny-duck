@@ -29,12 +29,12 @@ export class TransactionRepository {
     categoryId: string | null
     note: string | null
     date: Date
-    myShare: number | null
     settled: boolean
     originalAmount: number | null
     originalCurrency: string | null
     exchangeRate: number | null
     transferId: string | null
+    reimbursementId: string | null
   }): Promise<TransactionRow> {
     const [row] = await this.db
       .insert(transactions)
@@ -51,12 +51,12 @@ export class TransactionRepository {
       categoryId?: string | null
       note?: string | null
       date?: Date
-      myShare?: number | null
       settled?: boolean
       originalAmount?: number | null
       originalCurrency?: string | null
       exchangeRate?: number | null
       transferId?: string | null
+      reimbursementId?: string | null
     }
   ): Promise<TransactionRow> {
     const [row] = await this.db
@@ -129,6 +129,21 @@ export class TransactionRepository {
       )
   }
 
+  async findByReimbursementId(
+    reimbursementId: string,
+    userId: string
+  ): Promise<TransactionRow[]> {
+    return this.db
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.reimbursementId, reimbursementId),
+          eq(transactions.userId, userId)
+        )
+      )
+  }
+
   async findAll(
     filters: ListTransactionsFilters
   ): Promise<{ data: TransactionRow[]; total: number }> {
@@ -144,6 +159,8 @@ export class TransactionRepository {
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
+    if (!filters.accountId)
+      conditions.push(isNull(transactions.reimbursementId))
     if (filters.transfer === true)
       conditions.push(isNotNull(transactions.transferId))
     if (filters.transfer === false)
@@ -174,6 +191,7 @@ export class TransactionRepository {
       .filter(
         (r) =>
           r.transferId &&
+          !r.reimbursementId &&
           !rows.some(
             (other) => other.transferId === r.transferId && other.id !== r.id
           )

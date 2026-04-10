@@ -12,12 +12,12 @@ export const TransactionSchema = z.object({
   categoryId: z.string().uuid().nullable(),
   note: z.string().nullable(),
   date: z.string(),
-  myShare: z.number().nullable(),
   settled: z.boolean(),
   originalAmount: z.number().nullable(),
   originalCurrency: z.string().nullable(),
   exchangeRate: z.number().nullable(),
   transferId: z.string().uuid().nullable(),
+  reimbursementId: z.string().uuid().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -31,7 +31,7 @@ export const CreateTransactionSchema = z.object({
   categoryId: z.string().uuid(),
   date: z.string().datetime({ offset: true }),
   note: z.string().max(500).optional(),
-  myShare: z.number().min(0.01).optional(),
+  settled: z.boolean().optional(),
   originalAmount: z.number().min(0.01).optional(),
   originalCurrency: z.string().max(3).optional(),
   exchangeRate: z.number().min(0.000001).optional(),
@@ -43,7 +43,6 @@ export const UpdateTransactionSchema = z.object({
   categoryId: z.string().uuid().optional(),
   note: z.string().max(500).nullable().optional(),
   date: z.string().datetime({ offset: true }).optional(),
-  myShare: z.number().min(0.01).nullable().optional(),
   originalAmount: z.number().min(0.01).nullable().optional(),
   originalCurrency: z.string().max(3).nullable().optional(),
   exchangeRate: z.number().min(0.000001).nullable().optional(),
@@ -83,6 +82,13 @@ export const UpdateTransferSchema = z.object({
   originalAmount: z.number().min(0.01).nullable().optional(),
   originalCurrency: z.string().max(3).nullable().optional(),
   exchangeRate: z.number().min(0.000001).nullable().optional(),
+})
+
+export const CreateReimbursementSchema = z.object({
+  accountId: z.string().uuid(),
+  amount: z.number().min(0.01),
+  date: z.string().datetime({ offset: true }),
+  exchangeRate: z.number().min(0.000001).optional(),
 })
 
 export const TransferResponseSchema = z.object({
@@ -136,6 +142,22 @@ export const transactionContract = c.router({
     body: c.noBody(),
     responses: {
       200: TransactionSchema,
+    },
+  },
+  createReimbursement: {
+    method: "POST",
+    path: "/transactions/:id/reimburse",
+    body: CreateReimbursementSchema,
+    responses: {
+      201: TransactionSchema,
+    },
+  },
+  deleteReimbursement: {
+    method: "DELETE",
+    path: "/transactions/:id/reimburse/:reimbursementTransactionId",
+    body: c.noBody(),
+    responses: {
+      200: MessageSchema,
     },
   },
   createTransfer: {

@@ -9,6 +9,8 @@ import { CreateTransactionCommand } from "./commands/create-transaction.command"
 import { UpdateTransactionCommand } from "./commands/update-transaction.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
 import { SettleTransactionCommand } from "./commands/settle-transaction.command"
+import { CreateReimbursementCommand } from "./commands/create-reimbursement.command"
+import { DeleteReimbursementCommand } from "./commands/delete-reimbursement.command"
 import { CreateTransferCommand } from "./commands/create-transfer.command"
 import { UpdateTransferCommand } from "./commands/update-transfer.command"
 import { DeleteTransferCommand } from "./commands/delete-transfer.command"
@@ -35,7 +37,7 @@ export class TransactionsController {
           categoryId: body.categoryId,
           date: new Date(body.date),
           note: body.note,
-          myShare: body.myShare,
+          settled: body.settled,
           originalAmount: body.originalAmount,
           originalCurrency: body.originalCurrency,
           exchangeRate: body.exchangeRate,
@@ -92,7 +94,6 @@ export class TransactionsController {
             categoryId: body.categoryId,
             note: body.note,
             date: body.date ? new Date(body.date) : undefined,
-            myShare: body.myShare,
             originalAmount: body.originalAmount,
             originalCurrency: body.originalCurrency,
             exchangeRate: body.exchangeRate,
@@ -124,6 +125,46 @@ export class TransactionsController {
       )
       return { status: 200 as const, body: transaction }
     })
+  }
+
+  @TsRestHandler(transactionContract.createReimbursement)
+  handleCreateReimbursement(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.createReimbursement,
+      async ({ params, body }) => {
+        const transaction = await this.commandBus.execute(
+          new CreateReimbursementCommand({
+            transactionId: params.id,
+            userId: user.sub,
+            accountId: body.accountId,
+            amount: body.amount,
+            date: new Date(body.date),
+            exchangeRate: body.exchangeRate,
+          })
+        )
+        return { status: 201 as const, body: transaction }
+      }
+    )
+  }
+
+  @TsRestHandler(transactionContract.deleteReimbursement)
+  handleDeleteReimbursement(@CurrentUser() user: AccessTokenPayload) {
+    return tsRestHandler(
+      transactionContract.deleteReimbursement,
+      async ({ params }) => {
+        await this.commandBus.execute(
+          new DeleteReimbursementCommand(
+            params.id,
+            params.reimbursementTransactionId,
+            user.sub
+          )
+        )
+        return {
+          status: 200 as const,
+          body: { message: "Reimbursement deleted" },
+        }
+      }
+    )
   }
 
   @TsRestHandler(transactionContract.createTransfer)

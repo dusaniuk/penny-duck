@@ -1,25 +1,24 @@
 import { TransactionRow } from "./transaction-row"
 import type { Account, Category, Transaction } from "@workspace/api-contract"
 
-type AccountData = Account
-type CategoryData = Category
-type TransactionData = Transaction
-
 interface TransactionListProps {
-  transactions: Array<TransactionData>
-  accounts: Array<AccountData>
-  categories: Array<CategoryData>
+  transactions: Array<Transaction>
+  accounts: Array<Account>
+  categories: Array<Category>
   loading: boolean
   hasMore: boolean
   onLoadMore: () => void
   loadingMore: boolean
-  onClickTransaction: (transaction: TransactionData) => void
+  onEdit: (transaction: Transaction) => void
+  onReimburse: (transaction: Transaction) => void
+  onSettle: (transaction: Transaction) => void
+  onDelete: (transaction: Transaction) => void
 }
 
 interface DateGroup {
   label: string
   subtotal: number
-  transactions: Array<TransactionData>
+  transactions: Array<Transaction>
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -46,10 +45,10 @@ function formatDateLabel(dateStr: string): string {
 }
 
 function deduplicateTransfers(
-  transactions: Array<TransactionData>,
-): Array<TransactionData> {
+  transactions: Array<Transaction>,
+): Array<Transaction> {
   // First pass: pick the preferred side per transferId (outgoing = has exchangeRate)
-  const preferred = new Map<string, TransactionData>()
+  const preferred = new Map<string, Transaction>()
   for (const t of transactions) {
     if (!t.transferId) continue
     const existing = preferred.get(t.transferId)
@@ -73,9 +72,9 @@ function deduplicateTransfers(
   })
 }
 
-function groupByDate(transactions: Array<TransactionData>): Array<DateGroup> {
+function groupByDate(transactions: Array<Transaction>): Array<DateGroup> {
   const deduplicated = deduplicateTransfers(transactions)
-  const groups = new Map<string, Array<TransactionData>>()
+  const groups = new Map<string, Array<Transaction>>()
 
   for (const t of deduplicated) {
     const dateKey = new Date(t.date).toLocaleDateString("en-CA")
@@ -107,7 +106,10 @@ export function TransactionList({
   hasMore,
   onLoadMore,
   loadingMore,
-  onClickTransaction,
+  onEdit,
+  onReimburse,
+  onSettle,
+  onDelete,
 }: TransactionListProps) {
   if (loading) {
     return (
@@ -137,7 +139,7 @@ export function TransactionList({
 
   // Build a map of transferId → paired account name (the other side)
   const transferPairAccount = new Map<string, string>()
-  const transfersByTransferId = new Map<string, Array<TransactionData>>()
+  const transfersByTransferId = new Map<string, Array<Transaction>>()
   for (const t of transactions) {
     if (!t.transferId) continue
     const arr = transfersByTransferId.get(t.transferId) ?? []
@@ -190,7 +192,10 @@ export function TransactionList({
                     ? (transferPairAccount.get(t.transferId) ?? null)
                     : null
                 }
-                onClick={onClickTransaction}
+                onEdit={onEdit}
+                onReimburse={onReimburse}
+                onSettle={onSettle}
+                onDelete={onDelete}
               />
             ))}
           </div>

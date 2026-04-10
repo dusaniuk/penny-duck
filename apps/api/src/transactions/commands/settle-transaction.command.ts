@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common"
+import { NotFoundException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
@@ -20,10 +20,10 @@ export class SettleTransactionHandler implements ICommandHandler<SettleTransacti
   async execute(cmd: SettleTransactionCommand): Promise<Transaction> {
     const row = await this.transactionRepo.findById(cmd.id, cmd.userId)
     if (!row) throw new NotFoundException("Transaction not found")
-    if (row.myShare == null)
-      throw new BadRequestException("Can only settle shared transactions")
 
-    const updated = await this.transactionRepo.update(cmd.id, { settled: true })
+    const updated = await this.transactionRepo.update(cmd.id, {
+      settled: !row.settled,
+    })
     return toResponse(updated)
   }
 }
