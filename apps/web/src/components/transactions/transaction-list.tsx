@@ -86,7 +86,7 @@ function groupByDate(transactions: Array<TransactionData>): Array<DateGroup> {
 
   return Array.from(groups.entries()).map(([, txs]) => {
     const subtotal = txs.reduce((sum, t) => {
-      if (t.type === "transfer") return sum
+      if (t.transferId) return sum
       if (t.type === "expense") return sum - t.amount
       return sum + t.amount
     }, 0)

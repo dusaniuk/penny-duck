@@ -8,8 +8,6 @@ import { UpdateAccountHandler } from "./commands/update-account.command"
 import { DeleteAccountHandler } from "./commands/delete-account.command"
 import { GetAccountsHandler } from "./queries/get-accounts.query"
 import { GetAccountHandler } from "./queries/get-account.query"
-import { TransactionCreatedHandler } from "./event-handlers/transaction-created.handler"
-import { TransactionDeletedHandler } from "./event-handlers/transaction-deleted.handler"
 import { AccountRepository } from "./account.repository"
 import { AccountsController } from "./accounts.controller"
 
@@ -19,7 +17,6 @@ const commandHandlers = [
   DeleteAccountHandler,
 ]
 const queryHandlers = [GetAccountsHandler, GetAccountHandler]
-const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
 
 @Module({
   imports: [
@@ -32,7 +29,6 @@ const eventHandlers = [TransactionCreatedHandler, TransactionDeletedHandler]
   providers: [
     ...commandHandlers,
     ...queryHandlers,
-    ...eventHandlers,
     AccountRepository,
   ],
   exports: [AccountRepository],

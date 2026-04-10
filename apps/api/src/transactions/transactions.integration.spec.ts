@@ -4,7 +4,6 @@ import {
   closeTestApp,
   truncateAll,
   signupUser,
-  flushEvents,
 } from "../test/setup"
 import { CreateAccountCommand } from "../accounts/commands/create-account.command"
 import { GetAccountQuery } from "../accounts/queries/get-account.query"
@@ -31,11 +30,9 @@ beforeAll(async () => {
 afterAll(() => closeTestApp())
 
 beforeEach(async () => {
-  await flushEvents() // drain async event handlers from previous test
   await truncateAll()
   const result = await signupUser()
   userId = result.user.id
-  await flushEvents()
 
   const account = await commandBus.execute(
     new CreateAccountCommand(userId, "Bank", "bank", "UAH", 10000)
@@ -302,8 +299,6 @@ describe("Transactions", () => {
       })
     )
 
-    await flushEvents()
-
     const account = await queryBus.execute(
       new GetAccountQuery(accountId, userId)
     )
@@ -321,8 +316,6 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-
-    await flushEvents()
 
     const account = await queryBus.execute(
       new GetAccountQuery(accountId, userId)
@@ -345,14 +338,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await flushEvents()
 
     const updated = await commandBus.execute(
       new UpdateTransactionCommand(tx.id, userId, {
         accountId: account2.id,
       })
     )
-    await flushEvents()
 
     expect(updated.accountId).toBe(account2.id)
 
@@ -380,7 +371,6 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await flushEvents()
 
     await commandBus.execute(
       new UpdateTransactionCommand(tx.id, userId, {
@@ -388,7 +378,6 @@ describe("Transactions", () => {
         amount: 300,
       })
     )
-    await flushEvents()
 
     const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
     expect(orig.balance).toBe(10000) // old expense (200) reversed
@@ -414,14 +403,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await flushEvents()
 
     await commandBus.execute(
       new UpdateTransactionCommand(tx.id, userId, {
         accountId: account2.id,
       })
     )
-    await flushEvents()
 
     const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
     expect(orig.balance).toBe(10000) // income reversed
@@ -443,10 +430,8 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await flushEvents()
 
     await commandBus.execute(new DeleteTransactionCommand(tx.id, userId))
-    await flushEvents()
 
     const account = await queryBus.execute(
       new GetAccountQuery(accountId, userId)

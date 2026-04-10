@@ -1,0 +1,1 @@
+ALTER TABLE "app"."accounts" RENAME COLUMN "balance" TO "initial_balance";

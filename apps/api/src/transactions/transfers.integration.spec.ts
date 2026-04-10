@@ -4,7 +4,6 @@ import {
   closeTestApp,
   truncateAll,
   signupUser,
-  flushEvents,
 } from "../test/setup"
 import { CreateAccountCommand } from "../accounts/commands/create-account.command"
 import { GetAccountQuery } from "../accounts/queries/get-account.query"
@@ -27,11 +26,9 @@ beforeAll(async () => {
 afterAll(() => closeTestApp())
 
 beforeEach(async () => {
-  await flushEvents() // drain async event handlers from previous test
   await truncateAll()
   const result = await signupUser()
   userId = result.user.id
-  await flushEvents()
 })
 
 describe("Transfers", () => {
@@ -55,12 +52,11 @@ describe("Transfers", () => {
 
     expect(outgoing.accountId).toBe(acc1.id)
     expect(outgoing.amount).toBe(500)
-    expect(outgoing.type).toBe("transfer")
+    expect(outgoing.type).toBe("expense")
     expect(incoming.accountId).toBe(acc2.id)
     expect(incoming.amount).toBe(500)
+    expect(incoming.type).toBe("income")
     expect(outgoing.transferId).toBe(incoming.transferId)
-
-    await flushEvents()
 
     const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, userId))
     const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, userId))
@@ -92,8 +88,6 @@ describe("Transfers", () => {
     expect(outgoing.amount).toBe(100)
     expect(outgoing.exchangeRate).toBe(41.52)
     expect(incoming.amount).toBe(4152)
-
-    await flushEvents()
 
     const u = await queryBus.execute(new GetAccountQuery(usd.id, userId))
     const h = await queryBus.execute(new GetAccountQuery(uah.id, userId))
@@ -167,12 +161,10 @@ describe("Transfers", () => {
         date: new Date(),
       })
     )
-    await flushEvents()
 
     await commandBus.execute(
       new DeleteTransferCommand(outgoing.transferId!, userId)
     )
-    await flushEvents()
 
     const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, userId))
     const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, userId))

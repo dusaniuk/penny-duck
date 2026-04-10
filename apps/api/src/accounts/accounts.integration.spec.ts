@@ -4,7 +4,6 @@ import {
   closeTestApp,
   truncateAll,
   signupUser,
-  flushEvents,
 } from "../test/setup"
 import { CreateAccountCommand } from "./commands/create-account.command"
 import { UpdateAccountCommand } from "./commands/update-account.command"
@@ -26,11 +25,9 @@ beforeAll(async () => {
 afterAll(() => closeTestApp())
 
 beforeEach(async () => {
-  await flushEvents() // drain async event handlers from previous test
   await truncateAll()
   const result = await signupUser()
   userId = result.user.id
-  await flushEvents()
 })
 
 describe("Accounts", () => {
@@ -109,7 +106,6 @@ describe("Accounts", () => {
     const account = await commandBus.execute(
       new CreateAccountCommand(userId, "Bank", "bank", "UAH", 1000)
     )
-    await flushEvents()
 
     const categories = await queryBus.execute(
       new (

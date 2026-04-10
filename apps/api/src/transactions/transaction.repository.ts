@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm"
+import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte } from "drizzle-orm"
 import { type DbClient, transactions } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
@@ -11,6 +11,7 @@ export interface ListTransactionsFilters {
   type?: string
   categoryId?: string
   settled?: boolean
+  transfer?: boolean
   dateFrom?: Date
   dateTo?: Date
   page: number
@@ -24,7 +25,6 @@ export class TransactionRepository {
   async insert(data: {
     userId: string
     accountId: string
-    type: string
     amount: number
     categoryId: string | null
     note: string | null
@@ -47,7 +47,6 @@ export class TransactionRepository {
     id: string,
     data: {
       accountId?: string
-      type?: string
       amount?: number
       categoryId?: string | null
       note?: string | null
@@ -137,11 +136,18 @@ export class TransactionRepository {
 
     if (filters.accountId)
       conditions.push(eq(transactions.accountId, filters.accountId))
-    if (filters.type) conditions.push(eq(transactions.type, filters.type))
+    if (filters.type === "expense")
+      conditions.push(lt(transactions.amount, 0))
+    if (filters.type === "income")
+      conditions.push(gt(transactions.amount, 0))
     if (filters.categoryId)
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
+    if (filters.transfer === true)
+      conditions.push(isNotNull(transactions.transferId))
+    if (filters.transfer === false)
+      conditions.push(isNull(transactions.transferId))
     if (filters.dateFrom)
       conditions.push(gte(transactions.date, filters.dateFrom))
     if (filters.dateTo)

@@ -23,7 +23,6 @@ export const transactions = appSchema.table(
       .references(() => accounts.id, {
         onDelete: "restrict",
       }),
-    type: varchar("type", { length: 20 }).notNull(),
     amount: money("amount").notNull(),
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",

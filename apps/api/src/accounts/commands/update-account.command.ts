@@ -24,7 +24,7 @@ export class UpdateAccountHandler
     const existing = await this.accountRepo.findById(cmd.id, cmd.userId)
     if (!existing) throw new NotFoundException("Account not found")
 
-    const row = await this.accountRepo.update(cmd.id, {
+    const row = await this.accountRepo.update(cmd.id, cmd.userId, {
       name: cmd.name,
       type: cmd.type,
     })

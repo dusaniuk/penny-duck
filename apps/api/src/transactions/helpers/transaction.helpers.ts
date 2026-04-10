@@ -6,8 +6,8 @@ export function toResponse(row: TransactionRow): Transaction {
   return {
     id: row.id,
     accountId: row.accountId,
-    type: row.type,
-    amount: row.amount,
+    type: row.amount < 0 ? "expense" : "income",
+    amount: Math.abs(row.amount),
     categoryId: row.categoryId ?? null,
     note: row.note ?? null,
     date: row.date.toISOString(),

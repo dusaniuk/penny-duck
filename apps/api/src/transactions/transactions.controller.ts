@@ -58,6 +58,7 @@ export class TransactionsController {
           type: query.type,
           categoryId: query.categoryId,
           settled: query.settled,
+          transfer: query.transfer,
           dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
           dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
         })

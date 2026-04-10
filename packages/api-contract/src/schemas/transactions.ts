@@ -7,7 +7,7 @@ const c = initContract()
 export const TransactionSchema = z.object({
   id: z.string().uuid(),
   accountId: z.string().uuid(),
-  type: z.string(),
+  type: z.enum(["expense", "income"]),
   amount: z.number(),
   categoryId: z.string().uuid().nullable(),
   note: z.string().nullable(),
@@ -51,7 +51,10 @@ export const UpdateTransactionSchema = z.object({
 
 export const ListTransactionsQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
-  type: z.enum(["expense", "income", "transfer"]).optional(),
+  type: z.enum(["expense", "income"]).optional(),
+  transfer: z
+    .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())
+    .optional(),
   categoryId: z.string().uuid().optional(),
   settled: z
     .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())

@@ -10,6 +10,7 @@ interface ListFilters {
   type?: string
   categoryId?: string
   settled?: boolean
+  transfer?: boolean
   dateFrom?: Date
   dateTo?: Date
 }

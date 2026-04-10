@@ -24,7 +24,7 @@ export function TransactionRow({
     ? accounts.find((a) => a.id === transaction.accountId)
     : null
   const category = categories.find((c) => c.id === transaction.categoryId)
-  const isTransfer = transaction.type === "transfer"
+  const isTransfer = transaction.transferId != null
   const isExpense = transaction.type === "expense"
   const isUnsettled = transaction.myShare != null && !transaction.settled
 

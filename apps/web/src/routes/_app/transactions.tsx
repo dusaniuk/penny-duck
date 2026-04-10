@@ -48,7 +48,7 @@ function TransactionsPage() {
           page,
           limit: PAGE_SIZE,
           accountId: filters.accountId,
-          type: filters.type as "expense" | "income" | "transfer" | undefined,
+          type: filters.type as "expense" | "income" | undefined,
           categoryId: filters.categoryId,
           settled: filters.settled,
           dateFrom: filters.dateFrom
@@ -122,7 +122,7 @@ function TransactionsPage() {
           page: nextPage,
           limit: PAGE_SIZE,
           accountId: filters.accountId,
-          type: filters.type as "expense" | "income" | "transfer" | undefined,
+          type: filters.type as "expense" | "income" | undefined,
           categoryId: filters.categoryId,
           settled: filters.settled,
           dateFrom: filters.dateFrom

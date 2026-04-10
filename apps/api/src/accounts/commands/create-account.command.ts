@@ -26,7 +26,7 @@ export class CreateAccountHandler
       name: cmd.name,
       type: cmd.type,
       currency: cmd.currency,
-      balance: cmd.balance,
+      initialBalance: cmd.balance,
     })
     return {
       id: row.id,

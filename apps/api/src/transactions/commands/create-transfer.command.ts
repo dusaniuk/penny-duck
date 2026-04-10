@@ -1,15 +1,9 @@
 import { randomUUID } from "crypto"
-import {
-  Command,
-  CommandHandler,
-  EventBus,
-  ICommandHandler,
-} from "@nestjs/cqrs"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { AccountRepository } from "../../accounts/account.repository"
 import { TransactionRepository } from "../transaction.repository"
-import { TransactionCreatedEvent } from "../events/transaction-created.event"
 import {
   toResponse,
   validateExchangeRate,
@@ -37,8 +31,7 @@ export class CreateTransferCommand extends Command<[Transaction, Transaction]> {
 export class CreateTransferHandler implements ICommandHandler<CreateTransferCommand> {
   constructor(
     private readonly transactionRepo: TransactionRepository,
-    private readonly accountRepo: AccountRepository,
-    private readonly eventBus: EventBus
+    private readonly accountRepo: AccountRepository
   ) {}
 
   async execute(
@@ -81,8 +74,7 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
       {
         userId: input.userId,
         accountId: input.fromAccountId,
-        type: "transfer",
-        amount: input.amount,
+        amount: -input.amount,
         categoryId: null,
         note: input.note ?? null,
         date: input.date,
@@ -96,7 +88,6 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
       {
         userId: input.userId,
         accountId: input.toAccountId,
-        type: "transfer",
         amount: incomingAmount,
         categoryId: null,
         note: input.note ?? null,
@@ -108,13 +99,6 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         exchangeRate: null,
         transferId,
       }
-    )
-
-    this.eventBus.publish(
-      new TransactionCreatedEvent(outRow.accountId, "expense", outRow.amount)
-    )
-    this.eventBus.publish(
-      new TransactionCreatedEvent(inRow.accountId, "income", inRow.amount)
     )
 
     return [toResponse(outRow), toResponse(inRow)]

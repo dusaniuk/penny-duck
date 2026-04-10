@@ -1,14 +1,7 @@
-import {
-  Command,
-  CommandHandler,
-  EventBus,
-  ICommandHandler,
-} from "@nestjs/cqrs"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
-import { TransactionCreatedEvent } from "../events/transaction-created.event"
-import { TransactionDeletedEvent } from "../events/transaction-deleted.event"
 import {
   toResponse,
   validateExchangeRate,
@@ -38,39 +31,30 @@ export class UpdateTransactionCommand extends Command<Transaction> {
 
 @CommandHandler(UpdateTransactionCommand)
 export class UpdateTransactionHandler implements ICommandHandler<UpdateTransactionCommand> {
-  constructor(
-    private readonly transactionRepo: TransactionRepository,
-    private readonly eventBus: EventBus
-  ) {}
+  constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(cmd: UpdateTransactionCommand): Promise<Transaction> {
     const existing = await this.transactionRepo.findById(cmd.id, cmd.userId)
     if (!existing) throw new NotFoundException("Transaction not found")
-    if (existing.type === "transfer")
+    if (existing.transferId)
       throw new BadRequestException(
         "Use the transfer endpoint to modify transfer transactions"
       )
 
     const { fields } = cmd
     const updateData: Record<string, unknown> = {}
-    const oldAccountId = existing.accountId
-    const direction: "expense" | "income" =
-      existing.type === "expense" ? "expense" : "income"
-    const accountChanged =
-      fields.accountId !== undefined && fields.accountId !== existing.accountId
 
-    if (accountChanged) {
+    if (fields.accountId !== undefined && fields.accountId !== existing.accountId) {
       updateData.accountId = fields.accountId
     }
 
-    const oldAmount = existing.amount
     if (fields.amount !== undefined) {
       if (fields.amount <= 0)
         throw new BadRequestException("Amount must be greater than 0")
-      updateData.amount = fields.amount
+      updateData.amount = existing.amount < 0 ? -fields.amount : fields.amount
     }
     if (fields.categoryId !== undefined) {
-      if (existing.type !== "transfer" && fields.categoryId === null) {
+      if (!existing.transferId && fields.categoryId === null) {
         throw new BadRequestException(
           "Category is required for expense and income transactions"
         )
@@ -84,7 +68,7 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
       updateData.myShare = null
       updateData.settled = true
     } else if (fields.myShare !== undefined) {
-      const effectiveAmount = fields.amount ?? existing.amount
+      const effectiveAmount = fields.amount ?? Math.abs(existing.amount)
       if (fields.myShare <= 0)
         throw new BadRequestException("My share must be greater than 0")
       if (fields.myShare >= effectiveAmount)
@@ -119,28 +103,6 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
     }
 
     const row = await this.transactionRepo.update(cmd.id, updateData)
-
-    if (accountChanged) {
-      this.eventBus.publish(
-        new TransactionDeletedEvent(oldAccountId, direction, oldAmount)
-      )
-      this.eventBus.publish(
-        new TransactionCreatedEvent(row.accountId, direction, row.amount)
-      )
-    } else if (fields.amount !== undefined && fields.amount !== oldAmount) {
-      const delta =
-        row.type === "expense" ? oldAmount - row.amount : row.amount - oldAmount
-
-      if (delta > 0) {
-        this.eventBus.publish(
-          new TransactionDeletedEvent(row.accountId, "expense", delta)
-        )
-      } else if (delta < 0) {
-        this.eventBus.publish(
-          new TransactionCreatedEvent(row.accountId, "expense", -delta)
-        )
-      }
-    }
 
     return toResponse(row)
   }

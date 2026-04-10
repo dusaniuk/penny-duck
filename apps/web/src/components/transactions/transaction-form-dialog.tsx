@@ -87,7 +87,7 @@ export function TransactionFormDialog({
     if (open) {
       setType(
         transaction
-          ? (transaction.type as "expense" | "income")
+          ? transaction.type
           : defaultType
       )
       setAmount(transaction ? transaction.amount.toString() : "")

@@ -11,7 +11,7 @@ export const accounts = appSchema.table("accounts", {
   name: varchar("name", { length: 100 }).notNull(),
   type: varchar("type", { length: 20 }).notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  balance: money("balance").notNull().default(0),
+  initialBalance: money("initial_balance").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

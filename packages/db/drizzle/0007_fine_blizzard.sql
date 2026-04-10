@@ -1,0 +1,1 @@
+ALTER TABLE "app"."transactions" DROP COLUMN "type";

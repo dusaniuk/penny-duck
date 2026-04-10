@@ -1,14 +1,7 @@
-import {
-  Command,
-  CommandHandler,
-  EventBus,
-  ICommandHandler,
-} from "@nestjs/cqrs"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { BadRequestException, NotFoundException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
-import { TransactionCreatedEvent } from "../events/transaction-created.event"
-import { TransactionDeletedEvent } from "../events/transaction-deleted.event"
 import {
   toResponse,
   validateExchangeRate,
@@ -35,10 +28,7 @@ export class UpdateTransferCommand extends Command<[Transaction, Transaction]> {
 
 @CommandHandler(UpdateTransferCommand)
 export class UpdateTransferHandler implements ICommandHandler<UpdateTransferCommand> {
-  constructor(
-    private readonly transactionRepo: TransactionRepository,
-    private readonly eventBus: EventBus
-  ) {}
+  constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(
     cmd: UpdateTransferCommand
@@ -46,12 +36,10 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
     const pair = await this.transactionRepo.findByTransferId(cmd.transferId, cmd.userId)
     if (pair.length !== 2) throw new NotFoundException("Transaction not found")
 
-    const outgoing = pair.find((t) => t.originalAmount !== null) ?? pair[0]
-    const incoming = pair.find((t) => t !== outgoing)!
+    const outgoing = pair.find((t) => t.amount < 0)!
+    const incoming = pair.find((t) => t.amount > 0)!
 
     const { fields } = cmd
-    const oldOutgoingAmount = outgoing.amount
-    const oldIncomingAmount = incoming.amount
 
     const outgoingUpdate: Record<string, unknown> = {}
     const incomingUpdate: Record<string, unknown> = {}
@@ -73,7 +61,7 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
     if (fields.amount !== undefined) {
       if (fields.amount <= 0)
         throw new BadRequestException("Amount must be greater than 0")
-      outgoingUpdate.amount = fields.amount
+      outgoingUpdate.amount = -fields.amount
       if (hasNewExchangeRate) {
         incomingUpdate.amount = fields.originalAmount!
       } else {
@@ -116,41 +104,6 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
       incomingUpdate
     )
 
-    this.publishBalanceDelta(
-      outgoing.accountId,
-      oldOutgoingAmount,
-      outRow.amount,
-      "expense"
-    )
-    this.publishBalanceDelta(
-      incoming.accountId,
-      oldIncomingAmount,
-      inRow.amount,
-      "income"
-    )
-
     return [toResponse(outRow), toResponse(inRow)]
-  }
-
-  private publishBalanceDelta(
-    accountId: string | null,
-    oldAmount: number,
-    newAmount: number,
-    direction: "expense" | "income"
-  ): void {
-    if (!accountId || oldAmount === newAmount) return
-
-    const delta =
-      direction === "expense" ? oldAmount - newAmount : newAmount - oldAmount
-
-    if (delta > 0) {
-      this.eventBus.publish(
-        new TransactionDeletedEvent(accountId, "expense", delta)
-      )
-    } else if (delta < 0) {
-      this.eventBus.publish(
-        new TransactionCreatedEvent(accountId, "expense", -delta)
-      )
-    }
   }
 }

@@ -1,13 +1,7 @@
-import {
-  Command,
-  CommandHandler,
-  EventBus,
-  ICommandHandler,
-} from "@nestjs/cqrs"
+import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { BadRequestException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
 import { TransactionRepository } from "../transaction.repository"
-import { TransactionCreatedEvent } from "../events/transaction-created.event"
 import {
   toResponse,
   validateExchangeRate,
@@ -35,17 +29,14 @@ export class CreateTransactionCommand extends Command<Transaction> {
 
 @CommandHandler(CreateTransactionCommand)
 export class CreateTransactionHandler implements ICommandHandler<CreateTransactionCommand> {
-  constructor(
-    private readonly transactionRepo: TransactionRepository,
-    private readonly eventBus: EventBus
-  ) {}
+  constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(cmd: CreateTransactionCommand): Promise<Transaction> {
     const { input } = cmd
 
     if (input.amount <= 0)
       throw new BadRequestException("Amount must be greater than 0")
-    if (input.type !== "transfer" && !input.categoryId) {
+    if (!input.categoryId) {
       throw new BadRequestException(
         "Category is required for expense and income transactions"
       )
@@ -65,12 +56,12 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
     )
 
     const settled = input.myShare != null ? false : true
+    const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
     const row = await this.transactionRepo.insert({
       userId: input.userId,
       accountId: input.accountId,
-      type: input.type,
-      amount: input.amount,
+      amount: dbAmount,
       categoryId: input.categoryId ?? null,
       note: input.note ?? null,
       date: input.date,
@@ -81,14 +72,6 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
       exchangeRate: input.exchangeRate ?? null,
       transferId: null,
     })
-
-    this.eventBus.publish(
-      new TransactionCreatedEvent(
-        row.accountId,
-        input.type === "expense" ? "expense" : "income",
-        row.amount
-      )
-    )
 
     return toResponse(row)
   }
