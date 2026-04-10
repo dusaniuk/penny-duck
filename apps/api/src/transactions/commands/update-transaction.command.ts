@@ -67,12 +67,13 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
 
     const oldAmount = existing.amount
     if (fields.amount !== undefined) {
-      if (fields.amount <= 0) throw new Error("Amount must be greater than 0")
+      if (fields.amount <= 0)
+        throw new BadRequestException("Amount must be greater than 0")
       updateData.amount = fields.amount
     }
     if (fields.categoryId !== undefined) {
       if (existing.type !== "transfer" && fields.categoryId === null) {
-        throw new Error(
+        throw new BadRequestException(
           "Category is required for expense and income transactions"
         )
       }
@@ -87,9 +88,9 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
     } else if (fields.myShare !== undefined) {
       const effectiveAmount = fields.amount ?? existing.amount
       if (fields.myShare <= 0)
-        throw new Error("My share must be greater than 0")
+        throw new BadRequestException("My share must be greater than 0")
       if (fields.myShare >= effectiveAmount)
-        throw new Error("My share must be less than the total amount")
+        throw new BadRequestException("My share must be less than the total amount")
       updateData.myShare = fields.myShare
       updateData.settled = false
     }
