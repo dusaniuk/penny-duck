@@ -6,6 +6,7 @@ import {
   UseGuards,
 } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { Throttle } from "@nestjs/throttler"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { Response } from "express"
 import { authContract } from "@workspace/api-contract"
@@ -34,6 +35,7 @@ export class AuthController {
   ) {}
 
   @TsRestHandler(authContract.signup)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   handleSignup(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.signup, async ({ body }) => {
       const result = await this.commandBus.execute(
@@ -56,6 +58,7 @@ export class AuthController {
   }
 
   @TsRestHandler(authContract.login)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   handleLogin(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.login, async ({ body }) => {
       const result = await this.commandBus.execute(
@@ -71,6 +74,7 @@ export class AuthController {
   }
 
   @TsRestHandler(authContract.refresh)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   handleRefresh(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.refresh, async () => {
       const rawToken = res.req.cookies?.refresh_token
