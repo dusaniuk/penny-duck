@@ -38,6 +38,7 @@ export const CreateTransactionSchema = z.object({
 })
 
 export const UpdateTransactionSchema = z.object({
+  accountId: z.string().uuid().optional(),
   amount: z.number().min(0.01).optional(),
   categoryId: z.string().uuid().optional(),
   note: z.string().max(500).nullable().optional(),

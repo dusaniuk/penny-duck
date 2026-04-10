@@ -330,6 +330,108 @@ describe("Transactions", () => {
     expect(account.balance).toBe(10500)
   })
 
+  it("moves balance when changing accountId", async () => {
+    const account2 = await commandBus.execute(
+      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+    )
+
+    const tx = await commandBus.execute(
+      new CreateTransactionCommand({
+        userId,
+        accountId,
+        type: "expense",
+        amount: 200,
+        categoryId,
+        date: new Date(),
+      })
+    )
+    await flushEvents()
+
+    const updated = await commandBus.execute(
+      new UpdateTransactionCommand(tx.id, userId, {
+        accountId: account2.id,
+      })
+    )
+    await flushEvents()
+
+    expect(updated.accountId).toBe(account2.id)
+
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    expect(orig.balance).toBe(10000) // expense reversed
+
+    const dest = await queryBus.execute(
+      new GetAccountQuery(account2.id, userId)
+    )
+    expect(dest.balance).toBe(4800) // expense applied
+  })
+
+  it("moves balance correctly when changing accountId and amount together", async () => {
+    const account2 = await commandBus.execute(
+      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+    )
+
+    const tx = await commandBus.execute(
+      new CreateTransactionCommand({
+        userId,
+        accountId,
+        type: "expense",
+        amount: 200,
+        categoryId,
+        date: new Date(),
+      })
+    )
+    await flushEvents()
+
+    await commandBus.execute(
+      new UpdateTransactionCommand(tx.id, userId, {
+        accountId: account2.id,
+        amount: 300,
+      })
+    )
+    await flushEvents()
+
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    expect(orig.balance).toBe(10000) // old expense (200) reversed
+
+    const dest = await queryBus.execute(
+      new GetAccountQuery(account2.id, userId)
+    )
+    expect(dest.balance).toBe(4700) // new expense (300) applied
+  })
+
+  it("moves balance correctly when changing accountId on income", async () => {
+    const account2 = await commandBus.execute(
+      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+    )
+
+    const tx = await commandBus.execute(
+      new CreateTransactionCommand({
+        userId,
+        accountId,
+        type: "income",
+        amount: 500,
+        categoryId,
+        date: new Date(),
+      })
+    )
+    await flushEvents()
+
+    await commandBus.execute(
+      new UpdateTransactionCommand(tx.id, userId, {
+        accountId: account2.id,
+      })
+    )
+    await flushEvents()
+
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    expect(orig.balance).toBe(10000) // income reversed
+
+    const dest = await queryBus.execute(
+      new GetAccountQuery(account2.id, userId)
+    )
+    expect(dest.balance).toBe(5500) // income applied
+  })
+
   it("reverses balance on delete", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({

@@ -15,6 +15,7 @@ import {
 } from "../helpers/transaction.helpers"
 
 interface UpdateFields {
+  accountId?: string
   amount?: number
   categoryId?: string | null
   note?: string | null
@@ -52,6 +53,15 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
 
     const { fields } = cmd
     const updateData: Record<string, unknown> = {}
+    const oldAccountId = existing.accountId
+    const direction: "expense" | "income" =
+      existing.type === "expense" ? "expense" : "income"
+    const accountChanged =
+      fields.accountId !== undefined && fields.accountId !== existing.accountId
+
+    if (accountChanged) {
+      updateData.accountId = fields.accountId
+    }
 
     const oldAmount = existing.amount
     if (fields.amount !== undefined) {
@@ -110,11 +120,14 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
 
     const row = await this.transactionRepo.update(cmd.id, updateData)
 
-    if (
-      fields.amount !== undefined &&
-      fields.amount !== oldAmount &&
-      row.accountId
-    ) {
+    if (accountChanged) {
+      this.eventBus.publish(
+        new TransactionDeletedEvent(oldAccountId, direction, oldAmount)
+      )
+      this.eventBus.publish(
+        new TransactionCreatedEvent(row.accountId, direction, row.amount)
+      )
+    } else if (fields.amount !== undefined && fields.amount !== oldAmount) {
       const delta =
         row.type === "expense" ? oldAmount - row.amount : row.amount - oldAmount
 

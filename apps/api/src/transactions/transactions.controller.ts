@@ -86,6 +86,7 @@ export class TransactionsController {
       async ({ params, body }) => {
         const transaction = await this.commandBus.execute(
           new UpdateTransactionCommand(params.id, user.sub, {
+            accountId: body.accountId,
             amount: body.amount,
             categoryId: body.categoryId,
             note: body.note,

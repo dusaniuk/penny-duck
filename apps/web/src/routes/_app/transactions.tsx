@@ -180,7 +180,7 @@ function TransactionsPage() {
     exchangeRate?: number
   }) {
     if (editTransaction) {
-      const { type: _, accountId: __, ...updateFields } = data
+      const { type: _, ...updateFields } = data
       await updateMutation.mutateAsync({
         params: { id: editTransaction.id },
         body: updateFields,
