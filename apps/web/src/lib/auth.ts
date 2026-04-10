@@ -52,10 +52,12 @@ export const getAuthUser = createServerFn().handler(
 
     try {
       let accessToken = getCookie("access_token")
+      let didRefresh = false
 
       if (!accessToken) {
         accessToken = await refreshTokens(SSR_API_URL)
         if (!accessToken) return null
+        didRefresh = true
       }
 
       const res = await fetch(`${SSR_API_URL}/auth/me`, {
@@ -63,6 +65,10 @@ export const getAuthUser = createServerFn().handler(
       })
 
       if (res.status === 401) {
+        // If we just refreshed and still got 401, don't retry — avoids
+        // sending the same (now-rotated) refresh token cookie again
+        if (didRefresh) return null
+
         accessToken = await refreshTokens(SSR_API_URL)
         if (!accessToken) return null
 
