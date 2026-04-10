@@ -114,6 +114,25 @@ Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup
 - **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
 - **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
 
+## Branching & Releases
+
+- **`main`** is the production branch — linked to Railway, every push triggers a deploy
+- Work on a version branch (e.g. `v0.2.0`), push freely without triggering deploys
+- When ready to release: rebase onto main, fast-forward merge, tag, push
+
+```bash
+git checkout v0.2.0
+git rebase main
+git checkout main
+git merge --ff-only v0.2.0
+git tag v0.2.0
+git push origin main --tags
+```
+
+- **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users
+- While on `0.x`, no need to bump major for breaking changes
+- After merging, delete the version branch (local + remote)
+
 ## graphify
 
 This project has a graphify knowledge graph at graphify-out/.

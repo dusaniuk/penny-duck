@@ -111,10 +111,10 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
     )
 
     this.eventBus.publish(
-      new TransactionCreatedEvent(outRow.accountId!, "expense", outRow.amount)
+      new TransactionCreatedEvent(outRow.accountId, "expense", outRow.amount)
     )
     this.eventBus.publish(
-      new TransactionCreatedEvent(inRow.accountId!, "income", inRow.amount)
+      new TransactionCreatedEvent(inRow.accountId, "income", inRow.amount)
     )
 
     return [toResponse(outRow), toResponse(inRow)]

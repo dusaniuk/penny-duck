@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
+import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm"
 import { type DbClient, transactions } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
@@ -11,7 +11,6 @@ export interface ListTransactionsFilters {
   type?: string
   categoryId?: string
   settled?: boolean
-  orphaned?: boolean
   dateFrom?: Date
   dateTo?: Date
   page: number
@@ -24,7 +23,7 @@ export class TransactionRepository {
 
   async insert(data: {
     userId: string
-    accountId: string | null
+    accountId: string
     type: string
     amount: number
     categoryId: string | null
@@ -47,7 +46,7 @@ export class TransactionRepository {
   async update(
     id: string,
     data: {
-      accountId?: string | null
+      accountId?: string
       type?: string
       amount?: number
       categoryId?: string | null
@@ -143,8 +142,6 @@ export class TransactionRepository {
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
-    if (filters.orphaned === true)
-      conditions.push(isNull(transactions.accountId))
     if (filters.dateFrom)
       conditions.push(gte(transactions.date, filters.dateFrom))
     if (filters.dateTo)

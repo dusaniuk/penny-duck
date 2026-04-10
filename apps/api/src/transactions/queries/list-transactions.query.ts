@@ -10,7 +10,6 @@ interface ListFilters {
   type?: string
   categoryId?: string
   settled?: boolean
-  orphaned?: boolean
   dateFrom?: Date
   dateTo?: Date
 }

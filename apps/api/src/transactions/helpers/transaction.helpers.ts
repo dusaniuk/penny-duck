@@ -5,7 +5,7 @@ import { type TransactionRow } from "../transaction.repository"
 export function toResponse(row: TransactionRow): Transaction {
   return {
     id: row.id,
-    accountId: row.accountId ?? null,
+    accountId: row.accountId,
     type: row.type,
     amount: row.amount,
     categoryId: row.categoryId ?? null,

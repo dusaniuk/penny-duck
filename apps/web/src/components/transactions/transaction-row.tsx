@@ -27,7 +27,6 @@ export function TransactionRow({
   const isTransfer = transaction.type === "transfer"
   const isExpense = transaction.type === "expense"
   const isUnsettled = transaction.myShare != null && !transaction.settled
-  const isOrphaned = transaction.accountId === null
 
   const amountColor = isTransfer
     ? "text-violet-400"
@@ -100,9 +99,7 @@ export function TransactionRow({
           {transaction.amount.toFixed(2)}
         </p>
         <p className="text-xs text-muted-foreground">
-          {transaction.accountId === null ? (
-            <span className="text-orange-400">No account</span>
-          ) : isTransfer && transaction.originalAmount != null ? (
+          {isTransfer && transaction.originalAmount != null ? (
             `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
           ) : (
             account?.name ?? ""
@@ -117,11 +114,9 @@ export function TransactionRow({
       type="button"
       onClick={() => onClick(transaction)}
       className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted/50 ${
-        isOrphaned
-          ? "border-l-3 border-l-orange-400 border-dashed bg-orange-400/5"
-          : isUnsettled
-            ? "border-l-3 border-l-amber-400 bg-amber-400/5"
-            : ""
+        isUnsettled
+          ? "border-l-3 border-l-amber-400 bg-amber-400/5"
+          : ""
       }`}
     >
       {renderLeft()}

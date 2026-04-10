@@ -84,7 +84,7 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
 
     this.eventBus.publish(
       new TransactionCreatedEvent(
-        row.accountId!,
+        row.accountId,
         input.type === "expense" ? "expense" : "income",
         row.amount
       )

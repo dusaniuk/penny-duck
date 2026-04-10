@@ -17,7 +17,6 @@ interface TransactionFilters {
   type?: string
   categoryId?: string
   settled?: boolean
-  orphaned?: boolean
   dateFrom?: string
   dateTo?: string
 }
@@ -52,7 +51,6 @@ function TransactionsPage() {
           type: filters.type as "expense" | "income" | "transfer" | undefined,
           categoryId: filters.categoryId,
           settled: filters.settled,
-          orphaned: filters.orphaned,
           dateFrom: filters.dateFrom
             ? new Date(filters.dateFrom).toISOString()
             : undefined,
@@ -71,12 +69,6 @@ function TransactionsPage() {
     queryData: { query: { settled: false, limit: 1 } },
   })
   const unsettledCount = unsettledData?.body.total ?? 0
-
-  const { data: orphanedData } = tsr.transactions.list.useQuery({
-    queryKey: ["transactions", "orphaned-count"],
-    queryData: { query: { orphaned: true, limit: 1 } },
-  })
-  const orphanedCount = orphanedData?.body.total ?? 0
 
   const { data: accountsData } = tsr.accounts.list.useQuery({
     queryKey: ["accounts"],
@@ -133,7 +125,6 @@ function TransactionsPage() {
           type: filters.type as "expense" | "income" | "transfer" | undefined,
           categoryId: filters.categoryId,
           settled: filters.settled,
-          orphaned: filters.orphaned,
           dateFrom: filters.dateFrom
             ? new Date(filters.dateFrom).toISOString()
             : undefined,
@@ -189,10 +180,7 @@ function TransactionsPage() {
     exchangeRate?: number
   }) {
     if (editTransaction) {
-      const { type: _, ...updateFields } = data
-      if (editTransaction.accountId !== null) {
-        delete (updateFields as Record<string, unknown>).accountId
-      }
+      const { type: _, accountId: __, ...updateFields } = data
       await updateMutation.mutateAsync({
         params: { id: editTransaction.id },
         body: updateFields,
@@ -269,19 +257,6 @@ function TransactionsPage() {
     setPage(1)
   }
 
-  function handleToggleOrphaned() {
-    if (filters.orphaned === true) {
-      setFilters((prev) => {
-        const { orphaned: _, ...rest } = prev
-        return rest
-      })
-    } else {
-      setFilters((prev) => ({ ...prev, orphaned: true }))
-    }
-    setExtraTransactions([])
-    setPage(1)
-  }
-
   const activeFilterBadges: Array<{ key: string; label: string }> = []
   if (filters.accountId) {
     const acc = accounts.find((a) => a.id === filters.accountId)
@@ -309,10 +284,6 @@ function TransactionsPage() {
       label: [filters.dateFrom, filters.dateTo].filter(Boolean).join(" – "),
     })
   }
-  if (filters.orphaned) {
-    activeFilterBadges.push({ key: "orphaned", label: "Orphaned" })
-  }
-
   function removeFilter(key: string) {
     setFilters((prev) => {
       const next = { ...prev }
@@ -344,19 +315,6 @@ function TransactionsPage() {
               }`}
             >
               ⚠ Unsettled ({unsettledCount})
-            </button>
-          )}
-          {orphanedCount > 0 && (
-            <button
-              type="button"
-              onClick={handleToggleOrphaned}
-              className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-                filters.orphaned === true
-                  ? "border-orange-400 bg-orange-400/20 text-orange-400"
-                  : "border-orange-400/50 text-orange-400 hover:bg-orange-400/10"
-              }`}
-            >
-              ⚠ Orphaned ({orphanedCount})
             </button>
           )}
           <Button

@@ -58,7 +58,6 @@ export class TransactionsController {
           type: query.type,
           categoryId: query.categoryId,
           settled: query.settled,
-          orphaned: query.orphaned,
           dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
           dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
         })
@@ -87,7 +86,6 @@ export class TransactionsController {
       async ({ params, body }) => {
         const transaction = await this.commandBus.execute(
           new UpdateTransactionCommand(params.id, user.sub, {
-            accountId: body.accountId,
             amount: body.amount,
             categoryId: body.categoryId,
             note: body.note,

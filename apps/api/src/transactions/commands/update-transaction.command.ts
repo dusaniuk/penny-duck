@@ -15,7 +15,6 @@ import {
 } from "../helpers/transaction.helpers"
 
 interface UpdateFields {
-  accountId?: string
   amount?: number
   categoryId?: string | null
   note?: string | null
@@ -53,17 +52,6 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
 
     const { fields } = cmd
     const updateData: Record<string, unknown> = {}
-
-    if (fields.accountId !== undefined && existing.accountId === null) {
-      updateData.accountId = fields.accountId
-      this.eventBus.publish(
-        new TransactionCreatedEvent(
-          fields.accountId,
-          existing.type === "expense" ? "expense" : "income",
-          existing.amount
-        )
-      )
-    }
 
     const oldAmount = existing.amount
     if (fields.amount !== undefined) {

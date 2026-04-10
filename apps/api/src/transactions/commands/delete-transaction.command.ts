@@ -36,7 +36,7 @@ export class DeleteTransactionHandler implements ICommandHandler<DeleteTransacti
 
     this.eventBus.publish(
       new TransactionDeletedEvent(
-        row.accountId!,
+        row.accountId,
         row.type === "expense" ? "expense" : "income",
         row.amount
       )

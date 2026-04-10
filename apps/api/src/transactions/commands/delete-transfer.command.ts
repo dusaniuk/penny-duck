@@ -35,14 +35,14 @@ export class DeleteTransferHandler implements ICommandHandler<DeleteTransferComm
 
     this.eventBus.publish(
       new TransactionDeletedEvent(
-        outgoing.accountId!,
+        outgoing.accountId,
         "expense",
         outgoing.amount
       )
     )
     this.eventBus.publish(
       new TransactionDeletedEvent(
-        incoming.accountId!,
+        incoming.accountId,
         "income",
         incoming.amount
       )
