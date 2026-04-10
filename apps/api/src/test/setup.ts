@@ -7,6 +7,7 @@ import { faker } from "@faker-js/faker"
 import { AppModule } from "../app.module"
 import { DB_CLIENT } from "../database/database.module"
 import { SignupCommand } from "../auth/application/commands/signup.command"
+import { LoginCommand } from "../auth/application/commands/login.command"
 
 let app: INestApplication
 let commandBus: CommandBus
@@ -56,11 +57,16 @@ export async function flushEvents(ms = 100) {
 export async function signupUser(
   overrides?: Partial<{ name: string; email: string; password: string }>
 ) {
-  return commandBus.execute(
+  const email = overrides?.email ?? faker.internet.email()
+  const password = overrides?.password ?? faker.internet.password({ length: 16 })
+
+  await commandBus.execute(
     new SignupCommand(
       overrides?.name ?? faker.person.fullName(),
-      overrides?.email ?? faker.internet.email(),
-      overrides?.password ?? faker.internet.password({ length: 16 })
+      email,
+      password
     )
   )
+
+  return commandBus.execute(new LoginCommand(email, password))
 }

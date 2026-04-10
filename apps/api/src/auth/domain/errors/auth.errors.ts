@@ -5,13 +5,6 @@ export class InvalidCredentialsError extends Error {
   }
 }
 
-export class EmailAlreadyExistsError extends Error {
-  constructor() {
-    super("Email already in use")
-    this.name = "EmailAlreadyExistsError"
-  }
-}
-
 export class TokenReuseDetectedError extends Error {
   constructor(public readonly familyId: string) {
     super("Session invalidated")

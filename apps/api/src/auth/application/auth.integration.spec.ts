@@ -12,10 +12,7 @@ import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
 import { GetCurrentUserQuery } from "./queries/get-current-user.query"
 import { GetCategoriesQuery } from "../../categories/queries/get-categories.query"
-import {
-  EmailAlreadyExistsError,
-  InvalidCredentialsError,
-} from "../domain/errors/auth.errors"
+import { InvalidCredentialsError } from "../domain/errors/auth.errors"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
@@ -33,16 +30,24 @@ beforeEach(async () => {
 })
 
 describe("Auth", () => {
-  it("signs up a user and returns tokens", async () => {
+  it("signs up and returns a generic success message", async () => {
     const result = await commandBus.execute(
       new SignupCommand("John Doe", "john@example.com", "securePassword123")
     )
 
-    expect(result.user.id).toBeDefined()
-    expect(result.user.email).toBe("john@example.com")
-    expect(result.user.name).toBe("John Doe")
-    expect(result.accessToken.sub).toBe(result.user.id)
-    expect(result.refreshToken).toBeDefined()
+    expect(result.message).toBe("Account created successfully")
+  })
+
+  it("signup with existing email returns the same success message", async () => {
+    await commandBus.execute(
+      new SignupCommand("User 1", "dupe@example.com", "password12345678")
+    )
+
+    const result = await commandBus.execute(
+      new SignupCommand("User 2", "dupe@example.com", "password12345678")
+    )
+
+    expect(result.message).toBe("Account created successfully")
   })
 
   it("signup seeds default categories via event", async () => {
@@ -56,19 +61,7 @@ describe("Auth", () => {
     expect(categories.length).toBeGreaterThan(0)
   })
 
-  it("rejects duplicate email", async () => {
-    await commandBus.execute(
-      new SignupCommand("User 1", "dupe@example.com", "password12345678")
-    )
-
-    await expect(
-      commandBus.execute(
-        new SignupCommand("User 2", "dupe@example.com", "password12345678")
-      )
-    ).rejects.toThrow(EmailAlreadyExistsError)
-  })
-
-  it("logs in with correct credentials", async () => {
+  it("signs up then logs in with correct credentials", async () => {
     await commandBus.execute(
       new SignupCommand("User", "login@example.com", "myPassword12345")
     )
@@ -101,20 +94,20 @@ describe("Auth", () => {
   })
 
   it("refreshes tokens", async () => {
-    const signup = await signupUser()
+    const login = await signupUser()
 
     const result = await commandBus.execute(
-      new RefreshTokensCommand(signup.refreshToken)
+      new RefreshTokensCommand(login.refreshToken)
     )
 
-    expect(result.accessToken.sub).toBe(signup.user.id)
+    expect(result.accessToken.sub).toBe(login.user.id)
     expect(result.refreshToken).toBeDefined()
-    expect(result.refreshToken).not.toBe(signup.refreshToken)
+    expect(result.refreshToken).not.toBe(login.refreshToken)
   })
 
   it("rejects reused refresh token", async () => {
-    const signup = await signupUser()
-    const oldToken = signup.refreshToken
+    const login = await signupUser()
+    const oldToken = login.refreshToken
 
     // Use the token once (rotates it)
     await commandBus.execute(new RefreshTokensCommand(oldToken))
@@ -126,11 +119,11 @@ describe("Auth", () => {
   })
 
   it("logs out and invalidates refresh token", async () => {
-    const signup = await signupUser()
+    const login = await signupUser()
 
     // Rotate the token first so we have a fresh one to test against
     const refreshed = await commandBus.execute(
-      new RefreshTokensCommand(signup.refreshToken)
+      new RefreshTokensCommand(login.refreshToken)
     )
 
     await commandBus.execute(new LogoutCommand(refreshed.refreshToken))
@@ -142,11 +135,11 @@ describe("Auth", () => {
   })
 
   it("rejects concurrent refresh with the same token (race condition)", async () => {
-    const signup = await signupUser()
+    const login = await signupUser()
 
     const results = await Promise.allSettled([
-      commandBus.execute(new RefreshTokensCommand(signup.refreshToken)),
-      commandBus.execute(new RefreshTokensCommand(signup.refreshToken)),
+      commandBus.execute(new RefreshTokensCommand(login.refreshToken)),
+      commandBus.execute(new RefreshTokensCommand(login.refreshToken)),
     ])
 
     const fulfilled = results.filter((r) => r.status === "fulfilled")
@@ -157,13 +150,13 @@ describe("Auth", () => {
   })
 
   it("gets current user", async () => {
-    const signup = await signupUser()
+    const login = await signupUser()
 
     const user = await queryBus.execute(
-      new GetCurrentUserQuery(signup.user.id, signup.user.email)
+      new GetCurrentUserQuery(login.user.id, login.user.email)
     )
 
-    expect(user.id).toBe(signup.user.id)
-    expect(user.email).toBe(signup.user.email)
+    expect(user.id).toBe(login.user.id)
+    expect(user.email).toBe(login.user.email)
   })
 })

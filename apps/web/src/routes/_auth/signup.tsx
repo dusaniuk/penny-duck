@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/_auth/signup")({
 })
 
 function SignupPage() {
-  const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const signupMutation = tsr.auth.signup.useMutation()
 
@@ -40,7 +40,7 @@ function SignupPage() {
       await signupMutation.mutateAsync({
         body: { name, email, password },
       })
-      navigate({ to: "/dashboard" })
+      setSuccess(true)
     } catch (err) {
       if (err && typeof err === "object" && "body" in err) {
         const body = (err as { body: { message?: string } }).body
@@ -49,6 +49,26 @@ function SignupPage() {
         setError("Signup failed")
       }
     }
+  }
+
+  if (success) {
+    return (
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Account created!</CardTitle>
+            <CardDescription>
+              And now pretend that you verified your account via email. Real
+              verification will be added soon. For now, just go to{" "}
+              <Link to="/login" className="underline">
+                login
+              </Link>
+              .
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (

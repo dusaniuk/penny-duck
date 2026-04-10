@@ -36,23 +36,15 @@ export class AuthController {
 
   @TsRestHandler(authContract.signup)
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
-  handleSignup(@Res({ passthrough: true }) res: Response) {
+  handleSignup() {
     return tsRestHandler(authContract.signup, async ({ body }) => {
       const result = await this.commandBus.execute(
         new SignupCommand(body.name, body.email, body.password)
       )
 
-      const accessJwt = this.jwtService.sign(result.accessToken)
-      this.cookieService.setAccessToken(res, accessJwt)
-      this.cookieService.setRefreshToken(res, result.refreshToken)
-
       return {
         status: 201 as const,
-        body: {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-        },
+        body: { message: result.message },
       }
     })
   }
