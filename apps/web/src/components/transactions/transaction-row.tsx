@@ -143,7 +143,7 @@ export function TransactionRow({
       <div className="shrink-0 text-right">
         <p className={`text-sm font-semibold tabular-nums ${amountColor}`}>
           {amountPrefix}
-          {transaction.amount.toFixed(2)}
+          {transaction.amount.toFixed(2)} {account?.currency}
         </p>
         <p className="text-xs text-muted-foreground">
           {isTransfer && transaction.originalAmount != null ? (
