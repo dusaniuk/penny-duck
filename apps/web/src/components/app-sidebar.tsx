@@ -20,6 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@workspace/ui/components/sidebar"
 import { NavUser } from "@/components/nav-user"
 
@@ -40,6 +41,7 @@ export function AppSidebar({
   typeof Sidebar
 >) {
   const matchRoute = useMatchRoute()
+  const { setOpenMobile } = useSidebar()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -50,7 +52,7 @@ export function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <Link to="/dashboard">
+              <Link to="/dashboard" onClick={() => setOpenMobile(false)}>
                 <IconCashBanknote className="size-5!" />
                 <span className="text-base font-semibold">Penny Duck</span>
               </Link>
@@ -67,7 +69,7 @@ export function AppSidebar({
                   asChild
                   isActive={!!matchRoute({ to: item.url })}
                 >
-                  <Link to={item.url}>
+                  <Link to={item.url} onClick={() => setOpenMobile(false)}>
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>
@@ -85,7 +87,7 @@ export function AppSidebar({
                   asChild
                   isActive={!!matchRoute({ to: item.url })}
                 >
-                  <Link to={item.url}>
+                  <Link to={item.url} onClick={() => setOpenMobile(false)}>
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>
