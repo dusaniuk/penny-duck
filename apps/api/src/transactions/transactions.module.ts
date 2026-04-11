@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common"
 import { CqrsModule } from "@nestjs/cqrs"
 import { DatabaseModule } from "@/database/database.module"
 import { AuthModule } from "@/auth/auth.module"
+import { ExchangeRatesModule } from "@/exchange-rates/exchange-rates.module"
+import { UserRepository } from "@/auth/infrastructure/repositories/user.repository"
 import { CreateTransactionHandler } from "./commands/create-transaction.command"
 import { UpdateTransactionHandler } from "./commands/update-transaction.command"
 import { DeleteTransactionHandler } from "./commands/delete-transaction.command"
@@ -31,13 +33,14 @@ const commandHandlers = [
 const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
 
 @Module({
-  imports: [DatabaseModule, CqrsModule, AuthModule],
+  imports: [DatabaseModule, CqrsModule, AuthModule, ExchangeRatesModule],
   controllers: [TransactionsController],
   providers: [
     ...commandHandlers,
     ...queryHandlers,
     TransactionRepository,
     AccountRepository,
+    UserRepository,
   ],
   exports: [TransactionRepository],
 })

@@ -3,7 +3,9 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { transactionContract } from "@workspace/api-contract"
 import { AuthGuard } from "../auth/presentation/auth.guard"
-import { CurrentOrg } from "../auth/presentation/auth.decorator"
+import { CurrentUser, CurrentOrg } from "../auth/presentation/auth.decorator"
+import { type AccessTokenPayload } from "../auth/infrastructure/services/jwt.service"
+import { UserRepository } from "../auth/infrastructure/repositories/user.repository"
 import { CreateTransactionCommand } from "./commands/create-transaction.command"
 import { UpdateTransactionCommand } from "./commands/update-transaction.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
@@ -21,7 +23,8 @@ import { ListTransactionsQuery } from "./queries/list-transactions.query"
 export class TransactionsController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus
+    private readonly queryBus: QueryBus,
+    private readonly userRepo: UserRepository
   ) {}
 
   @TsRestHandler(transactionContract.create)
@@ -47,12 +50,18 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.list)
-  handleList(@CurrentOrg() organizationId: string) {
+  handleList(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload
+  ) {
     return tsRestHandler(transactionContract.list, async ({ query }) => {
+      const currentUser = await this.userRepo.findById(user.sub)
+      const homeCurrency = currentUser?.homeCurrency ?? "UAH"
+
       const page = query.page ?? 1
       const limit = query.limit ?? 50
       const { data, total } = await this.queryBus.execute(
-        new ListTransactionsQuery(organizationId, {
+        new ListTransactionsQuery(organizationId, homeCurrency, {
           page,
           limit,
           accountId: query.accountId,

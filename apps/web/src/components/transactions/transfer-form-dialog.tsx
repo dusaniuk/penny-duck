@@ -26,6 +26,7 @@ interface TransferFormDialogProps {
   transaction?: TransactionData | null
   pairedAccountId?: string | null
   accounts: Array<AccountData>
+  exchangeRates?: Record<string, Record<string, number>>
   onSubmit: (data: {
     fromAccountId: string
     toAccountId: string
@@ -45,6 +46,7 @@ export function TransferFormDialog({
   transaction,
   pairedAccountId,
   accounts,
+  exchangeRates,
   onSubmit,
   onDelete,
 }: TransferFormDialogProps) {
@@ -72,6 +74,19 @@ export function TransferFormDialog({
       setShowExchangeRate(true)
     }
   }, [forceExchangeRate])
+
+  useEffect(() => {
+    if (forceExchangeRate && exchangeRates && !isEdit) {
+      const fromCurrency = fromAccount.currency
+      const toCurrency = toAccount.currency
+      const rate = (
+        exchangeRates as Record<string, Record<string, number> | undefined>
+      )[fromCurrency]?.[toCurrency]
+      if (rate !== undefined) {
+        setExchangeRate(rate.toFixed(6))
+      }
+    }
+  }, [forceExchangeRate, fromAccount, toAccount, exchangeRates, isEdit])
 
   useEffect(() => {
     if (amount && exchangeRate) {

@@ -3,6 +3,7 @@ import { authContract } from "./schemas/auth"
 import { accountContract } from "./schemas/accounts"
 import { categoryContract } from "./schemas/categories"
 import { transactionContract } from "./schemas/transactions"
+import { exchangeRateContract } from "./schemas/exchange-rates"
 
 const c = initContract()
 
@@ -12,6 +13,7 @@ export const contract = c.router(
     accounts: accountContract,
     categories: categoryContract,
     transactions: transactionContract,
+    exchangeRates: exchangeRateContract,
   },
   {
     pathPrefix: "",

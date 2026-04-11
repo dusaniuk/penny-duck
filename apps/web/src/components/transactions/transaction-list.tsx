@@ -5,6 +5,7 @@ interface TransactionListProps {
   transactions: Array<Transaction>
   accounts: Array<Account>
   categories: Array<Category>
+  homeCurrency: string
   loading: boolean
   hasMore: boolean
   onLoadMore: () => void
@@ -86,8 +87,8 @@ function groupByDate(transactions: Array<Transaction>): Array<DateGroup> {
   return Array.from(groups.entries()).map(([, txs]) => {
     const subtotal = txs.reduce((sum, t) => {
       if (t.transferId) return sum
-      if (t.type === "expense") return sum - t.amount
-      return sum + t.amount
+      if (t.type === "expense") return sum - t.homeAmount
+      return sum + t.homeAmount
     }, 0)
 
     return {
@@ -102,6 +103,7 @@ export function TransactionList({
   transactions,
   accounts,
   categories,
+  homeCurrency,
   loading,
   hasMore,
   onLoadMore,
@@ -177,7 +179,7 @@ export function TransactionList({
               }`}
             >
               {group.subtotal >= 0 ? "+" : ""}
-              {group.subtotal.toFixed(2)}
+              {group.subtotal.toFixed(2)} {homeCurrency}
             </span>
           </div>
           <div className="space-y-0.5">

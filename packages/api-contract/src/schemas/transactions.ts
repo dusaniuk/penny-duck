@@ -9,6 +9,7 @@ export const TransactionSchema = z.object({
   accountId: z.string().uuid(),
   type: z.enum(["expense", "income"]),
   amount: z.number(),
+  homeAmount: z.number(),
   categoryId: z.string().uuid().nullable(),
   note: z.string().nullable(),
   date: z.string(),

@@ -4,6 +4,7 @@ interface UserData {
   id: string
   email: string
   name: string
+  homeCurrency: string
   passwordHash: string
   createdAt: Date
   updatedAt: Date
@@ -14,6 +15,7 @@ export class User {
     private readonly _id: string,
     private readonly _email: string,
     private readonly _name: string,
+    private readonly _homeCurrency: string,
     private readonly _passwordHash: string,
     private readonly _createdAt: Date,
     private readonly _updatedAt: Date
@@ -31,6 +33,7 @@ export class User {
       "", // ID assigned by database
       rawEmail.trim().toLowerCase(),
       name,
+      "UAH",
       hash,
       new Date(),
       new Date()
@@ -42,6 +45,7 @@ export class User {
       data.id,
       data.email,
       data.name,
+      data.homeCurrency,
       data.passwordHash,
       data.createdAt,
       data.updatedAt
@@ -60,6 +64,9 @@ export class User {
   }
   get name(): string {
     return this._name
+  }
+  get homeCurrency(): string {
+    return this._homeCurrency
   }
   get passwordHash(): string {
     return this._passwordHash

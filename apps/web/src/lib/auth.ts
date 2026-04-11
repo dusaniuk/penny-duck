@@ -6,6 +6,7 @@ export interface AuthUser {
   id: string
   email: string
   name: string
+  homeCurrency: string
 }
 
 async function refreshTokens(apiUrl: string): Promise<string | undefined> {

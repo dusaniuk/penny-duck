@@ -40,3 +40,8 @@ export {
   transactionContract,
 } from "./schemas/transactions"
 export type { Transaction } from "./schemas/transactions"
+
+export {
+  ExchangeRatesResponseSchema,
+  exchangeRateContract,
+} from "./schemas/exchange-rates"

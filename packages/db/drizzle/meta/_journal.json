@@ -71,6 +71,13 @@
       "when": 1775935728336,
       "tag": "0009_add-organizations",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775937941672,
+      "tag": "0010_faulty_manta",
+      "breakpoints": true
     }
   ]
 }

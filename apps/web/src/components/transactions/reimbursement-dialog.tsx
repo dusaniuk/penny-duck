@@ -23,6 +23,7 @@ interface ReimbursementDialogProps {
   onOpenChange: (open: boolean) => void
   transaction: Transaction | null
   accounts: Array<Account>
+  exchangeRates?: Record<string, Record<string, number>>
   onSubmit: (data: {
     transactionId: string
     accountId: string
@@ -37,6 +38,7 @@ export function ReimbursementDialog({
   onOpenChange,
   transaction,
   accounts,
+  exchangeRates,
   onSubmit,
 }: ReimbursementDialogProps) {
   const [accountId, setAccountId] = useState("")
@@ -100,6 +102,19 @@ export function ReimbursementDialog({
       setError(null)
     }
   }, [open])
+
+  useEffect(() => {
+    if (isCrossCurrency && exchangeRates) {
+      const fromCurrency = expenseAccount.currency
+      const toCurrency = selectedAccount.currency
+      const rate = (
+        exchangeRates as Record<string, Record<string, number> | undefined>
+      )[fromCurrency]?.[toCurrency]
+      if (rate !== undefined) {
+        setExchangeRate(rate.toFixed(6))
+      }
+    }
+  }, [isCrossCurrency, expenseAccount, selectedAccount, exchangeRates])
 
   if (!transaction) return null
 

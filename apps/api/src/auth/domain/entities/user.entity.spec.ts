@@ -21,6 +21,7 @@ describe("User", () => {
       id: faker.string.uuid(),
       email: faker.internet.email().toLowerCase(),
       name: faker.person.fullName(),
+      homeCurrency: "UAH",
       passwordHash: "$2b$12$fakehashvalue",
       createdAt: new Date(),
       updatedAt: new Date(),

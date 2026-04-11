@@ -83,6 +83,14 @@ function TransactionsPage() {
   })
   const categories: Array<Category> = categoriesData?.body ?? []
 
+  const { data: meData } = tsr.auth.me.useQuery({ queryKey: ["auth", "me"] })
+  const homeCurrency = meData?.body.homeCurrency ?? "UAH"
+
+  const { data: ratesData } = tsr.exchangeRates.latest.useQuery({
+    queryKey: ["exchange-rates", "latest"],
+  })
+  const latestRates = ratesData?.body.rates ?? {}
+
   const [loadingMore, setLoadingMore] = useState(false)
   const [extraTransactions, setExtraTransactions] = useState<Array<Transaction>>([])
 
@@ -346,6 +354,7 @@ function TransactionsPage() {
         transactions={allTransactions}
         accounts={accounts}
         categories={categories}
+        homeCurrency={homeCurrency}
         loading={loading}
         hasMore={allTransactions.length < total}
         onLoadMore={handleLoadMore}
@@ -402,6 +411,7 @@ function TransactionsPage() {
             : null
         }
         accounts={accounts}
+        exchangeRates={latestRates}
         onSubmit={handleTransferSubmit}
         onDelete={
           editTransaction
@@ -420,6 +430,7 @@ function TransactionsPage() {
         }}
         transaction={reimburseTransaction}
         accounts={accounts}
+        exchangeRates={latestRates}
         onSubmit={async (data) => {
           await createReimbursementMutation.mutateAsync({
             params: { id: data.transactionId },

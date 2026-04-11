@@ -19,6 +19,7 @@ export const AuthUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string(),
   name: z.string(),
+  homeCurrency: z.string(),
 })
 
 export const authContract = c.router({

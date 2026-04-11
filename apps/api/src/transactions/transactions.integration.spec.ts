@@ -161,7 +161,7 @@ describe("Transactions", () => {
     }
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, { page: 1, limit: 10 })
+      new ListTransactionsQuery(organizationId, "UAH", { page: 1, limit: 10 })
     )
 
     expect(result.data).toHaveLength(3)
@@ -191,7 +191,7 @@ describe("Transactions", () => {
     )
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, { page: 1, limit: 10, type: "expense" })
+      new ListTransactionsQuery(organizationId, "UAH", { page: 1, limit: 10, type: "expense" })
     )
 
     expect(result.data).toHaveLength(1)
@@ -225,7 +225,7 @@ describe("Transactions", () => {
     )
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, {
+      new ListTransactionsQuery(organizationId, "UAH", {
         page: 1,
         limit: 10,
         settled: false,
@@ -680,7 +680,7 @@ describe("Transactions", () => {
 
     // Find the reimbursement transfer's incoming transaction
     const list = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, {
+      new ListTransactionsQuery(organizationId, "UAH", {
         page: 1,
         limit: 100,
         accountId: account2.id,
@@ -739,7 +739,7 @@ describe("Transactions", () => {
 
     // Main list (no accountId filter) should hide reimbursement transfers
     const mainList = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, { page: 1, limit: 100 })
+      new ListTransactionsQuery(organizationId, "UAH", { page: 1, limit: 100 })
     )
 
     expect(mainList.data).toHaveLength(1)
@@ -747,7 +747,7 @@ describe("Transactions", () => {
 
     // Account-filtered view should show reimbursement transfers
     const accountList = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, {
+      new ListTransactionsQuery(organizationId, "UAH", {
         page: 1,
         limit: 100,
         accountId: account2.id,
@@ -790,7 +790,7 @@ describe("Transactions", () => {
 
     // All transactions should be gone
     const list = await queryBus.execute(
-      new ListTransactionsQuery(organizationId, { page: 1, limit: 100 })
+      new ListTransactionsQuery(organizationId, "UAH", { page: 1, limit: 100 })
     )
     expect(list.data).toHaveLength(0)
 

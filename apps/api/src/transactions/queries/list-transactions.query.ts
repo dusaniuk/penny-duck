@@ -1,5 +1,7 @@
 import { Query, IQueryHandler, QueryHandler } from "@nestjs/cqrs"
 import { type Transaction } from "@workspace/api-contract"
+import { AccountRepository } from "@/accounts/account.repository"
+import { ExchangeRateService } from "@/exchange-rates/exchange-rate.service"
 import { TransactionRepository } from "../transaction.repository"
 import { toResponse } from "../helpers/transaction.helpers"
 
@@ -21,6 +23,7 @@ export class ListTransactionsQuery extends Query<{
 }> {
   constructor(
     public readonly organizationId: string,
+    public readonly homeCurrency: string,
     public readonly filters: ListFilters
   ) {
     super()
@@ -29,7 +32,11 @@ export class ListTransactionsQuery extends Query<{
 
 @QueryHandler(ListTransactionsQuery)
 export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQuery> {
-  constructor(private readonly transactionRepo: TransactionRepository) {}
+  constructor(
+    private readonly transactionRepo: TransactionRepository,
+    private readonly accountRepo: AccountRepository,
+    private readonly exchangeRateService: ExchangeRateService
+  ) {}
 
   async execute(
     query: ListTransactionsQuery
@@ -38,6 +45,33 @@ export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQu
       organizationId: query.organizationId,
       ...query.filters,
     })
-    return { data: data.map(toResponse), total }
+
+    if (data.length === 0) return { data: [], total }
+
+    const accounts = await this.accountRepo.findAllByOrganizationId(
+      query.organizationId
+    )
+    const currencyByAccountId = new Map(
+      accounts.map((a) => [a.id, a.currency])
+    )
+
+    const results: Transaction[] = []
+    for (const row of data) {
+      const currency = currencyByAccountId.get(row.accountId)
+      let homeAmount = Math.abs(row.amount)
+
+      if (currency && currency !== query.homeCurrency) {
+        const rate = await this.exchangeRateService.getRate(
+          currency,
+          query.homeCurrency,
+          row.date
+        )
+        homeAmount = Math.abs(row.amount) * rate
+      }
+
+      results.push(toResponse(row, homeAmount))
+    }
+
+    return { data: results, total }
   }
 }

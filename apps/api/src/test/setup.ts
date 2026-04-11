@@ -46,7 +46,7 @@ export async function truncateAll() {
     )
   }
   await db.execute(
-    sql`TRUNCATE app.transactions, app.categories, app.accounts, app.organization_members, app.organizations, app.refresh_tokens, app.users CASCADE`
+    sql`TRUNCATE app.exchange_rates, app.transactions, app.categories, app.accounts, app.organization_members, app.organizations, app.refresh_tokens, app.users CASCADE`
   )
 }
 
