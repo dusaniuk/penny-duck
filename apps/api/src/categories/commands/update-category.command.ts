@@ -6,7 +6,7 @@ import { CategoryRepository } from "../category.repository"
 export class UpdateCategoryCommand extends Command<Category> {
   constructor(
     public readonly id: string,
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly name?: string,
     public readonly icon?: string | null
   ) {
@@ -19,10 +19,10 @@ export class UpdateCategoryHandler implements ICommandHandler<UpdateCategoryComm
   constructor(private readonly categoryRepo: CategoryRepository) {}
 
   async execute(cmd: UpdateCategoryCommand): Promise<Category> {
-    const existing = await this.categoryRepo.findById(cmd.id, cmd.userId)
+    const existing = await this.categoryRepo.findById(cmd.id, cmd.organizationId)
     if (existing === null) throw new NotFoundException("Category not found")
 
-    const row = await this.categoryRepo.update(cmd.id, {
+    const row = await this.categoryRepo.update(cmd.id, cmd.organizationId, {
       name: cmd.name,
       icon: cmd.icon,
     })

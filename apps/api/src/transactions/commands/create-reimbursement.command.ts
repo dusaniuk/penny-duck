@@ -8,7 +8,7 @@ import { toResponse } from "../helpers/transaction.helpers"
 
 export interface CreateReimbursementInput {
   transactionId: string
-  userId: string
+  organizationId: string
   accountId: string
   amount: number
   date: Date
@@ -38,7 +38,7 @@ export class CreateReimbursementHandler
 
     const expense = await this.transactionRepo.findById(
       input.transactionId,
-      input.userId
+      input.organizationId
     )
     if (!expense) throw new NotFoundException("Transaction not found")
     if (expense.amount >= 0)
@@ -46,7 +46,7 @@ export class CreateReimbursementHandler
 
     const receivingAccount = await this.accountRepo.findById(
       input.accountId,
-      input.userId
+      input.organizationId
     )
     if (!receivingAccount) throw new NotFoundException("Account not found")
 
@@ -59,7 +59,7 @@ export class CreateReimbursementHandler
     } else {
       const expenseAccount = await this.accountRepo.findById(
         expense.accountId,
-        input.userId
+        input.organizationId
       )
       if (!expenseAccount) throw new NotFoundException("Account not found")
 
@@ -89,7 +89,7 @@ export class CreateReimbursementHandler
 
     if (isSameAccount) {
       // Same account: just update the expense amount, no transfer needed
-      const updated = await this.transactionRepo.update(input.transactionId, {
+      const updated = await this.transactionRepo.update(input.transactionId, input.organizationId, {
         amount: newExpenseAmount,
       })
       return toResponse(updated)
@@ -100,14 +100,14 @@ export class CreateReimbursementHandler
 
     const expenseAccount = await this.accountRepo.findById(
       expense.accountId,
-      input.userId
+      input.organizationId
     )
     const isCrossCurrency =
       expenseAccount!.currency !== receivingAccount.currency
 
     await this.transactionRepo.insertTransferPair(
       {
-        userId: input.userId,
+        organizationId: input.organizationId,
         accountId: expense.accountId,
         amount: -amountInExpenseCurrency,
         categoryId: null,
@@ -121,7 +121,7 @@ export class CreateReimbursementHandler
         reimbursementId: input.transactionId,
       },
       {
-        userId: input.userId,
+        organizationId: input.organizationId,
         accountId: input.accountId,
         amount: input.amount,
         categoryId: null,
@@ -137,7 +137,7 @@ export class CreateReimbursementHandler
     )
 
     // Update the expense amount
-    const updated = await this.transactionRepo.update(input.transactionId, {
+    const updated = await this.transactionRepo.update(input.transactionId, input.organizationId, {
       amount: newExpenseAmount,
     })
 

@@ -5,6 +5,7 @@ import {
   closeTestApp,
   truncateAll,
   signupUser,
+  flushEvents,
 } from "../test/setup"
 import { CreateAccountCommand } from "../accounts/commands/create-account.command"
 import { GetAccountQuery } from "../accounts/queries/get-account.query"
@@ -20,7 +21,7 @@ import { ListTransactionsQuery } from "./queries/list-transactions.query"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
-let userId: string
+let organizationId: string
 let accountId: string
 let categoryId: string
 
@@ -35,14 +36,15 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  userId = result.user.id
+  organizationId = result.accessToken.organizationId
+  await flushEvents()
 
   const account = await commandBus.execute(
-    new CreateAccountCommand(userId, "Bank", "bank", "UAH", 10000)
+    new CreateAccountCommand(organizationId, "Bank", "bank", "UAH", 10000)
   )
   accountId = account.id
 
-  const categories = await queryBus.execute(new GetCategoriesQuery(userId))
+  const categories = await queryBus.execute(new GetCategoriesQuery(organizationId))
   categoryId = categories[0].id
 })
 
@@ -50,7 +52,7 @@ describe("Transactions", () => {
   it("creates an expense transaction", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50.25,
@@ -70,7 +72,7 @@ describe("Transactions", () => {
   it("creates an income transaction", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "income",
         amount: 1000,
@@ -86,7 +88,7 @@ describe("Transactions", () => {
   it("toggles settled on a transaction", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -98,7 +100,7 @@ describe("Transactions", () => {
     expect(tx.settled).toBe(true)
 
     const unsettled = await commandBus.execute(
-      new SettleTransactionCommand(tx.id, userId)
+      new SettleTransactionCommand(tx.id, organizationId)
     )
 
     expect(unsettled.settled).toBe(false)
@@ -107,7 +109,7 @@ describe("Transactions", () => {
   it("creates a transaction with exchange rate", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -127,7 +129,7 @@ describe("Transactions", () => {
   it("gets a single transaction", async () => {
     const created = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50,
@@ -137,7 +139,7 @@ describe("Transactions", () => {
     )
 
     const found = await queryBus.execute(
-      new GetTransactionQuery(created.id, userId)
+      new GetTransactionQuery(created.id, organizationId)
     )
 
     expect(found.id).toBe(created.id)
@@ -148,7 +150,7 @@ describe("Transactions", () => {
     for (let i = 0; i < 3; i++) {
       await commandBus.execute(
         new CreateTransactionCommand({
-          userId,
+          organizationId,
           accountId,
           type: "expense",
           amount: 10 * (i + 1),
@@ -159,7 +161,7 @@ describe("Transactions", () => {
     }
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(userId, { page: 1, limit: 10 })
+      new ListTransactionsQuery(organizationId, { page: 1, limit: 10 })
     )
 
     expect(result.data).toHaveLength(3)
@@ -169,7 +171,7 @@ describe("Transactions", () => {
   it("filters transactions by type", async () => {
     await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50,
@@ -179,7 +181,7 @@ describe("Transactions", () => {
     )
     await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "income",
         amount: 100,
@@ -189,7 +191,7 @@ describe("Transactions", () => {
     )
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(userId, { page: 1, limit: 10, type: "expense" })
+      new ListTransactionsQuery(organizationId, { page: 1, limit: 10, type: "expense" })
     )
 
     expect(result.data).toHaveLength(1)
@@ -199,7 +201,7 @@ describe("Transactions", () => {
   it("filters transactions by settled status", async () => {
     const unsettledTx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -208,12 +210,12 @@ describe("Transactions", () => {
       })
     )
     await commandBus.execute(
-      new SettleTransactionCommand(unsettledTx.id, userId)
+      new SettleTransactionCommand(unsettledTx.id, organizationId)
     )
 
     await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50,
@@ -223,7 +225,7 @@ describe("Transactions", () => {
     )
 
     const result = await queryBus.execute(
-      new ListTransactionsQuery(userId, {
+      new ListTransactionsQuery(organizationId, {
         page: 1,
         limit: 10,
         settled: false,
@@ -237,7 +239,7 @@ describe("Transactions", () => {
   it("updates a transaction", async () => {
     const created = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50,
@@ -247,7 +249,7 @@ describe("Transactions", () => {
     )
 
     const updated = await commandBus.execute(
-      new UpdateTransactionCommand(created.id, userId, {
+      new UpdateTransactionCommand(created.id, organizationId, {
         amount: 75,
         note: "updated",
       })
@@ -260,7 +262,7 @@ describe("Transactions", () => {
   it("deletes a transaction", async () => {
     const created = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 50,
@@ -269,17 +271,17 @@ describe("Transactions", () => {
       })
     )
 
-    await commandBus.execute(new DeleteTransactionCommand(created.id, userId))
+    await commandBus.execute(new DeleteTransactionCommand(created.id, organizationId))
 
     await expect(
-      queryBus.execute(new GetTransactionQuery(created.id, userId))
+      queryBus.execute(new GetTransactionQuery(created.id, organizationId))
     ).rejects.toThrow()
   })
 
   it("settles an unsettled transaction", async () => {
     const created = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -289,11 +291,11 @@ describe("Transactions", () => {
     )
 
     // Toggle to unsettled
-    await commandBus.execute(new SettleTransactionCommand(created.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(created.id, organizationId))
 
     // Toggle back to settled
     const settled = await commandBus.execute(
-      new SettleTransactionCommand(created.id, userId)
+      new SettleTransactionCommand(created.id, organizationId)
     )
 
     expect(settled.settled).toBe(true)
@@ -302,7 +304,7 @@ describe("Transactions", () => {
   it("updates account balance on expense", async () => {
     await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 200,
@@ -312,7 +314,7 @@ describe("Transactions", () => {
     )
 
     const account = await queryBus.execute(
-      new GetAccountQuery(accountId, userId)
+      new GetAccountQuery(accountId, organizationId)
     )
     expect(account.balance).toBe(9800)
   })
@@ -320,7 +322,7 @@ describe("Transactions", () => {
   it("updates account balance on income", async () => {
     await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "income",
         amount: 500,
@@ -330,19 +332,19 @@ describe("Transactions", () => {
     )
 
     const account = await queryBus.execute(
-      new GetAccountQuery(accountId, userId)
+      new GetAccountQuery(accountId, organizationId)
     )
     expect(account.balance).toBe(10500)
   })
 
   it("moves balance when changing accountId", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 200,
@@ -352,30 +354,30 @@ describe("Transactions", () => {
     )
 
     const updated = await commandBus.execute(
-      new UpdateTransactionCommand(tx.id, userId, {
+      new UpdateTransactionCommand(tx.id, organizationId, {
         accountId: account2.id,
       })
     )
 
     expect(updated.accountId).toBe(account2.id)
 
-    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(orig.balance).toBe(10000) // expense reversed
 
     const dest = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(dest.balance).toBe(4800) // expense applied
   })
 
   it("moves balance correctly when changing accountId and amount together", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 200,
@@ -385,29 +387,29 @@ describe("Transactions", () => {
     )
 
     await commandBus.execute(
-      new UpdateTransactionCommand(tx.id, userId, {
+      new UpdateTransactionCommand(tx.id, organizationId, {
         accountId: account2.id,
         amount: 300,
       })
     )
 
-    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(orig.balance).toBe(10000) // old expense (200) reversed
 
     const dest = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(dest.balance).toBe(4700) // new expense (300) applied
   })
 
   it("moves balance correctly when changing accountId on income", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "income",
         amount: 500,
@@ -417,16 +419,16 @@ describe("Transactions", () => {
     )
 
     await commandBus.execute(
-      new UpdateTransactionCommand(tx.id, userId, {
+      new UpdateTransactionCommand(tx.id, organizationId, {
         accountId: account2.id,
       })
     )
 
-    const orig = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const orig = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(orig.balance).toBe(10000) // income reversed
 
     const dest = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(dest.balance).toBe(5500) // income applied
   })
@@ -434,7 +436,7 @@ describe("Transactions", () => {
   it("reverses balance on delete", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 200,
@@ -443,10 +445,10 @@ describe("Transactions", () => {
       })
     )
 
-    await commandBus.execute(new DeleteTransactionCommand(tx.id, userId))
+    await commandBus.execute(new DeleteTransactionCommand(tx.id, organizationId))
 
     const account = await queryBus.execute(
-      new GetAccountQuery(accountId, userId)
+      new GetAccountQuery(accountId, organizationId)
     )
     expect(account.balance).toBe(10000)
   })
@@ -454,7 +456,7 @@ describe("Transactions", () => {
   it("creates a same-account reimbursement", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -462,12 +464,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     const updated = await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId,
         amount: 30,
         date: new Date(),
@@ -478,19 +480,19 @@ describe("Transactions", () => {
     expect(updated.type).toBe("expense")
 
     const account = await queryBus.execute(
-      new GetAccountQuery(accountId, userId)
+      new GetAccountQuery(accountId, organizationId)
     )
     expect(account.balance).toBe(9930)
   })
 
   it("creates a cross-account same-currency reimbursement", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -498,12 +500,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     const updated = await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId: account2.id,
         amount: 30,
         date: new Date(),
@@ -512,26 +514,26 @@ describe("Transactions", () => {
 
     expect(updated.amount).toBe(70)
 
-    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(acc1.balance).toBe(9900)
 
     const acc2 = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(acc2.balance).toBe(5030)
   })
 
   it("creates a cross-currency reimbursement", async () => {
     const plnAccount = await commandBus.execute(
-      new CreateAccountCommand(userId, "PLN Bank", "bank", "PLN", 1000)
+      new CreateAccountCommand(organizationId, "PLN Bank", "bank", "PLN", 1000)
     )
     const uahAccount = await commandBus.execute(
-      new CreateAccountCommand(userId, "UAH Bank", "bank", "UAH", 0)
+      new CreateAccountCommand(organizationId, "UAH Bank", "bank", "UAH", 0)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId: plnAccount.id,
         type: "expense",
         amount: 100,
@@ -539,12 +541,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     const updated = await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId: uahAccount.id,
         amount: 300,
         date: new Date(),
@@ -555,12 +557,12 @@ describe("Transactions", () => {
     expect(updated.amount).toBe(70)
 
     const pln = await queryBus.execute(
-      new GetAccountQuery(plnAccount.id, userId)
+      new GetAccountQuery(plnAccount.id, organizationId)
     )
     expect(pln.balance).toBe(900)
 
     const uah = await queryBus.execute(
-      new GetAccountQuery(uahAccount.id, userId)
+      new GetAccountQuery(uahAccount.id, organizationId)
     )
     expect(uah.balance).toBe(300)
   })
@@ -568,7 +570,7 @@ describe("Transactions", () => {
   it("rejects reimbursement exceeding expense amount", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -576,13 +578,13 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     await expect(
       commandBus.execute(
         new CreateReimbursementCommand({
           transactionId: tx.id,
-          userId,
+          organizationId,
           accountId,
           amount: 100,
           date: new Date(),
@@ -594,7 +596,7 @@ describe("Transactions", () => {
   it("rejects reimbursement on income transaction", async () => {
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "income",
         amount: 100,
@@ -607,7 +609,7 @@ describe("Transactions", () => {
       commandBus.execute(
         new CreateReimbursementCommand({
           transactionId: tx.id,
-          userId,
+          organizationId,
           accountId,
           amount: 50,
           date: new Date(),
@@ -618,15 +620,15 @@ describe("Transactions", () => {
 
   it("rejects cross-currency reimbursement without exchange rate", async () => {
     const uahAccount = await commandBus.execute(
-      new CreateAccountCommand(userId, "UAH", "bank", "UAH", 0)
+      new CreateAccountCommand(organizationId, "UAH", "bank", "UAH", 0)
     )
     const plnAccount = await commandBus.execute(
-      new CreateAccountCommand(userId, "PLN", "bank", "PLN", 1000)
+      new CreateAccountCommand(organizationId, "PLN", "bank", "PLN", 1000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId: plnAccount.id,
         type: "expense",
         amount: 100,
@@ -634,13 +636,13 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     await expect(
       commandBus.execute(
         new CreateReimbursementCommand({
           transactionId: tx.id,
-          userId,
+          organizationId,
           accountId: uahAccount.id,
           amount: 300,
           date: new Date(),
@@ -651,12 +653,12 @@ describe("Transactions", () => {
 
   it("deletes a cross-account reimbursement and restores expense amount", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -664,12 +666,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId: account2.id,
         amount: 30,
         date: new Date(),
@@ -678,7 +680,7 @@ describe("Transactions", () => {
 
     // Find the reimbursement transfer's incoming transaction
     const list = await queryBus.execute(
-      new ListTransactionsQuery(userId, {
+      new ListTransactionsQuery(organizationId, {
         page: 1,
         limit: 100,
         accountId: account2.id,
@@ -689,33 +691,33 @@ describe("Transactions", () => {
     )
 
     await commandBus.execute(
-      new DeleteReimbursementCommand(tx.id, reimbursementTx!.id, userId)
+      new DeleteReimbursementCommand(tx.id, reimbursementTx!.id, organizationId)
     )
 
     // Expense restored to 100
     const restored = await queryBus.execute(
-      new GetTransactionQuery(tx.id, userId)
+      new GetTransactionQuery(tx.id, organizationId)
     )
     expect(restored.amount).toBe(100)
 
     // Balances restored
-    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(acc1.balance).toBe(9900)
 
     const acc2 = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(acc2.balance).toBe(5000)
   })
 
   it("hides reimbursement transfers from main transaction list", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -723,12 +725,12 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId: account2.id,
         amount: 30,
         date: new Date(),
@@ -737,7 +739,7 @@ describe("Transactions", () => {
 
     // Main list (no accountId filter) should hide reimbursement transfers
     const mainList = await queryBus.execute(
-      new ListTransactionsQuery(userId, { page: 1, limit: 100 })
+      new ListTransactionsQuery(organizationId, { page: 1, limit: 100 })
     )
 
     expect(mainList.data).toHaveLength(1)
@@ -745,7 +747,7 @@ describe("Transactions", () => {
 
     // Account-filtered view should show reimbursement transfers
     const accountList = await queryBus.execute(
-      new ListTransactionsQuery(userId, {
+      new ListTransactionsQuery(organizationId, {
         page: 1,
         limit: 100,
         accountId: account2.id,
@@ -759,12 +761,12 @@ describe("Transactions", () => {
 
   it("deleting an expense cascades to its reimbursement transfers", async () => {
     const account2 = await commandBus.execute(
-      new CreateAccountCommand(userId, "Cash", "wallet", "UAH", 5000)
+      new CreateAccountCommand(organizationId, "Cash", "wallet", "UAH", 5000)
     )
 
     const tx = await commandBus.execute(
       new CreateTransactionCommand({
-        userId,
+        organizationId,
         accountId,
         type: "expense",
         amount: 100,
@@ -772,32 +774,32 @@ describe("Transactions", () => {
         date: new Date(),
       })
     )
-    await commandBus.execute(new SettleTransactionCommand(tx.id, userId))
+    await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
 
     await commandBus.execute(
       new CreateReimbursementCommand({
         transactionId: tx.id,
-        userId,
+        organizationId,
         accountId: account2.id,
         amount: 30,
         date: new Date(),
       })
     )
 
-    await commandBus.execute(new DeleteTransactionCommand(tx.id, userId))
+    await commandBus.execute(new DeleteTransactionCommand(tx.id, organizationId))
 
     // All transactions should be gone
     const list = await queryBus.execute(
-      new ListTransactionsQuery(userId, { page: 1, limit: 100 })
+      new ListTransactionsQuery(organizationId, { page: 1, limit: 100 })
     )
     expect(list.data).toHaveLength(0)
 
     // Balances restored
-    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, userId))
+    const acc1 = await queryBus.execute(new GetAccountQuery(accountId, organizationId))
     expect(acc1.balance).toBe(10000)
 
     const acc2 = await queryBus.execute(
-      new GetAccountQuery(account2.id, userId)
+      new GetAccountQuery(account2.id, organizationId)
     )
     expect(acc2.balance).toBe(5000)
   })

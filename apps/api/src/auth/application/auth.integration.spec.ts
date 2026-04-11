@@ -55,7 +55,7 @@ describe("Auth", () => {
     await flushEvents()
 
     const categories = await queryBus.execute(
-      new GetCategoriesQuery(result.user.id)
+      new GetCategoriesQuery(result.accessToken.organizationId)
     )
 
     expect(categories.length).toBeGreaterThan(0)

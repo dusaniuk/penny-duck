@@ -5,7 +5,7 @@ import { CategoryRepository } from "../category.repository"
 export class DeleteCategoryCommand extends Command<void> {
   constructor(
     public readonly id: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -16,9 +16,9 @@ export class DeleteCategoryHandler implements ICommandHandler<DeleteCategoryComm
   constructor(private readonly categoryRepo: CategoryRepository) {}
 
   async execute(cmd: DeleteCategoryCommand): Promise<void> {
-    const category = await this.categoryRepo.findById(cmd.id, cmd.userId)
+    const category = await this.categoryRepo.findById(cmd.id, cmd.organizationId)
     if (category === null) throw new NotFoundException("Category not found")
 
-    await this.categoryRepo.delete(cmd.id, cmd.userId)
+    await this.categoryRepo.delete(cmd.id, cmd.organizationId)
   }
 }

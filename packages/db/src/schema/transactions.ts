@@ -7,7 +7,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
-import { users } from "./users"
+import { organizations } from "./organizations"
 import { accounts } from "./accounts"
 import { categories } from "./categories"
 import { money, rate } from "./custom-types"
@@ -16,9 +16,9 @@ export const transactions = appSchema.table(
   "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    organizationId: uuid("organization_id")
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => organizations.id, { onDelete: "cascade" }),
     accountId: uuid("account_id")
       .notNull()
       .references(() => accounts.id, {
@@ -47,10 +47,13 @@ export const transactions = appSchema.table(
       .defaultNow(),
   },
   (table) => [
-    index("transactions_user_date_idx").on(table.userId, table.date),
+    index("transactions_org_date_idx").on(table.organizationId, table.date),
     index("transactions_account_date_idx").on(table.accountId, table.date),
     index("transactions_transfer_id_idx").on(table.transferId),
-    index("transactions_user_settled_idx").on(table.userId, table.settled),
+    index("transactions_org_settled_idx").on(
+      table.organizationId,
+      table.settled
+    ),
     index("transactions_reimbursement_id_idx").on(table.reimbursementId),
   ]
 )

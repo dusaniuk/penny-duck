@@ -2,6 +2,7 @@ import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
 import { User } from "../../domain/entities/user.entity"
 import { UserRegisteredEvent } from "../../domain/events/user-registered.event"
 import { UserRepository } from "../../infrastructure/repositories/user.repository"
+import { OrganizationRepository } from "../../../organizations/organization.repository"
 
 export class SignupCommand {
   constructor(
@@ -19,6 +20,7 @@ export interface SignupResult {
 export class SignupHandler implements ICommandHandler<SignupCommand> {
   constructor(
     private readonly userRepo: UserRepository,
+    private readonly orgRepo: OrganizationRepository,
     private readonly eventBus: EventBus
   ) {}
 
@@ -35,8 +37,13 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
     )
     const savedUser = await this.userRepo.save(user)
 
+    const org = await this.orgRepo.createWithOwner(
+      `${savedUser.name}'s Space`,
+      savedUser.id
+    )
+
     this.eventBus.publish(
-      new UserRegisteredEvent(savedUser.id, savedUser.email)
+      new UserRegisteredEvent(savedUser.id, savedUser.email, org.id)
     )
 
     return { message: "Account created successfully" }

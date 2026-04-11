@@ -2,7 +2,7 @@ import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { CategoryRepository } from "../category.repository"
 
 export class SeedDefaultCategoriesCommand extends Command<void> {
-  constructor(public readonly userId: string) {
+  constructor(public readonly organizationId: string) {
     super()
   }
 }
@@ -78,7 +78,7 @@ export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefault
   async execute(cmd: SeedDefaultCategoriesCommand): Promise<void> {
     for (const [parentName, category] of Object.entries(DEFAULT_CATEGORIES)) {
       const savedParent = await this.categoryRepo.insert({
-        userId: cmd.userId,
+        organizationId: cmd.organizationId,
         parentId: null,
         name: parentName,
         icon: category.icon,
@@ -86,7 +86,7 @@ export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefault
 
       await this.categoryRepo.insertMany(
         category.children.map((child) => ({
-          userId: cmd.userId,
+          organizationId: cmd.organizationId,
           parentId: savedParent.id,
           name: child.name,
           icon: child.icon,

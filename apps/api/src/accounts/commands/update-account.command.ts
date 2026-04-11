@@ -6,7 +6,7 @@ import { AccountRepository } from "../account.repository"
 export class UpdateAccountCommand extends Command<Account> {
   constructor(
     public readonly id: string,
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly name?: string,
     public readonly type?: string
   ) {
@@ -21,10 +21,10 @@ export class UpdateAccountHandler
   constructor(private readonly accountRepo: AccountRepository) {}
 
   async execute(cmd: UpdateAccountCommand): Promise<Account> {
-    const existing = await this.accountRepo.findById(cmd.id, cmd.userId)
+    const existing = await this.accountRepo.findById(cmd.id, cmd.organizationId)
     if (!existing) throw new NotFoundException("Account not found")
 
-    const row = await this.accountRepo.update(cmd.id, cmd.userId, {
+    const row = await this.accountRepo.update(cmd.id, cmd.organizationId, {
       name: cmd.name,
       type: cmd.type,
     })

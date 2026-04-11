@@ -3,8 +3,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { accountContract } from "@workspace/api-contract"
 import { AuthGuard } from "../auth/presentation/auth.guard"
-import { CurrentUser } from "../auth/presentation/auth.decorator"
-import { type AccessTokenPayload } from "../auth/infrastructure/services/jwt.service"
+import { CurrentOrg } from "../auth/presentation/auth.decorator"
 import { CreateAccountCommand } from "./commands/create-account.command"
 import { UpdateAccountCommand } from "./commands/update-account.command"
 import { DeleteAccountCommand } from "./commands/delete-account.command"
@@ -20,21 +19,21 @@ export class AccountsController {
   ) {}
 
   @TsRestHandler(accountContract.list)
-  handleList(@CurrentUser() user: AccessTokenPayload) {
+  handleList(@CurrentOrg() organizationId: string) {
     return tsRestHandler(accountContract.list, async () => {
       const accounts = await this.queryBus.execute(
-        new GetAccountsQuery(user.sub)
+        new GetAccountsQuery(organizationId)
       )
       return { status: 200 as const, body: accounts }
     })
   }
 
   @TsRestHandler(accountContract.create)
-  handleCreate(@CurrentUser() user: AccessTokenPayload) {
+  handleCreate(@CurrentOrg() organizationId: string) {
     return tsRestHandler(accountContract.create, async ({ body }) => {
       const account = await this.commandBus.execute(
         new CreateAccountCommand(
-          user.sub,
+          organizationId,
           body.name,
           body.type,
           body.currency,
@@ -46,30 +45,30 @@ export class AccountsController {
   }
 
   @TsRestHandler(accountContract.get)
-  handleGet(@CurrentUser() user: AccessTokenPayload) {
+  handleGet(@CurrentOrg() organizationId: string) {
     return tsRestHandler(accountContract.get, async ({ params }) => {
       const account = await this.queryBus.execute(
-        new GetAccountQuery(params.id, user.sub)
+        new GetAccountQuery(params.id, organizationId)
       )
       return { status: 200 as const, body: account }
     })
   }
 
   @TsRestHandler(accountContract.update)
-  handleUpdate(@CurrentUser() user: AccessTokenPayload) {
+  handleUpdate(@CurrentOrg() organizationId: string) {
     return tsRestHandler(accountContract.update, async ({ params, body }) => {
       const account = await this.commandBus.execute(
-        new UpdateAccountCommand(params.id, user.sub, body.name, body.type)
+        new UpdateAccountCommand(params.id, organizationId, body.name, body.type)
       )
       return { status: 200 as const, body: account }
     })
   }
 
   @TsRestHandler(accountContract.delete)
-  handleDelete(@CurrentUser() user: AccessTokenPayload) {
+  handleDelete(@CurrentOrg() organizationId: string) {
     return tsRestHandler(accountContract.delete, async ({ params }) => {
       await this.commandBus.execute(
-        new DeleteAccountCommand(params.id, user.sub)
+        new DeleteAccountCommand(params.id, organizationId)
       )
       return { status: 200 as const, body: { message: "Account deleted" } }
     })

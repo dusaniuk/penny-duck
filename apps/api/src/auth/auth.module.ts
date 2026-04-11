@@ -3,6 +3,7 @@ import { CqrsModule } from "@nestjs/cqrs"
 import { JwtModule } from "@nestjs/jwt"
 import { env } from "@workspace/env/api"
 import { DatabaseModule } from "@/database/database.module"
+import { OrganizationsModule } from "../organizations/organizations.module"
 
 import { SignupHandler } from "./application/commands/signup.command"
 import { LoginHandler } from "./application/commands/login.command"
@@ -34,6 +35,7 @@ const eventHandlers = [TokenReuseDetectedHandler]
   imports: [
     DatabaseModule,
     CqrsModule,
+    OrganizationsModule,
     JwtModule.register({
       secret: env.JWT_SECRET,
       signOptions: {

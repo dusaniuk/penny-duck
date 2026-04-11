@@ -4,6 +4,7 @@ import { JwtService as NestJwtService } from "@nestjs/jwt"
 export interface AccessTokenPayload {
   sub: string
   email: string
+  organizationId: string
 }
 
 @Injectable()

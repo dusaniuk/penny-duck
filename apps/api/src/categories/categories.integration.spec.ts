@@ -13,7 +13,7 @@ import { GetCategoriesQuery } from "./queries/get-categories.query"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
-let userId: string
+let organizationId: string
 
 beforeAll(async () => {
   const ctx = await createTestApp()
@@ -27,20 +27,20 @@ beforeEach(async () => {
   await flushEvents() // drain async event handlers from previous test
   await truncateAll()
   const result = await signupUser()
-  userId = result.user.id
+  organizationId = result.accessToken.organizationId
   await flushEvents()
 })
 
 describe("Categories", () => {
   it("seeds default categories on signup", async () => {
-    const categories = await queryBus.execute(new GetCategoriesQuery(userId))
+    const categories = await queryBus.execute(new GetCategoriesQuery(organizationId))
 
     expect(categories.length).toBeGreaterThan(0)
   })
 
   it("creates a custom category", async () => {
     const category = await commandBus.execute(
-      new CreateCategoryCommand(userId, "Custom Cat", null, "star")
+      new CreateCategoryCommand(organizationId, "Custom Cat", null, "star")
     )
 
     expect(category.id).toBeDefined()
@@ -50,11 +50,11 @@ describe("Categories", () => {
 
   it("creates a subcategory", async () => {
     const parent = await commandBus.execute(
-      new CreateCategoryCommand(userId, "Parent", null, null)
+      new CreateCategoryCommand(organizationId, "Parent", null, null)
     )
 
     const child = await commandBus.execute(
-      new CreateCategoryCommand(userId, "Child", parent.id, null)
+      new CreateCategoryCommand(organizationId, "Child", parent.id, null)
     )
 
     expect(child.parentId).toBe(parent.id)
@@ -62,11 +62,11 @@ describe("Categories", () => {
 
   it("updates a category", async () => {
     const category = await commandBus.execute(
-      new CreateCategoryCommand(userId, "Old Name", null, null)
+      new CreateCategoryCommand(organizationId, "Old Name", null, null)
     )
 
     const updated = await commandBus.execute(
-      new UpdateCategoryCommand(category.id, userId, "New Name", "heart")
+      new UpdateCategoryCommand(category.id, organizationId, "New Name", "heart")
     )
 
     expect(updated.name).toBe("New Name")
@@ -75,15 +75,15 @@ describe("Categories", () => {
 
   it("deletes a category", async () => {
     const category = await commandBus.execute(
-      new CreateCategoryCommand(userId, "To Delete", null, null)
+      new CreateCategoryCommand(organizationId, "To Delete", null, null)
     )
 
-    const beforeDelete = await queryBus.execute(new GetCategoriesQuery(userId))
+    const beforeDelete = await queryBus.execute(new GetCategoriesQuery(organizationId))
     const countBefore = beforeDelete.length
 
-    await commandBus.execute(new DeleteCategoryCommand(category.id, userId))
+    await commandBus.execute(new DeleteCategoryCommand(category.id, organizationId))
 
-    const afterDelete = await queryBus.execute(new GetCategoriesQuery(userId))
+    const afterDelete = await queryBus.execute(new GetCategoriesQuery(organizationId))
     expect(afterDelete.length).toBe(countBefore - 1)
   })
 
@@ -92,15 +92,15 @@ describe("Categories", () => {
     await flushEvents()
 
     await commandBus.execute(
-      new CreateCategoryCommand(userId, "User1 Cat", null, null)
+      new CreateCategoryCommand(organizationId, "User1 Cat", null, null)
     )
     await commandBus.execute(
-      new CreateCategoryCommand(other.user.id, "User2 Cat", null, null)
+      new CreateCategoryCommand(other.accessToken.organizationId, "User2 Cat", null, null)
     )
 
-    const user1Cats = await queryBus.execute(new GetCategoriesQuery(userId))
+    const user1Cats = await queryBus.execute(new GetCategoriesQuery(organizationId))
     const user2Cats = await queryBus.execute(
-      new GetCategoriesQuery(other.user.id)
+      new GetCategoriesQuery(other.accessToken.organizationId)
     )
 
     const user1Custom = user1Cats.find(

@@ -10,7 +10,7 @@ import {
 } from "../helpers/transaction.helpers"
 
 export interface CreateTransferInput {
-  userId: string
+  organizationId: string
   fromAccountId: string
   toAccountId: string
   amount: number
@@ -53,8 +53,8 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
     )
 
     const [fromAccount, toAccount] = await Promise.all([
-      this.accountRepo.findById(input.fromAccountId, input.userId),
-      this.accountRepo.findById(input.toAccountId, input.userId),
+      this.accountRepo.findById(input.fromAccountId, input.organizationId),
+      this.accountRepo.findById(input.toAccountId, input.organizationId),
     ])
     if (!fromAccount || !toAccount)
       throw new NotFoundException("Account not found")
@@ -72,7 +72,7 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
 
     const [outRow, inRow] = await this.transactionRepo.insertTransferPair(
       {
-        userId: input.userId,
+        organizationId: input.organizationId,
         accountId: input.fromAccountId,
         amount: -input.amount,
         categoryId: null,
@@ -86,7 +86,7 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         reimbursementId: null,
       },
       {
-        userId: input.userId,
+        organizationId: input.organizationId,
         accountId: input.toAccountId,
         amount: incomingAmount,
         categoryId: null,

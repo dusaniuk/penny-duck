@@ -1,12 +1,12 @@
-import { timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { index, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
-import { users } from "./users"
+import { organizations } from "./organizations"
 
 export const categories = appSchema.table("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  organizationId: uuid("organization_id")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => organizations.id, { onDelete: "cascade" }),
   parentId: uuid("parent_id"),
   name: varchar("name", { length: 100 }).notNull(),
   icon: varchar("icon", { length: 50 }),
@@ -16,4 +16,4 @@ export const categories = appSchema.table("categories", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}, (table) => [index("categories_org_idx").on(table.organizationId)])

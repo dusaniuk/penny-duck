@@ -4,6 +4,7 @@ import { InvalidCredentialsError } from "../../domain/errors/auth.errors"
 import { UserLoggedInEvent } from "../../domain/events/user-logged-in.event"
 import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
 import { UserRepository } from "../../infrastructure/repositories/user.repository"
+import { OrganizationRepository } from "../../../organizations/organization.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 
 export class LoginCommand {
@@ -15,7 +16,7 @@ export class LoginCommand {
 
 export interface LoginResult {
   user: { id: string; email: string; name: string }
-  accessToken: { sub: string; email: string }
+  accessToken: { sub: string; email: string; organizationId: string }
   refreshToken: string
 }
 
@@ -24,6 +25,7 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly tokenRepo: RefreshTokenRepository,
+    private readonly orgRepo: OrganizationRepository,
     private readonly eventBus: EventBus
   ) {}
 
@@ -36,6 +38,9 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
     const valid = await user.verifyPassword(command.password)
     if (!valid) throw new InvalidCredentialsError()
 
+    const org = await this.orgRepo.findByUserId(user.id)
+    if (!org) throw new InvalidCredentialsError()
+
     const family = TokenFamily.create()
     const { token, rawValue } = await RefreshToken.issue(user.id, family, 7)
     await this.tokenRepo.save(token)
@@ -44,7 +49,7 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
 
     return {
       user: { id: user.id, email: user.email, name: user.name },
-      accessToken: { sub: user.id, email: user.email },
+      accessToken: { sub: user.id, email: user.email, organizationId: org.id },
       refreshToken: rawValue,
     }
   }

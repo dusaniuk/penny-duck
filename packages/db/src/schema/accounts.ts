@@ -1,13 +1,13 @@
-import { timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { index, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
-import { users } from "./users"
+import { organizations } from "./organizations"
 import { money } from "./custom-types"
 
 export const accounts = appSchema.table("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  organizationId: uuid("organization_id")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => organizations.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 100 }).notNull(),
   type: varchar("type", { length: 20 }).notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
@@ -18,4 +18,4 @@ export const accounts = appSchema.table("accounts", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+}, (table) => [index("accounts_org_idx").on(table.organizationId)])

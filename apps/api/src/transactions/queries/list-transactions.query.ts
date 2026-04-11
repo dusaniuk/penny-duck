@@ -20,7 +20,7 @@ export class ListTransactionsQuery extends Query<{
   total: number
 }> {
   constructor(
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly filters: ListFilters
   ) {
     super()
@@ -35,7 +35,7 @@ export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQu
     query: ListTransactionsQuery
   ): Promise<{ data: Transaction[]; total: number }> {
     const { data, total } = await this.transactionRepo.findAll({
-      userId: query.userId,
+      organizationId: query.organizationId,
       ...query.filters,
     })
     return { data: data.map(toResponse), total }

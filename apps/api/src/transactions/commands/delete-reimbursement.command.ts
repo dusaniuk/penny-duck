@@ -6,7 +6,7 @@ export class DeleteReimbursementCommand extends Command<void> {
   constructor(
     public readonly expenseId: string,
     public readonly reimbursementTransactionId: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -21,13 +21,13 @@ export class DeleteReimbursementHandler
   async execute(cmd: DeleteReimbursementCommand): Promise<void> {
     const expense = await this.transactionRepo.findById(
       cmd.expenseId,
-      cmd.userId
+      cmd.organizationId
     )
     if (!expense) throw new NotFoundException("Transaction not found")
 
     const reimbursementTx = await this.transactionRepo.findById(
       cmd.reimbursementTransactionId,
-      cmd.userId
+      cmd.organizationId
     )
     if (!reimbursementTx || reimbursementTx.reimbursementId !== cmd.expenseId)
       throw new NotFoundException("Reimbursement not found")
@@ -40,7 +40,7 @@ export class DeleteReimbursementHandler
     // Find the outgoing side of the transfer to get the reimbursed amount
     const pair = await this.transactionRepo.findByTransferId(
       reimbursementTx.transferId,
-      cmd.userId
+      cmd.organizationId
     )
     const outgoing = pair.find((t) => t.amount < 0)
     if (!outgoing) throw new NotFoundException("Transfer pair incomplete")
@@ -48,14 +48,14 @@ export class DeleteReimbursementHandler
     // Restore the expense amount: expense.amount is negative, outgoing.amount is negative
     // e.g. expense = -70, outgoing = -30 => restored = -70 + (-30) = -100
     const restoredAmount = expense.amount + outgoing.amount
-    await this.transactionRepo.update(cmd.expenseId, {
+    await this.transactionRepo.update(cmd.expenseId, cmd.organizationId, {
       amount: restoredAmount,
     })
 
     // Delete the transfer pair
     await this.transactionRepo.deleteByTransferId(
       reimbursementTx.transferId,
-      cmd.userId
+      cmd.organizationId
     )
   }
 }

@@ -19,7 +19,7 @@ interface UpdateTransferFields {
 export class UpdateTransferCommand extends Command<[Transaction, Transaction]> {
   constructor(
     public readonly transferId: string,
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly fields: UpdateTransferFields
   ) {
     super()
@@ -33,7 +33,7 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
   async execute(
     cmd: UpdateTransferCommand
   ): Promise<[Transaction, Transaction]> {
-    const pair = await this.transactionRepo.findByTransferId(cmd.transferId, cmd.userId)
+    const pair = await this.transactionRepo.findByTransferId(cmd.transferId, cmd.organizationId)
     if (pair.length !== 2) throw new NotFoundException("Transaction not found")
 
     const outgoing = pair.find((t) => t.amount < 0)!
@@ -101,7 +101,8 @@ export class UpdateTransferHandler implements ICommandHandler<UpdateTransferComm
       outgoing.id,
       outgoingUpdate,
       incoming.id,
-      incomingUpdate
+      incomingUpdate,
+      cmd.organizationId
     )
 
     return [toResponse(outRow), toResponse(inRow)]

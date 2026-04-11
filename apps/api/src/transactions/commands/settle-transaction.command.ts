@@ -7,7 +7,7 @@ import { toResponse } from "../helpers/transaction.helpers"
 export class SettleTransactionCommand extends Command<Transaction> {
   constructor(
     public readonly id: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -18,10 +18,10 @@ export class SettleTransactionHandler implements ICommandHandler<SettleTransacti
   constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(cmd: SettleTransactionCommand): Promise<Transaction> {
-    const row = await this.transactionRepo.findById(cmd.id, cmd.userId)
+    const row = await this.transactionRepo.findById(cmd.id, cmd.organizationId)
     if (!row) throw new NotFoundException("Transaction not found")
 
-    const updated = await this.transactionRepo.update(cmd.id, {
+    const updated = await this.transactionRepo.update(cmd.id, cmd.organizationId, {
       settled: !row.settled,
     })
     return toResponse(updated)

@@ -6,7 +6,7 @@ import { DB_CLIENT } from "@/database/database.module"
 export type TransactionRow = typeof transactions.$inferSelect
 
 export interface ListTransactionsFilters {
-  userId: string
+  organizationId: string
   accountId?: string
   type?: string
   categoryId?: string
@@ -23,7 +23,7 @@ export class TransactionRepository {
   constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
   async insert(data: {
-    userId: string
+    organizationId: string
     accountId: string
     amount: number
     categoryId: string | null
@@ -45,6 +45,7 @@ export class TransactionRepository {
 
   async update(
     id: string,
+    organizationId: string,
     data: {
       accountId?: string
       amount?: number
@@ -62,7 +63,7 @@ export class TransactionRepository {
     const [row] = await this.db
       .update(transactions)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(transactions.id, id))
+      .where(and(eq(transactions.id, id), eq(transactions.organizationId, organizationId)))
       .returning()
     return row
   }
@@ -86,37 +87,38 @@ export class TransactionRepository {
 
   async updateTransferPair(
     outgoingId: string,
-    outgoingData: Parameters<TransactionRepository["update"]>[1],
+    outgoingData: Parameters<TransactionRepository["update"]>[2],
     incomingId: string,
-    incomingData: Parameters<TransactionRepository["update"]>[1]
+    incomingData: Parameters<TransactionRepository["update"]>[2],
+    organizationId: string
   ): Promise<[TransactionRow, TransactionRow]> {
     return this.db.transaction(async (tx) => {
       const [outRow] = await tx
         .update(transactions)
         .set({ ...outgoingData, updatedAt: new Date() })
-        .where(eq(transactions.id, outgoingId))
+        .where(and(eq(transactions.id, outgoingId), eq(transactions.organizationId, organizationId)))
         .returning()
       const [inRow] = await tx
         .update(transactions)
         .set({ ...incomingData, updatedAt: new Date() })
-        .where(eq(transactions.id, incomingId))
+        .where(and(eq(transactions.id, incomingId), eq(transactions.organizationId, organizationId)))
         .returning()
       return [outRow, inRow]
     })
   }
 
-  async findById(id: string, userId: string): Promise<TransactionRow | null> {
+  async findById(id: string, organizationId: string): Promise<TransactionRow | null> {
     const rows = await this.db
       .select()
       .from(transactions)
-      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+      .where(and(eq(transactions.id, id), eq(transactions.organizationId, organizationId)))
       .limit(1)
     return rows[0] ?? null
   }
 
   async findByTransferId(
     transferId: string,
-    userId: string
+    organizationId: string
   ): Promise<TransactionRow[]> {
     return this.db
       .select()
@@ -124,14 +126,14 @@ export class TransactionRepository {
       .where(
         and(
           eq(transactions.transferId, transferId),
-          eq(transactions.userId, userId)
+          eq(transactions.organizationId, organizationId)
         )
       )
   }
 
   async findByReimbursementId(
     reimbursementId: string,
-    userId: string
+    organizationId: string
   ): Promise<TransactionRow[]> {
     return this.db
       .select()
@@ -139,7 +141,7 @@ export class TransactionRepository {
       .where(
         and(
           eq(transactions.reimbursementId, reimbursementId),
-          eq(transactions.userId, userId)
+          eq(transactions.organizationId, organizationId)
         )
       )
   }
@@ -147,7 +149,7 @@ export class TransactionRepository {
   async findAll(
     filters: ListTransactionsFilters
   ): Promise<{ data: TransactionRow[]; total: number }> {
-    const conditions = [eq(transactions.userId, filters.userId)]
+    const conditions = [eq(transactions.organizationId, filters.organizationId)]
 
     if (filters.accountId)
       conditions.push(eq(transactions.accountId, filters.accountId))
@@ -205,7 +207,7 @@ export class TransactionRepository {
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, filters.userId),
+            eq(transactions.organizationId, filters.organizationId),
             inArray(transactions.transferId, missingTransferIds)
           )
         )
@@ -215,10 +217,10 @@ export class TransactionRepository {
     return { data: [...rows, ...pairedRows], total }
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string, organizationId: string): Promise<void> {
     await this.db
       .delete(transactions)
-      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+      .where(and(eq(transactions.id, id), eq(transactions.organizationId, organizationId)))
   }
 
   async countByAccountId(accountId: string): Promise<number> {
@@ -229,13 +231,13 @@ export class TransactionRepository {
     return total
   }
 
-  async deleteByTransferId(transferId: string, userId: string): Promise<void> {
+  async deleteByTransferId(transferId: string, organizationId: string): Promise<void> {
     await this.db
       .delete(transactions)
       .where(
         and(
           eq(transactions.transferId, transferId),
-          eq(transactions.userId, userId)
+          eq(transactions.organizationId, organizationId)
         )
       )
   }

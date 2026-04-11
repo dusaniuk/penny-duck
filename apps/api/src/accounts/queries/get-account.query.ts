@@ -6,7 +6,7 @@ import { AccountRepository } from "../account.repository"
 export class GetAccountQuery extends Query<Account> {
   constructor(
     public readonly id: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -17,7 +17,7 @@ export class GetAccountHandler implements IQueryHandler<GetAccountQuery> {
   constructor(private readonly accountRepo: AccountRepository) {}
 
   async execute(query: GetAccountQuery): Promise<Account> {
-    const row = await this.accountRepo.findById(query.id, query.userId)
+    const row = await this.accountRepo.findById(query.id, query.organizationId)
     if (!row) throw new NotFoundException("Account not found")
     return {
       id: row.id,

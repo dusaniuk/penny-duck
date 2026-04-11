@@ -8,7 +8,7 @@ export class UserRegisteredHandler implements IEventHandler<UserRegisteredEvent>
 
   async handle(event: UserRegisteredEvent): Promise<void> {
     await this.commandBus.execute(
-      new SeedDefaultCategoriesCommand(event.userId)
+      new SeedDefaultCategoriesCommand(event.organizationId)
     )
   }
 }

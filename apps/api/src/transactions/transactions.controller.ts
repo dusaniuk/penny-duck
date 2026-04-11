@@ -3,8 +3,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { transactionContract } from "@workspace/api-contract"
 import { AuthGuard } from "../auth/presentation/auth.guard"
-import { CurrentUser } from "../auth/presentation/auth.decorator"
-import { type AccessTokenPayload } from "../auth/infrastructure/services/jwt.service"
+import { CurrentOrg } from "../auth/presentation/auth.decorator"
 import { CreateTransactionCommand } from "./commands/create-transaction.command"
 import { UpdateTransactionCommand } from "./commands/update-transaction.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
@@ -26,11 +25,11 @@ export class TransactionsController {
   ) {}
 
   @TsRestHandler(transactionContract.create)
-  handleCreate(@CurrentUser() user: AccessTokenPayload) {
+  handleCreate(@CurrentOrg() organizationId: string) {
     return tsRestHandler(transactionContract.create, async ({ body }) => {
       const transaction = await this.commandBus.execute(
         new CreateTransactionCommand({
-          userId: user.sub,
+          organizationId: organizationId,
           accountId: body.accountId,
           type: body.type,
           amount: body.amount,
@@ -48,12 +47,12 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.list)
-  handleList(@CurrentUser() user: AccessTokenPayload) {
+  handleList(@CurrentOrg() organizationId: string) {
     return tsRestHandler(transactionContract.list, async ({ query }) => {
       const page = query.page ?? 1
       const limit = query.limit ?? 50
       const { data, total } = await this.queryBus.execute(
-        new ListTransactionsQuery(user.sub, {
+        new ListTransactionsQuery(organizationId, {
           page,
           limit,
           accountId: query.accountId,
@@ -73,22 +72,22 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.get)
-  handleGet(@CurrentUser() user: AccessTokenPayload) {
+  handleGet(@CurrentOrg() organizationId: string) {
     return tsRestHandler(transactionContract.get, async ({ params }) => {
       const transaction = await this.queryBus.execute(
-        new GetTransactionQuery(params.id, user.sub)
+        new GetTransactionQuery(params.id, organizationId)
       )
       return { status: 200 as const, body: transaction }
     })
   }
 
   @TsRestHandler(transactionContract.update)
-  handleUpdate(@CurrentUser() user: AccessTokenPayload) {
+  handleUpdate(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.update,
       async ({ params, body }) => {
         const transaction = await this.commandBus.execute(
-          new UpdateTransactionCommand(params.id, user.sub, {
+          new UpdateTransactionCommand(params.id, organizationId, {
             accountId: body.accountId,
             amount: body.amount,
             categoryId: body.categoryId,
@@ -105,10 +104,10 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.delete)
-  handleDelete(@CurrentUser() user: AccessTokenPayload) {
+  handleDelete(@CurrentOrg() organizationId: string) {
     return tsRestHandler(transactionContract.delete, async ({ params }) => {
       await this.commandBus.execute(
-        new DeleteTransactionCommand(params.id, user.sub)
+        new DeleteTransactionCommand(params.id, organizationId)
       )
       return {
         status: 200 as const,
@@ -118,24 +117,24 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.settle)
-  handleSettle(@CurrentUser() user: AccessTokenPayload) {
+  handleSettle(@CurrentOrg() organizationId: string) {
     return tsRestHandler(transactionContract.settle, async ({ params }) => {
       const transaction = await this.commandBus.execute(
-        new SettleTransactionCommand(params.id, user.sub)
+        new SettleTransactionCommand(params.id, organizationId)
       )
       return { status: 200 as const, body: transaction }
     })
   }
 
   @TsRestHandler(transactionContract.createReimbursement)
-  handleCreateReimbursement(@CurrentUser() user: AccessTokenPayload) {
+  handleCreateReimbursement(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.createReimbursement,
       async ({ params, body }) => {
         const transaction = await this.commandBus.execute(
           new CreateReimbursementCommand({
             transactionId: params.id,
-            userId: user.sub,
+            organizationId: organizationId,
             accountId: body.accountId,
             amount: body.amount,
             date: new Date(body.date),
@@ -148,7 +147,7 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.deleteReimbursement)
-  handleDeleteReimbursement(@CurrentUser() user: AccessTokenPayload) {
+  handleDeleteReimbursement(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.deleteReimbursement,
       async ({ params }) => {
@@ -156,7 +155,7 @@ export class TransactionsController {
           new DeleteReimbursementCommand(
             params.id,
             params.reimbursementTransactionId,
-            user.sub
+            organizationId
           )
         )
         return {
@@ -168,13 +167,13 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.createTransfer)
-  handleCreateTransfer(@CurrentUser() user: AccessTokenPayload) {
+  handleCreateTransfer(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.createTransfer,
       async ({ body }) => {
         const [outgoing, incoming] = await this.commandBus.execute(
           new CreateTransferCommand({
-            userId: user.sub,
+            organizationId: organizationId,
             fromAccountId: body.fromAccountId,
             toAccountId: body.toAccountId,
             amount: body.amount,
@@ -194,12 +193,12 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.updateTransfer)
-  handleUpdateTransfer(@CurrentUser() user: AccessTokenPayload) {
+  handleUpdateTransfer(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.updateTransfer,
       async ({ params, body }) => {
         const [outgoing, incoming] = await this.commandBus.execute(
-          new UpdateTransferCommand(params.transferId, user.sub, {
+          new UpdateTransferCommand(params.transferId, organizationId, {
             amount: body.amount,
             date: body.date ? new Date(body.date) : undefined,
             note: body.note,
@@ -217,12 +216,12 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.deleteTransfer)
-  handleDeleteTransfer(@CurrentUser() user: AccessTokenPayload) {
+  handleDeleteTransfer(@CurrentOrg() organizationId: string) {
     return tsRestHandler(
       transactionContract.deleteTransfer,
       async ({ params }) => {
         await this.commandBus.execute(
-          new DeleteTransferCommand(params.transferId, user.sub)
+          new DeleteTransferCommand(params.transferId, organizationId)
         )
         return {
           status: 200 as const,

@@ -4,7 +4,7 @@ import { AccountRepository } from "../account.repository"
 
 export class CreateAccountCommand extends Command<Account> {
   constructor(
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly name: string,
     public readonly type: string,
     public readonly currency: string,
@@ -22,7 +22,7 @@ export class CreateAccountHandler
 
   async execute(cmd: CreateAccountCommand): Promise<Account> {
     const row = await this.accountRepo.insert({
-      userId: cmd.userId,
+      organizationId: cmd.organizationId,
       name: cmd.name,
       type: cmd.type,
       currency: cmd.currency,

@@ -20,12 +20,12 @@ export class AccountRepository {
       .as("balance_sq")
   }
 
-  async findAllByUserId(userId: string): Promise<AccountRow[]> {
+  async findAllByOrganizationId(organizationId: string): Promise<AccountRow[]> {
     const balanceSubquery = this.balanceSubquery()
     return this.db
       .select({
         id: accounts.id,
-        userId: accounts.userId,
+        organizationId: accounts.organizationId,
         name: accounts.name,
         type: accounts.type,
         currency: accounts.currency,
@@ -36,16 +36,16 @@ export class AccountRepository {
       })
       .from(accounts)
       .leftJoin(balanceSubquery, eq(balanceSubquery.accountId, accounts.id))
-      .where(eq(accounts.userId, userId))
+      .where(eq(accounts.organizationId, organizationId))
       .orderBy(asc(accounts.name))
   }
 
-  async findById(id: string, userId: string): Promise<AccountRow | null> {
+  async findById(id: string, organizationId: string): Promise<AccountRow | null> {
     const balanceSubquery = this.balanceSubquery()
     const rows = await this.db
       .select({
         id: accounts.id,
-        userId: accounts.userId,
+        organizationId: accounts.organizationId,
         name: accounts.name,
         type: accounts.type,
         currency: accounts.currency,
@@ -56,13 +56,13 @@ export class AccountRepository {
       })
       .from(accounts)
       .leftJoin(balanceSubquery, eq(balanceSubquery.accountId, accounts.id))
-      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .where(and(eq(accounts.id, id), eq(accounts.organizationId, organizationId)))
       .limit(1)
     return rows[0] ?? null
   }
 
   async insert(data: {
-    userId: string
+    organizationId: string
     name: string
     type: string
     currency: string
@@ -71,7 +71,7 @@ export class AccountRepository {
     const [row] = await this.db
       .insert(accounts)
       .values({
-        userId: data.userId,
+        organizationId: data.organizationId,
         name: data.name,
         type: data.type,
         currency: data.currency,
@@ -83,20 +83,20 @@ export class AccountRepository {
 
   async update(
     id: string,
-    userId: string,
+    organizationId: string,
     data: { name?: string; type?: string }
   ): Promise<AccountRow> {
     await this.db
       .update(accounts)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(accounts.id, id))
-    const row = await this.findById(id, userId)
+      .where(and(eq(accounts.id, id), eq(accounts.organizationId, organizationId)))
+    const row = await this.findById(id, organizationId)
     return row!
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string, organizationId: string): Promise<void> {
     await this.db
       .delete(accounts)
-      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .where(and(eq(accounts.id, id), eq(accounts.organizationId, organizationId)))
   }
 }

@@ -9,24 +9,24 @@ export type CategoryRow = typeof categories.$inferSelect
 export class CategoryRepository {
   constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
-  async findAllByUserId(userId: string): Promise<CategoryRow[]> {
+  async findAllByOrganizationId(organizationId: string): Promise<CategoryRow[]> {
     return this.db
       .select()
       .from(categories)
-      .where(eq(categories.userId, userId))
+      .where(eq(categories.organizationId, organizationId))
   }
 
-  async findById(id: string, userId: string): Promise<CategoryRow | null> {
+  async findById(id: string, organizationId: string): Promise<CategoryRow | null> {
     const rows = await this.db
       .select()
       .from(categories)
-      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .where(and(eq(categories.id, id), eq(categories.organizationId, organizationId)))
       .limit(1)
     return rows[0] ?? null
   }
 
   async insert(data: {
-    userId: string
+    organizationId: string
     parentId: string | null
     name: string
     icon: string | null
@@ -40,19 +40,20 @@ export class CategoryRepository {
 
   async update(
     id: string,
+    organizationId: string,
     data: { name?: string; icon?: string | null }
   ): Promise<CategoryRow> {
     const [row] = await this.db
       .update(categories)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(categories.id, id))
+      .where(and(eq(categories.id, id), eq(categories.organizationId, organizationId)))
       .returning()
     return row
   }
 
   async insertMany(
     items: Array<{
-      userId: string
+      organizationId: string
       parentId: string | null
       name: string
       icon: string | null
@@ -62,12 +63,12 @@ export class CategoryRepository {
     return this.db.insert(categories).values(items).returning()
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(id: string, organizationId: string): Promise<void> {
     await this.db
       .delete(categories)
-      .where(and(eq(categories.parentId, id), eq(categories.userId, userId)))
+      .where(and(eq(categories.parentId, id), eq(categories.organizationId, organizationId)))
     await this.db
       .delete(categories)
-      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .where(and(eq(categories.id, id), eq(categories.organizationId, organizationId)))
   }
 }

@@ -8,6 +8,7 @@ import { TokenReuseDetectedEvent } from "../../domain/events/token-reuse-detecte
 import { TokensRefreshedEvent } from "../../domain/events/tokens-refreshed.event"
 import { RefreshTokenRepository } from "../../infrastructure/repositories/refresh-token.repository"
 import { UserRepository } from "../../infrastructure/repositories/user.repository"
+import { OrganizationRepository } from "../../../organizations/organization.repository"
 import { TokenFamily } from "../../domain/value-objects/token-family.vo"
 
 export class RefreshTokensCommand {
@@ -15,7 +16,7 @@ export class RefreshTokensCommand {
 }
 
 export interface RefreshTokensResult {
-  accessToken: { sub: string; email: string }
+  accessToken: { sub: string; email: string; organizationId: string }
   refreshToken: string
 }
 
@@ -24,6 +25,7 @@ export class RefreshTokensHandler implements ICommandHandler<RefreshTokensComman
   constructor(
     private readonly tokenRepo: RefreshTokenRepository,
     private readonly userRepo: UserRepository,
+    private readonly orgRepo: OrganizationRepository,
     private readonly eventBus: EventBus,
   ) {}
 
@@ -77,12 +79,19 @@ export class RefreshTokensHandler implements ICommandHandler<RefreshTokensComman
     const user = await this.userRepo.findById(matchedToken.userId)
     if (!user) throw new InvalidTokenError()
 
+    const org = await this.orgRepo.findByUserId(matchedToken.userId)
+    if (!org) throw new InvalidTokenError()
+
     this.eventBus.publish(
       new TokensRefreshedEvent(matchedToken.userId, matchedToken.familyId)
     )
 
     return {
-      accessToken: { sub: matchedToken.userId, email: user.email },
+      accessToken: {
+        sub: matchedToken.userId,
+        email: user.email,
+        organizationId: org.id,
+      },
       refreshToken: rawValue,
     }
   }

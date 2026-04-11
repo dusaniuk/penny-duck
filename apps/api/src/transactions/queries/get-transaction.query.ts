@@ -7,7 +7,7 @@ import { toResponse } from "../helpers/transaction.helpers"
 export class GetTransactionQuery extends Query<Transaction> {
   constructor(
     public readonly id: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -18,7 +18,7 @@ export class GetTransactionHandler implements IQueryHandler<GetTransactionQuery>
   constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(query: GetTransactionQuery): Promise<Transaction> {
-    const row = await this.transactionRepo.findById(query.id, query.userId)
+    const row = await this.transactionRepo.findById(query.id, query.organizationId)
     if (!row) throw new NotFoundException("Transaction not found")
     return toResponse(row)
   }

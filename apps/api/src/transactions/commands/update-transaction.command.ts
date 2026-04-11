@@ -21,7 +21,7 @@ interface UpdateFields {
 export class UpdateTransactionCommand extends Command<Transaction> {
   constructor(
     public readonly id: string,
-    public readonly userId: string,
+    public readonly organizationId: string,
     public readonly fields: UpdateFields
   ) {
     super()
@@ -33,7 +33,7 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
   constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(cmd: UpdateTransactionCommand): Promise<Transaction> {
-    const existing = await this.transactionRepo.findById(cmd.id, cmd.userId)
+    const existing = await this.transactionRepo.findById(cmd.id, cmd.organizationId)
     if (!existing) throw new NotFoundException("Transaction not found")
     if (existing.transferId)
       throw new BadRequestException(
@@ -88,7 +88,7 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
       }
     }
 
-    const row = await this.transactionRepo.update(cmd.id, updateData)
+    const row = await this.transactionRepo.update(cmd.id, cmd.organizationId, updateData)
 
     return toResponse(row)
   }

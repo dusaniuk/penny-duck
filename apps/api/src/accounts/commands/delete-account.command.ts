@@ -6,7 +6,7 @@ import { TransactionRepository } from "../../transactions/transaction.repository
 export class DeleteAccountCommand extends Command<void> {
   constructor(
     public readonly id: string,
-    public readonly userId: string
+    public readonly organizationId: string
   ) {
     super()
   }
@@ -22,7 +22,7 @@ export class DeleteAccountHandler
   ) {}
 
   async execute(cmd: DeleteAccountCommand): Promise<void> {
-    const account = await this.accountRepo.findById(cmd.id, cmd.userId)
+    const account = await this.accountRepo.findById(cmd.id, cmd.organizationId)
     if (!account) throw new NotFoundException("Account not found")
 
     const count = await this.transactionRepo.countByAccountId(cmd.id)
@@ -31,6 +31,6 @@ export class DeleteAccountHandler
         `Account has ${count} transaction${count !== 1 ? "s" : ""} and cannot be deleted`
       )
 
-    await this.accountRepo.delete(cmd.id, cmd.userId)
+    await this.accountRepo.delete(cmd.id, cmd.organizationId)
   }
 }

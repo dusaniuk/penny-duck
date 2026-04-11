@@ -64,6 +64,13 @@
       "when": 1775847681806,
       "tag": "0008_chemical_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775935728336,
+      "tag": "0009_add-organizations",
+      "breakpoints": true
     }
   ]
 }

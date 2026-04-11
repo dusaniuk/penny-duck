@@ -8,7 +8,7 @@ import {
 } from "../helpers/transaction.helpers"
 
 export interface CreateTransactionInput {
-  userId: string
+  organizationId: string
   accountId: string
   type: string
   amount: number
@@ -50,7 +50,7 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
     const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
     const row = await this.transactionRepo.insert({
-      userId: input.userId,
+      organizationId: input.organizationId,
       accountId: input.accountId,
       amount: dbAmount,
       categoryId: input.categoryId ?? null,
