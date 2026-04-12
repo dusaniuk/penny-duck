@@ -5,23 +5,22 @@ import { env } from "@workspace/env/api"
 import { DatabaseModule } from "@/database/database.module"
 import { OrganizationsModule } from "../organizations/organizations.module"
 
-import { SignupHandler } from "./application/commands/signup.command"
-import { LoginHandler } from "./application/commands/login.command"
-import { RefreshTokensHandler } from "./application/commands/refresh-tokens.command"
-import { LogoutHandler } from "./application/commands/logout.command"
-import { GenerateInviteCodeHandler } from "./application/commands/generate-invite-code.command"
-import { TokenReuseDetectedHandler } from "./application/event-handlers/token-reuse-detected.handler"
-import { GetInviteHandler } from "./application/queries/get-invite.query"
+import { SignupHandler } from "./commands/signup.command"
+import { LoginHandler } from "./commands/login.command"
+import { RefreshTokensHandler } from "./commands/refresh-tokens.command"
+import { LogoutHandler } from "./commands/logout.command"
+import { GenerateInviteCodeHandler } from "./commands/generate-invite-code.command"
+import { GetInviteHandler } from "./queries/get-invite.query"
+import { TokenReuseDetectedHandler } from "./events/token-reuse-detected.handler"
 
-import { UserRepository } from "./infrastructure/repositories/user.repository"
-import { RefreshTokenRepository } from "./infrastructure/repositories/refresh-token.repository"
-import { JwtService } from "./infrastructure/services/jwt.service"
-import { CookieService } from "./infrastructure/services/cookie.service"
-import { TokenCleanupService } from "./infrastructure/services/token-cleanup.service"
+import { UserRepository } from "./user.repository"
+import { RefreshTokenRepository } from "./refresh-token.repository"
+import { JwtService } from "./jwt.service"
+import { CookieService } from "./cookie.service"
+import { TokenCleanupService } from "./token-cleanup.service"
 
-import { AuthController } from "./presentation/auth.controller"
-import { AuthGuard } from "./presentation/auth.guard"
-import { AuthExceptionFilter } from "./presentation/auth-exception.filter"
+import { AuthController } from "./auth.controller"
+import { AuthGuard } from "./auth.guard"
 
 const commandHandlers = [
   SignupHandler,
@@ -56,7 +55,6 @@ const eventHandlers = [TokenReuseDetectedHandler]
     CookieService,
     TokenCleanupService,
     AuthGuard,
-    AuthExceptionFilter,
   ],
   exports: [AuthGuard, JwtService],
 })

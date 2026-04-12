@@ -6,8 +6,8 @@ import { type DbClient } from "@workspace/db"
 import { faker } from "@faker-js/faker"
 import { AppModule } from "../app.module"
 import { DB_CLIENT } from "../database/database.module"
-import { SignupCommand } from "../auth/application/commands/signup.command"
-import { LoginCommand } from "../auth/application/commands/login.command"
+import { SignupCommand } from "../auth/commands/signup.command"
+import { LoginCommand } from "../auth/commands/login.command"
 
 let app: INestApplication
 let commandBus: CommandBus

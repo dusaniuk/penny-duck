@@ -1,50 +1,32 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { eq, and, gt, lt } from "drizzle-orm"
+import { eq, gt, lt } from "drizzle-orm"
 import { type DbClient, refreshTokens } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
-import { RefreshToken } from "../../domain/entities/refresh-token.entity"
+
+export type RefreshTokenRow = typeof refreshTokens.$inferSelect
 
 @Injectable()
 export class RefreshTokenRepository {
   constructor(@Inject(DB_CLIENT) private readonly db: DbClient) {}
 
-  async save(token: RefreshToken): Promise<RefreshToken> {
-    if (token.id === "") {
-      const rows = await this.db
-        .insert(refreshTokens)
-        .values({
-          userId: token.userId,
-          tokenHash: token.tokenHash,
-          familyId: token.familyId,
-          revoked: token.revoked,
-          expiresAt: token.expiresAt,
-        })
-        .returning()
-
-      return RefreshToken.fromPersistence(rows[0])
-    }
-
-    const rows = await this.db
-      .update(refreshTokens)
-      .set({ revoked: token.revoked })
-      .where(eq(refreshTokens.id, token.id))
+  async insert(data: {
+    userId: string
+    tokenHash: string
+    familyId: string
+    expiresAt: Date
+  }): Promise<RefreshTokenRow> {
+    const [row] = await this.db
+      .insert(refreshTokens)
+      .values({ ...data, revoked: false })
       .returning()
-
-    return RefreshToken.fromPersistence(rows[0])
+    return row
   }
 
-  async findNonExpiredByFamilyId(familyId: string): Promise<RefreshToken[]> {
-    const rows = await this.db
+  async findAllNonExpired(): Promise<RefreshTokenRow[]> {
+    return this.db
       .select()
       .from(refreshTokens)
-      .where(
-        and(
-          eq(refreshTokens.familyId, familyId),
-          gt(refreshTokens.expiresAt, new Date())
-        )
-      )
-
-    return rows.map(RefreshToken.fromPersistence)
+      .where(gt(refreshTokens.expiresAt, new Date()))
   }
 
   async revokeAllByFamilyId(familyId: string): Promise<void> {
@@ -54,13 +36,11 @@ export class RefreshTokenRepository {
       .where(eq(refreshTokens.familyId, familyId))
   }
 
-  async findAllNonExpired(): Promise<RefreshToken[]> {
-    const rows = await this.db
-      .select()
-      .from(refreshTokens)
-      .where(gt(refreshTokens.expiresAt, new Date()))
-
-    return rows.map(RefreshToken.fromPersistence)
+  async revokeAllByUserId(userId: string): Promise<void> {
+    await this.db
+      .update(refreshTokens)
+      .set({ revoked: true })
+      .where(eq(refreshTokens.userId, userId))
   }
 
   async atomicRotate(
@@ -70,11 +50,8 @@ export class RefreshTokenRepository {
       tokenHash: string
       familyId: string
       expiresAt: Date
-    },
-  ): Promise<
-    | { rotated: true; newRow: typeof refreshTokens.$inferSelect }
-    | { rotated: false }
-  > {
+    }
+  ): Promise<{ rotated: true; newRow: RefreshTokenRow } | { rotated: false }> {
     return this.db.transaction(async (tx) => {
       const [existing] = await tx
         .select()
@@ -104,13 +81,6 @@ export class RefreshTokenRepository {
 
       return { rotated: true, newRow }
     })
-  }
-
-  async revokeAllByUserId(userId: string): Promise<void> {
-    await this.db
-      .update(refreshTokens)
-      .set({ revoked: true })
-      .where(eq(refreshTokens.userId, userId))
   }
 
   async deleteExpired(): Promise<number> {

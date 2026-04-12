@@ -2,7 +2,6 @@ import {
   Controller,
   Res,
   UnauthorizedException,
-  UseFilters,
   UseGuards,
 } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
@@ -11,21 +10,19 @@ import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { Response } from "express"
 import { isProduction } from "@workspace/env/api"
 import { authContract } from "@workspace/api-contract"
-import { LoginCommand } from "../application/commands/login.command"
-import { LogoutCommand } from "../application/commands/logout.command"
-import { RefreshTokensCommand } from "../application/commands/refresh-tokens.command"
-import { SignupCommand } from "../application/commands/signup.command"
-import { GenerateInviteCodeCommand } from "../application/commands/generate-invite-code.command"
-import { GetInviteQuery } from "../application/queries/get-invite.query"
-import { CookieService } from "../infrastructure/services/cookie.service"
-import { JwtService } from "../infrastructure/services/jwt.service"
-import type { AccessTokenPayload } from "../infrastructure/services/jwt.service"
-import { AuthExceptionFilter } from "./auth-exception.filter"
+import { LoginCommand } from "./commands/login.command"
+import { LogoutCommand } from "./commands/logout.command"
+import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
+import { SignupCommand } from "./commands/signup.command"
+import { GenerateInviteCodeCommand } from "./commands/generate-invite-code.command"
+import { GetInviteQuery } from "./queries/get-invite.query"
+import { CookieService } from "./cookie.service"
+import { JwtService } from "./jwt.service"
+import type { AccessTokenPayload } from "./jwt.service"
 import { AuthGuard } from "./auth.guard"
 import { CurrentUser, CurrentOrg } from "./auth.decorator"
 
 @Controller()
-@UseFilters(AuthExceptionFilter)
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,

@@ -1,7 +1,7 @@
 import { ForbiddenException } from "@nestjs/common"
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { env } from "@workspace/env/api"
-import { OrganizationRepository } from "../../../organizations/organization.repository"
+import { OrganizationRepository } from "../../organizations/organization.repository"
 
 export class GenerateInviteCodeCommand {
   constructor(

@@ -1,5 +1,5 @@
 import { CommandBus, EventsHandler, IEventHandler } from "@nestjs/cqrs"
-import { UserRegisteredEvent } from "../../auth/domain/events/user-registered.event"
+import { UserRegisteredEvent } from "../../auth/events/user-registered.event"
 import { SeedDefaultCategoriesCommand } from "../commands/seed-default-categories.command"
 
 @EventsHandler(UserRegisteredEvent)

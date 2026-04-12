@@ -1,5 +1,5 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
-import { OrganizationRepository } from "../../../organizations/organization.repository"
+import { OrganizationRepository } from "../../organizations/organization.repository"
 
 export class GetInviteQuery {
   constructor(public readonly code: string) {}

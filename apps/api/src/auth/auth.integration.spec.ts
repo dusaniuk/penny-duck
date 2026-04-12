@@ -1,3 +1,4 @@
+import { UnauthorizedException } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import {
   createTestApp,
@@ -5,17 +6,16 @@ import {
   truncateAll,
   signupUser,
   flushEvents,
-} from "../../test/setup"
+} from "../test/setup"
 import { SignupCommand } from "./commands/signup.command"
 import { LoginCommand } from "./commands/login.command"
 import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
 import { GenerateInviteCodeCommand } from "./commands/generate-invite-code.command"
-import { GetCategoriesQuery } from "../../categories/queries/get-categories.query"
+import { GetCategoriesQuery } from "../categories/queries/get-categories.query"
 import { GetInviteQuery } from "./queries/get-invite.query"
-import { GetMembersQuery } from "../../users/queries/get-members.query"
-import { OrganizationRepository } from "../../organizations/organization.repository"
-import { InvalidCredentialsError } from "../domain/errors/auth.errors"
+import { GetMembersQuery } from "../users/queries/get-members.query"
+import { OrganizationRepository } from "../organizations/organization.repository"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
@@ -30,7 +30,7 @@ beforeAll(async () => {
 
 afterAll(() => closeTestApp())
 beforeEach(async () => {
-  await flushEvents() // drain async event handlers from previous test
+  await flushEvents()
   await truncateAll()
 })
 
@@ -89,13 +89,13 @@ describe("Auth", () => {
       commandBus.execute(
         new LoginCommand("wrong@example.com", "wrongPassword1")
       )
-    ).rejects.toThrow(InvalidCredentialsError)
+    ).rejects.toThrow(UnauthorizedException)
   })
 
   it("rejects login for non-existent user", async () => {
     await expect(
       commandBus.execute(new LoginCommand("noone@example.com", "password12345"))
-    ).rejects.toThrow(InvalidCredentialsError)
+    ).rejects.toThrow(UnauthorizedException)
   })
 
   it("refreshes tokens", async () => {
@@ -114,10 +114,8 @@ describe("Auth", () => {
     const login = await signupUser()
     const oldToken = login.refreshToken
 
-    // Use the token once (rotates it)
     await commandBus.execute(new RefreshTokensCommand(oldToken))
 
-    // Try to use the old token again
     await expect(
       commandBus.execute(new RefreshTokensCommand(oldToken))
     ).rejects.toThrow()
@@ -126,14 +124,12 @@ describe("Auth", () => {
   it("logs out and invalidates refresh token", async () => {
     const login = await signupUser()
 
-    // Rotate the token first so we have a fresh one to test against
     const refreshed = await commandBus.execute(
       new RefreshTokensCommand(login.refreshToken)
     )
 
     await commandBus.execute(new LogoutCommand(refreshed.refreshToken))
 
-    // After logout, the token family is revoked — any token in that family fails
     await expect(
       commandBus.execute(new RefreshTokensCommand(refreshed.refreshToken))
     ).rejects.toThrow()
@@ -195,9 +191,7 @@ describe("Auth", () => {
 
       await orgRepo.addMember(org!.id, newUserLogin.accessToken.sub)
 
-      const members = await queryBus.execute(
-        new GetMembersQuery(org!.id)
-      )
+      const members = await queryBus.execute(new GetMembersQuery(org!.id))
       const newMember = members.find(
         (m: { id: string }) => m.id === newUserLogin.accessToken.sub
       )
@@ -248,10 +242,7 @@ describe("Auth", () => {
 
       await expect(
         commandBus.execute(
-          new GenerateInviteCodeCommand(
-            memberLogin.accessToken.sub,
-            org!.id
-          )
+          new GenerateInviteCodeCommand(memberLogin.accessToken.sub, org!.id)
         )
       ).rejects.toThrow()
     })
@@ -262,7 +253,12 @@ describe("Auth", () => {
       const code = await orgRepo.setInviteCode(org!.id)
 
       const result = await commandBus.execute(
-        new SignupCommand("Invited User", "invited@example.com", "password12345678", code)
+        new SignupCommand(
+          "Invited User",
+          "invited@example.com",
+          "password12345678",
+          code
+        )
       )
 
       expect(result.message).toBe("Account created successfully")
@@ -275,7 +271,12 @@ describe("Auth", () => {
 
     it("signup with invalid invite code returns generic success", async () => {
       const result = await commandBus.execute(
-        new SignupCommand("User", "nocode@example.com", "password12345678", "invalidcode")
+        new SignupCommand(
+          "User",
+          "nocode@example.com",
+          "password12345678",
+          "invalidcode"
+        )
       )
 
       expect(result.message).toBe("Account created successfully")
@@ -287,15 +288,23 @@ describe("Auth", () => {
       const code = await orgRepo.setInviteCode(org!.id)
 
       await commandBus.execute(
-        new SignupCommand("Existing", "existing@example.com", "password12345678")
+        new SignupCommand(
+          "Existing",
+          "existing@example.com",
+          "password12345678"
+        )
       )
 
       const result = await commandBus.execute(
-        new SignupCommand("Existing", "existing@example.com", "password12345678", code)
+        new SignupCommand(
+          "Existing",
+          "existing@example.com",
+          "password12345678",
+          code
+        )
       )
 
       expect(result.message).toBe("Account created successfully")
     })
   })
-
 })
