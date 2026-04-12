@@ -9,6 +9,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { Throttle } from "@nestjs/throttler"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { Response } from "express"
+import { isProduction } from "@workspace/env/api"
 import { authContract } from "@workspace/api-contract"
 import { LoginCommand } from "../application/commands/login.command"
 import { LogoutCommand } from "../application/commands/logout.command"
@@ -35,7 +36,7 @@ export class AuthController {
   ) {}
 
   @TsRestHandler(authContract.signup)
-  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Throttle({ default: { limit: isProduction ? 3 : 10_000, ttl: 60_000 } })
   handleSignup() {
     return tsRestHandler(authContract.signup, async ({ body }) => {
       const result = await this.commandBus.execute(
@@ -50,7 +51,7 @@ export class AuthController {
   }
 
   @TsRestHandler(authContract.login)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: isProduction ? 5 : 10_000, ttl: 60_000 } })
   handleLogin(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.login, async ({ body }) => {
       const result = await this.commandBus.execute(

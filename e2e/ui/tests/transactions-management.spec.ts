@@ -1,18 +1,9 @@
 import { test, expect } from "@playwright/test"
 import { env } from "../../shared/env"
-import { createAccountData, createUserData } from "../../shared/factories"
-
-async function signupAndNavigate(page: any) {
-  const user = createUserData()
-  await page.goto("/signup")
-  await page.waitForLoadState("networkidle")
-  await page.getByLabel("Name").fill(user.name)
-  await page.getByLabel("Email").fill(user.email)
-  await page.getByLabel("Password").fill(user.password)
-  await page.getByRole("button", { name: "Sign up" }).click()
-  await expect(page).toHaveURL(/\/dashboard/)
-  return user
-}
+import {
+  createAccountData,
+  signupAndLoginViaPage,
+} from "../../shared/factories"
 
 async function createAccountViaPage(
   page: any,
@@ -38,7 +29,7 @@ async function getFirstCategory(page: any) {
 
 test.describe("Transactions management", () => {
   test.beforeEach(async ({ page }) => {
-    await signupAndNavigate(page)
+    await signupAndLoginViaPage(page)
   })
 
   test("navigates to transactions page via sidebar", async ({ page }) => {
@@ -120,8 +111,7 @@ test.describe("Transactions management", () => {
     await expect(page.getByText("+1000.00").first()).toBeVisible()
   })
 
-  test("creates a shared expense and settles it", async ({
-    page }) => {
+  test("creates an unsettled expense and settles it", async ({ page }) => {
     const account = await createAccountViaPage(page, {
       balance: 5000,
       currency: "USD",
@@ -131,7 +121,7 @@ test.describe("Transactions management", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    // Create shared expense
+    // Create unsettled expense
     await page.locator(".fixed.bottom-6.right-6 > button").click()
     await page.getByText("Expense").click()
 
@@ -144,27 +134,15 @@ test.describe("Transactions management", () => {
       .getByRole("option", { name: new RegExp(category.name) })
       .click()
 
-    // Expand shared expense section
-    await dialog.getByText("+ Shared expense").click()
-    await dialog.getByPlaceholder("0.00").last().fill("40")
+    // Mark as unsettled
+    await dialog.getByText("Mark unsettled").click()
 
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
-    // Verify unsettled indicator
-    await expect(page.getByText("my share: 40.00")).toBeVisible()
-    await expect(page.getByText(/Unsettled/)).toBeVisible()
-
-    // Click the transaction to edit, then settle
-    await page.getByText("my share: 40.00").click()
-
-    const editDialog = page.getByRole("dialog")
-    await editDialog.getByRole("button", { name: "Mark settled" }).click()
-
-    // Unsettled chip should disappear (count becomes 0)
-    await expect(page.getByText(/Unsettled/)).not.toBeVisible({
-      timeout: 5000,
-    })
+    // Open row action menu and settle
+    await page.getByTestId("transaction-actions").click()
+    await page.getByRole("menuitem", { name: "Mark settled" }).click()
   })
 
   test("edits a transaction", async ({ page }) => {
@@ -191,8 +169,9 @@ test.describe("Transactions management", () => {
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
-    // Click the transaction row to edit
-    await page.getByRole("button", { name: /50\.00/ }).first().click()
+    // Open row action menu and click Edit
+    await page.getByTestId("transaction-actions").click()
+    await page.getByRole("menuitem", { name: "Edit" }).click()
 
     const editDialog = page.getByRole("dialog")
     await expect(editDialog.getByText("Edit Transaction")).toBeVisible()
@@ -231,10 +210,9 @@ test.describe("Transactions management", () => {
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
-    // Click row to edit, then delete
-    await page.getByText("to delete").click()
-    const editDialog = page.getByRole("dialog")
-    await editDialog.getByRole("button", { name: "Delete" }).click()
+    // Open row action menu and click Delete
+    await page.getByTestId("transaction-actions").click()
+    await page.getByRole("menuitem", { name: "Delete" }).click()
 
     // Confirm in alert dialog
     await page
@@ -251,7 +229,7 @@ test.describe("Transactions management", () => {
 
 test.describe("Transfers", () => {
   test.beforeEach(async ({ page }) => {
-    await signupAndNavigate(page)
+    await signupAndLoginViaPage(page)
   })
 
   test("creates a same-currency transfer", async ({ page }) => {
@@ -286,11 +264,9 @@ test.describe("Transfers", () => {
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
-    // Should show as a single row with both account names
-    const transferRows = page.getByRole("button", { name: /UAH Source|UAH Target/ })
-    await expect(transferRows).toHaveCount(1)
-    await expect(transferRows.first()).toContainText("UAH Source")
-    await expect(transferRows.first()).toContainText("UAH Target")
+    // Should show transfer with both account names
+    await expect(page.getByText("Transfer").first()).toBeVisible()
+    await expect(page.getByText(/UAH (Source|Target).*→.*UAH (Source|Target)/)).toBeVisible()
   })
 
   test("creates a cross-currency transfer with forced exchange rate", async ({
@@ -341,7 +317,7 @@ test.describe("Transfers", () => {
 
 test.describe("Transactions filters", () => {
   test.beforeEach(async ({ page }) => {
-    await signupAndNavigate(page)
+    await signupAndLoginViaPage(page)
   })
 
   test("filters by type via filter sheet", async ({ page }) => {

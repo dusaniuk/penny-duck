@@ -171,6 +171,7 @@ export function TransactionRow({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              data-testid="transaction-actions"
               className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <IconDotsVertical className="size-4" />

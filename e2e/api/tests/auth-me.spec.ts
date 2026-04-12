@@ -1,14 +1,11 @@
 import { test, expect } from "@playwright/test"
 import { env } from "../../shared/env"
-import { createUserData } from "../../shared/factories"
+import { signupAndLogin } from "../../shared/factories"
 
 test.describe("GET /auth/me", () => {
   test("returns current user when authenticated", async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    const user = await signupAndLogin(request)
 
-    // The signup response sets cookies on the request context,
-    // so subsequent requests carry them automatically
     const res = await request.get("/auth/me")
 
     expect(res.status()).toBe(200)

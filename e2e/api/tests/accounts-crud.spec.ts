@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test"
-import { createUserData, createAccountData } from "../../shared/factories"
+import { createAccountData, signupAndLogin } from "../../shared/factories"
 
 test.describe("Accounts CRUD", () => {
   test.beforeEach(async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
   })
 
   test("creates an account", async ({ request }) => {
@@ -129,7 +128,7 @@ test.describe("Accounts CRUD", () => {
     expect(deleteRes.status()).toBe(409)
 
     const body = await deleteRes.json()
-    expect(body.count).toBe(1)
+    expect(body.message).toContain("cannot be deleted")
   })
 
   test("returns 404 for non-existent account", async ({ request }) => {

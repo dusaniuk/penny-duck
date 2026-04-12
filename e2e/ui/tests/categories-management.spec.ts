@@ -1,17 +1,9 @@
 import { test, expect } from "@playwright/test"
-import { createUserData } from "../../shared/factories"
+import { signupAndLoginViaPage } from "../../shared/factories"
 
 test.describe("Categories management", () => {
   test.beforeEach(async ({ page }) => {
-    const user = createUserData()
-
-    await page.goto("/signup")
-    await page.waitForLoadState("networkidle")
-    await page.getByLabel("Name").fill(user.name)
-    await page.getByLabel("Email").fill(user.email)
-    await page.getByLabel("Password").fill(user.password)
-    await page.getByRole("button", { name: "Sign up" }).click()
-    await expect(page).toHaveURL(/\/dashboard/)
+    await signupAndLoginViaPage(page)
   })
 
   test("navigates to categories page via sidebar", async ({ page }) => {

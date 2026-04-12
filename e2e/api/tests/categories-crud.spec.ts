@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test"
-import { createUserData } from "../../shared/factories"
+import { signupAndLogin } from "../../shared/factories"
 
 async function waitForCategories(
   request: any,
@@ -18,8 +18,7 @@ async function waitForCategories(
 
 test.describe("Categories CRUD", () => {
   test.beforeEach(async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
   })
 
   test("lists default seeded categories after signup", async ({ request }) => {

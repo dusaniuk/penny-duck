@@ -1,13 +1,12 @@
 import { test, expect } from "@playwright/test"
 import { env } from "../../shared/env"
-import { createUserData } from "../../shared/factories"
+import { signupAndLogin } from "../../shared/factories"
 
 test.describe("POST /auth/refresh", () => {
   test("refreshes tokens with valid refresh token", async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
 
-    // Signup sets cookies; now call refresh
+    // Login sets cookies; now call refresh
     const res = await request.post("/auth/refresh")
 
     expect(res.status()).toBe(200)

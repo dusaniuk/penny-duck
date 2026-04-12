@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test"
-import { env } from "../../shared/env"
 import { createUserData } from "../../shared/factories"
 
 test.describe("Signup flow", () => {
-  test("signs up and redirects to dashboard", async ({ page }) => {
+  test("signs up and shows success with login link", async ({ page }) => {
     const user = createUserData()
 
     await page.goto("/signup")
@@ -13,25 +12,54 @@ test.describe("Signup flow", () => {
     await page.getByLabel("Email").fill(user.email)
     await page.getByLabel("Password").fill(user.password)
     await page.getByRole("button", { name: "Sign up" }).click()
+
+    await expect(page.getByText("Account created!")).toBeVisible()
+    await expect(page.getByRole("link", { name: "login" })).toBeVisible()
+  })
+
+  test("can login after signup", async ({ page }) => {
+    const user = createUserData()
+
+    await page.goto("/signup")
+    await page.waitForLoadState("networkidle")
+
+    await page.getByLabel("Name").fill(user.name)
+    await page.getByLabel("Email").fill(user.email)
+    await page.getByLabel("Password").fill(user.password)
+    await page.getByRole("button", { name: "Sign up" }).click()
+
+    await page.getByRole("link", { name: "login" }).click()
+    await expect(page).toHaveURL(/\/login/)
+
+    await page.getByLabel("Email").fill(user.email)
+    await page.getByLabel("Password").fill(user.password)
+    await page.getByRole("button", { name: "Login" }).click()
 
     await expect(page).toHaveURL(/\/dashboard/)
   })
 
-  test("shows error for duplicate email", async ({ page, request }) => {
+  test("shows success for duplicate email (no error exposure)", async ({
+    page,
+  }) => {
     const user = createUserData()
 
-    // Create user via API first
-    await request.post(`${env.API_BASE_URL}/auth/signup`, { data: user })
-
+    // Signup once
     await page.goto("/signup")
     await page.waitForLoadState("networkidle")
-
     await page.getByLabel("Name").fill(user.name)
     await page.getByLabel("Email").fill(user.email)
     await page.getByLabel("Password").fill(user.password)
     await page.getByRole("button", { name: "Sign up" }).click()
+    await expect(page.getByText("Account created!")).toBeVisible()
 
-    await expect(page.getByText("Email already in use")).toBeVisible()
+    // Signup again with same email — should still show success (no email enumeration)
+    await page.goto("/signup")
+    await page.waitForLoadState("networkidle")
+    await page.getByLabel("Name").fill("Different Name")
+    await page.getByLabel("Email").fill(user.email)
+    await page.getByLabel("Password").fill(user.password)
+    await page.getByRole("button", { name: "Sign up" }).click()
+    await expect(page.getByText("Account created!")).toBeVisible()
   })
 
   test("shows validation error for invalid email", async ({ page }) => {

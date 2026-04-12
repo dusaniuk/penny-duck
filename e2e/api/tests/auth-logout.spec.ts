@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test"
-import { createUserData } from "../../shared/factories"
+import { signupAndLogin } from "../../shared/factories"
 
 test.describe("POST /auth/logout", () => {
   test("logs out and clears cookies", async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
 
     const res = await request.post("/auth/logout")
 
@@ -22,8 +21,7 @@ test.describe("POST /auth/logout", () => {
   })
 
   test("access token no longer works after logout", async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
 
     // Verify we're logged in
     const meBeforeLogout = await request.get("/auth/me")

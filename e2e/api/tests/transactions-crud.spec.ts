@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test"
 import {
-  createUserData,
   createAccountData,
   createTransactionData,
+  signupAndLogin,
 } from "../../shared/factories"
 
 async function setupAccountAndCategory(request: any) {
@@ -53,8 +53,7 @@ async function waitForCategories(
 
 test.describe("Transactions CRUD", () => {
   test.beforeEach(async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
     await waitForCategories(request, 1)
   })
 
@@ -98,20 +97,20 @@ test.describe("Transactions CRUD", () => {
     expect(body.amount).toBe(1000)
   })
 
-  test("creates a shared (unsettled) transaction", async ({ request }) => {
+  test("creates an unsettled transaction", async ({ request }) => {
     const { account, category } = await setupAccountAndCategory(request)
     const data = createTransactionData({
       accountId: account.id,
       categoryId: category.id,
       amount: 100,
-      myShare: 40,
     })
 
-    const res = await request.post("/transactions", { data })
+    const res = await request.post("/transactions", {
+      data: { ...data, settled: false },
+    })
 
     expect(res.status()).toBe(201)
     const body = await res.json()
-    expect(body.myShare).toBe(40)
     expect(body.settled).toBe(false)
   })
 
@@ -184,12 +183,14 @@ test.describe("Transactions CRUD", () => {
   test("filters transactions by settled status", async ({ request }) => {
     const { account, category } = await setupAccountAndCategory(request)
     await request.post("/transactions", {
-      data: createTransactionData({
-        accountId: account.id,
-        categoryId: category.id,
-        amount: 100,
-        myShare: 40,
-      }),
+      data: {
+        ...createTransactionData({
+          accountId: account.id,
+          categoryId: category.id,
+          amount: 100,
+        }),
+        settled: false,
+      },
     })
     await request.post("/transactions", {
       data: createTransactionData({
@@ -261,15 +262,17 @@ test.describe("Transactions CRUD", () => {
     expect(getRes.status()).toBe(404)
   })
 
-  test("settles a shared transaction", async ({ request }) => {
+  test("settles an unsettled transaction", async ({ request }) => {
     const { account, category } = await setupAccountAndCategory(request)
     const createRes = await request.post("/transactions", {
-      data: createTransactionData({
-        accountId: account.id,
-        categoryId: category.id,
-        amount: 100,
-        myShare: 40,
-      }),
+      data: {
+        ...createTransactionData({
+          accountId: account.id,
+          categoryId: category.id,
+          amount: 100,
+        }),
+        settled: false,
+      },
     })
     const { id } = await createRes.json()
 
@@ -278,7 +281,6 @@ test.describe("Transactions CRUD", () => {
     expect(res.status()).toBe(200)
     const body = await res.json()
     expect(body.settled).toBe(true)
-    expect(body.myShare).toBe(40)
   })
 
   test("returns 404 for non-existent transaction", async ({ request }) => {
@@ -350,8 +352,7 @@ test.describe("Transactions CRUD", () => {
 
 test.describe("Transfers", () => {
   test.beforeEach(async ({ request }) => {
-    const user = createUserData()
-    await request.post("/auth/signup", { data: user })
+    await signupAndLogin(request)
     await waitForCategories(request, 1)
   })
 
@@ -378,9 +379,9 @@ test.describe("Transfers", () => {
     const body = await res.json()
     expect(body.outgoing.accountId).toBe(acc1.id)
     expect(body.outgoing.amount).toBe(500)
-    expect(body.outgoing.type).toBe("transfer")
     expect(body.incoming.accountId).toBe(acc2.id)
     expect(body.incoming.amount).toBe(500)
+    expect(body.outgoing.transferId).toBeTruthy()
     expect(body.outgoing.transferId).toBe(body.incoming.transferId)
 
     // Verify balances

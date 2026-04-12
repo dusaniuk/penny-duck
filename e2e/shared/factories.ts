@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker"
+import { expect, type APIRequestContext, type Page } from "@playwright/test"
 
 export function createUserData() {
   return {
@@ -6,6 +7,37 @@ export function createUserData() {
     email: faker.internet.email(),
     password: faker.internet.password({ length: 12 }),
   }
+}
+
+export async function signupAndLogin(request: APIRequestContext) {
+  const user = createUserData()
+  await request.post("/auth/signup", { data: user })
+  await request.post("/auth/login", {
+    data: { email: user.email, password: user.password },
+  })
+  return user
+}
+
+export async function signupAndLoginViaPage(page: Page) {
+  const user = createUserData()
+
+  await page.goto("/signup")
+  await page.waitForLoadState("networkidle")
+  await page.getByLabel("Name").fill(user.name)
+  await page.getByLabel("Email").fill(user.email)
+  await page.getByLabel("Password").fill(user.password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+
+  // Signup shows success page with link to login
+  await page.getByRole("link", { name: "login" }).click()
+  await expect(page).toHaveURL(/\/login/)
+
+  await page.getByLabel("Email").fill(user.email)
+  await page.getByLabel("Password").fill(user.password)
+  await page.getByRole("button", { name: "Login" }).click()
+
+  await expect(page).toHaveURL(/\/dashboard/)
+  return user
 }
 
 export function createTransactionData(
@@ -16,7 +48,6 @@ export function createTransactionData(
     categoryId: string
     date: string
     note: string
-    myShare: number
     originalAmount: number
     originalCurrency: string
     exchangeRate: number
@@ -29,7 +60,6 @@ export function createTransactionData(
     categoryId: overrides.categoryId ?? faker.string.uuid(),
     date: overrides.date ?? new Date().toISOString(),
     ...(overrides.note !== undefined ? { note: overrides.note } : {}),
-    ...(overrides.myShare !== undefined ? { myShare: overrides.myShare } : {}),
     ...(overrides.originalAmount !== undefined
       ? {
           originalAmount: overrides.originalAmount,
