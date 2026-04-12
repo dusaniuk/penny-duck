@@ -143,7 +143,7 @@ export function TransactionFormDialog({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-h-[90vh] overflow-y-auto">
+      <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>
             {isEdit ? "Edit Transaction" : "New Transaction"}
