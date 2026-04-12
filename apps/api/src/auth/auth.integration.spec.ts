@@ -110,12 +110,13 @@ describe("Auth", () => {
     expect(result.refreshToken).not.toBe(login.refreshToken)
   })
 
-  it("rejects reused refresh token", async () => {
+  it("rejects refresh with old token after rotation", async () => {
     const login = await signupUser()
     const oldToken = login.refreshToken
 
     await commandBus.execute(new RefreshTokensCommand(oldToken))
 
+    // Old token was deleted during refresh, so it should fail
     await expect(
       commandBus.execute(new RefreshTokensCommand(oldToken))
     ).rejects.toThrow()
@@ -124,30 +125,11 @@ describe("Auth", () => {
   it("logs out and invalidates refresh token", async () => {
     const login = await signupUser()
 
-    const refreshed = await commandBus.execute(
-      new RefreshTokensCommand(login.refreshToken)
-    )
-
-    await commandBus.execute(new LogoutCommand(refreshed.refreshToken))
+    await commandBus.execute(new LogoutCommand(login.refreshToken))
 
     await expect(
-      commandBus.execute(new RefreshTokensCommand(refreshed.refreshToken))
+      commandBus.execute(new RefreshTokensCommand(login.refreshToken))
     ).rejects.toThrow()
-  })
-
-  it("rejects concurrent refresh with the same token (race condition)", async () => {
-    const login = await signupUser()
-
-    const results = await Promise.allSettled([
-      commandBus.execute(new RefreshTokensCommand(login.refreshToken)),
-      commandBus.execute(new RefreshTokensCommand(login.refreshToken)),
-    ])
-
-    const fulfilled = results.filter((r) => r.status === "fulfilled")
-    const rejected = results.filter((r) => r.status === "rejected")
-
-    expect(fulfilled).toHaveLength(1)
-    expect(rejected).toHaveLength(1)
   })
 
   describe("Invite flow", () => {

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { eq, gt, lt } from "drizzle-orm"
+import { eq, lt } from "drizzle-orm"
 import { type DbClient, refreshTokens } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
@@ -11,76 +11,29 @@ export class RefreshTokenRepository {
 
   async insert(data: {
     userId: string
-    tokenHash: string
-    familyId: string
+    token: string
     expiresAt: Date
   }): Promise<RefreshTokenRow> {
     const [row] = await this.db
       .insert(refreshTokens)
-      .values({ ...data, revoked: false })
+      .values(data)
       .returning()
     return row
   }
 
-  async findAllNonExpired(): Promise<RefreshTokenRow[]> {
-    return this.db
+  async findByToken(token: string): Promise<RefreshTokenRow | null> {
+    const rows = await this.db
       .select()
       .from(refreshTokens)
-      .where(gt(refreshTokens.expiresAt, new Date()))
+      .where(eq(refreshTokens.token, token))
+      .limit(1)
+    return rows[0] ?? null
   }
 
-  async revokeAllByFamilyId(familyId: string): Promise<void> {
+  async deleteByToken(token: string): Promise<void> {
     await this.db
-      .update(refreshTokens)
-      .set({ revoked: true })
-      .where(eq(refreshTokens.familyId, familyId))
-  }
-
-  async revokeAllByUserId(userId: string): Promise<void> {
-    await this.db
-      .update(refreshTokens)
-      .set({ revoked: true })
-      .where(eq(refreshTokens.userId, userId))
-  }
-
-  async atomicRotate(
-    tokenId: string,
-    newTokenData: {
-      userId: string
-      tokenHash: string
-      familyId: string
-      expiresAt: Date
-    }
-  ): Promise<{ rotated: true; newRow: RefreshTokenRow } | { rotated: false }> {
-    return this.db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select()
-        .from(refreshTokens)
-        .where(eq(refreshTokens.id, tokenId))
-        .for("update")
-
-      if (!existing || existing.revoked) {
-        return { rotated: false }
-      }
-
-      await tx
-        .update(refreshTokens)
-        .set({ revoked: true })
-        .where(eq(refreshTokens.id, tokenId))
-
-      const [newRow] = await tx
-        .insert(refreshTokens)
-        .values({
-          userId: newTokenData.userId,
-          tokenHash: newTokenData.tokenHash,
-          familyId: newTokenData.familyId,
-          revoked: false,
-          expiresAt: newTokenData.expiresAt,
-        })
-        .returning()
-
-      return { rotated: true, newRow }
-    })
+      .delete(refreshTokens)
+      .where(eq(refreshTokens.token, token))
   }
 
   async deleteExpired(): Promise<number> {
@@ -88,7 +41,6 @@ export class RefreshTokenRepository {
       .delete(refreshTokens)
       .where(lt(refreshTokens.expiresAt, new Date()))
       .returning({ id: refreshTokens.id })
-
     return rows.length
   }
 }

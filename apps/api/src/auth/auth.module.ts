@@ -11,7 +11,6 @@ import { RefreshTokensHandler } from "./commands/refresh-tokens.command"
 import { LogoutHandler } from "./commands/logout.command"
 import { GenerateInviteCodeHandler } from "./commands/generate-invite-code.command"
 import { GetInviteHandler } from "./queries/get-invite.query"
-import { TokenReuseDetectedHandler } from "./events/token-reuse-detected.handler"
 
 import { UserRepository } from "./user.repository"
 import { RefreshTokenRepository } from "./refresh-token.repository"
@@ -30,7 +29,6 @@ const commandHandlers = [
   GenerateInviteCodeHandler,
 ]
 const queryHandlers = [GetInviteHandler]
-const eventHandlers = [TokenReuseDetectedHandler]
 
 @Module({
   imports: [
@@ -48,7 +46,6 @@ const eventHandlers = [TokenReuseDetectedHandler]
   providers: [
     ...commandHandlers,
     ...queryHandlers,
-    ...eventHandlers,
     UserRepository,
     RefreshTokenRepository,
     JwtService,
