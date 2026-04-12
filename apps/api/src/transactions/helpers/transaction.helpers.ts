@@ -1,9 +1,13 @@
 import { BadRequestException } from "@nestjs/common"
 import { type Transaction } from "@workspace/api-contract"
-import { type TransactionRow } from "../transaction.repository"
+import { type TransactionRow, type TransactionRowWithUser } from "../transaction.repository"
 
-export function toResponse(row: TransactionRow, homeAmount?: number): Transaction {
+export function toResponse(
+  row: TransactionRow | TransactionRowWithUser,
+  homeAmount?: number
+): Transaction {
   const amount = Math.abs(row.amount)
+  const madeByName = "madeByName" in row ? row.madeByName : null
   return {
     id: row.id,
     accountId: row.accountId,
@@ -21,6 +25,9 @@ export function toResponse(row: TransactionRow, homeAmount?: number): Transactio
     reimbursementId: row.reimbursementId ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    madeBy: row.madeById
+      ? { id: row.madeById, name: madeByName ?? "Unknown" }
+      : null,
   }
 }
 

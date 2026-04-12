@@ -18,7 +18,7 @@ export class GetTransactionHandler implements IQueryHandler<GetTransactionQuery>
   constructor(private readonly transactionRepo: TransactionRepository) {}
 
   async execute(query: GetTransactionQuery): Promise<Transaction> {
-    const row = await this.transactionRepo.findById(query.id, query.organizationId)
+    const row = await this.transactionRepo.findByIdWithUser(query.id, query.organizationId)
     if (!row) throw new NotFoundException("Transaction not found")
     return toResponse(row)
   }

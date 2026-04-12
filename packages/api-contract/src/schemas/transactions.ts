@@ -21,6 +21,12 @@ export const TransactionSchema = z.object({
   reimbursementId: z.string().uuid().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  madeBy: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+    })
+    .nullable(),
 })
 
 export type Transaction = z.infer<typeof TransactionSchema>
@@ -36,6 +42,7 @@ export const CreateTransactionSchema = z.object({
   originalAmount: z.number().min(0.01).optional(),
   originalCurrency: z.string().max(3).optional(),
   exchangeRate: z.number().min(0.000001).optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const UpdateTransactionSchema = z.object({
@@ -47,6 +54,7 @@ export const UpdateTransactionSchema = z.object({
   originalAmount: z.number().min(0.01).nullable().optional(),
   originalCurrency: z.string().max(3).nullable().optional(),
   exchangeRate: z.number().min(0.000001).nullable().optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const ListTransactionsQuerySchema = z.object({
@@ -63,6 +71,7 @@ export const ListTransactionsQuerySchema = z.object({
   dateTo: z.string().datetime({ offset: true }).optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const CreateTransferSchema = z.object({
@@ -74,6 +83,7 @@ export const CreateTransferSchema = z.object({
   originalAmount: z.number().min(0.01).optional(),
   originalCurrency: z.string().max(3).optional(),
   exchangeRate: z.number().min(0.000001).optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const UpdateTransferSchema = z.object({
@@ -83,6 +93,7 @@ export const UpdateTransferSchema = z.object({
   originalAmount: z.number().min(0.01).nullable().optional(),
   originalCurrency: z.string().max(3).nullable().optional(),
   exchangeRate: z.number().min(0.000001).nullable().optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const CreateReimbursementSchema = z.object({
@@ -90,6 +101,7 @@ export const CreateReimbursementSchema = z.object({
   amount: z.number().min(0.01),
   date: z.string().datetime({ offset: true }),
   exchangeRate: z.number().min(0.000001).optional(),
+  madeById: z.string().uuid().optional(),
 })
 
 export const TransferResponseSchema = z.object({

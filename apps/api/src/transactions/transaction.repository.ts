@@ -1,9 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common"
 import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte } from "drizzle-orm"
-import { type DbClient, transactions } from "@workspace/db"
+import { type DbClient, organizationMembers, transactions, users } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
 export type TransactionRow = typeof transactions.$inferSelect
+
+export interface TransactionRowWithUser extends TransactionRow {
+  madeByName: string | null
+}
 
 export interface ListTransactionsFilters {
   organizationId: string
@@ -14,6 +18,7 @@ export interface ListTransactionsFilters {
   transfer?: boolean
   dateFrom?: Date
   dateTo?: Date
+  madeById?: string
   page: number
   limit: number
 }
@@ -35,6 +40,7 @@ export class TransactionRepository {
     exchangeRate: number | null
     transferId: string | null
     reimbursementId: string | null
+    madeById: string | null
   }): Promise<TransactionRow> {
     const [row] = await this.db
       .insert(transactions)
@@ -58,6 +64,7 @@ export class TransactionRepository {
       exchangeRate?: number | null
       transferId?: string | null
       reimbursementId?: string | null
+      madeById?: string | null
     }
   ): Promise<TransactionRow> {
     const [row] = await this.db
@@ -116,6 +123,21 @@ export class TransactionRepository {
     return rows[0] ?? null
   }
 
+  async findByIdWithUser(
+    id: string,
+    organizationId: string
+  ): Promise<TransactionRowWithUser | null> {
+    const rows = await this.db
+      .select(this.selectWithUser)
+      .from(transactions)
+      .leftJoin(users, eq(transactions.madeById, users.id))
+      .where(
+        and(eq(transactions.id, id), eq(transactions.organizationId, organizationId))
+      )
+      .limit(1)
+    return rows[0] ?? null
+  }
+
   async findByTransferId(
     transferId: string,
     organizationId: string
@@ -146,9 +168,31 @@ export class TransactionRepository {
       )
   }
 
+  private get selectWithUser() {
+    return {
+      id: transactions.id,
+      organizationId: transactions.organizationId,
+      accountId: transactions.accountId,
+      amount: transactions.amount,
+      categoryId: transactions.categoryId,
+      note: transactions.note,
+      date: transactions.date,
+      settled: transactions.settled,
+      reimbursementId: transactions.reimbursementId,
+      originalAmount: transactions.originalAmount,
+      originalCurrency: transactions.originalCurrency,
+      exchangeRate: transactions.exchangeRate,
+      transferId: transactions.transferId,
+      madeById: transactions.madeById,
+      createdAt: transactions.createdAt,
+      updatedAt: transactions.updatedAt,
+      madeByName: users.name,
+    } as const
+  }
+
   async findAll(
     filters: ListTransactionsFilters
-  ): Promise<{ data: TransactionRow[]; total: number }> {
+  ): Promise<{ data: TransactionRowWithUser[]; total: number }> {
     const conditions = [eq(transactions.organizationId, filters.organizationId)]
 
     if (filters.accountId)
@@ -171,6 +215,8 @@ export class TransactionRepository {
       conditions.push(gte(transactions.date, filters.dateFrom))
     if (filters.dateTo)
       conditions.push(lte(transactions.date, filters.dateTo))
+    if (filters.madeById)
+      conditions.push(eq(transactions.madeById, filters.madeById))
 
     const where = and(...conditions)
 
@@ -181,8 +227,9 @@ export class TransactionRepository {
 
     const offset = (filters.page - 1) * filters.limit
     const rows = await this.db
-      .select()
+      .select(this.selectWithUser)
       .from(transactions)
+      .leftJoin(users, eq(transactions.madeById, users.id))
       .where(where)
       .orderBy(desc(transactions.date))
       .limit(filters.limit)
@@ -203,8 +250,9 @@ export class TransactionRepository {
     let pairedRows: typeof rows = []
     if (missingTransferIds.length > 0) {
       pairedRows = await this.db
-        .select()
+        .select(this.selectWithUser)
         .from(transactions)
+        .leftJoin(users, eq(transactions.madeById, users.id))
         .where(
           and(
             eq(transactions.organizationId, filters.organizationId),
@@ -221,6 +269,20 @@ export class TransactionRepository {
     await this.db
       .delete(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.organizationId, organizationId)))
+  }
+
+  async isMemberOfOrg(userId: string, organizationId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: organizationMembers.id })
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
+      .limit(1)
+    return rows.length > 0
   }
 
   async countByAccountId(accountId: string): Promise<number> {

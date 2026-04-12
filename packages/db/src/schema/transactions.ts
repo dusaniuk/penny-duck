@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { organizations } from "./organizations"
+import { users } from "./users"
 import { accounts } from "./accounts"
 import { categories } from "./categories"
 import { money, rate } from "./custom-types"
@@ -39,6 +40,9 @@ export const transactions = appSchema.table(
     originalCurrency: varchar("original_currency", { length: 3 }),
     exchangeRate: rate("exchange_rate"),
     transferId: uuid("transfer_id"),
+    madeById: uuid("made_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -55,5 +59,6 @@ export const transactions = appSchema.table(
       table.settled
     ),
     index("transactions_reimbursement_id_idx").on(table.reimbursementId),
+    index("transactions_made_by_id_idx").on(table.madeById),
   ]
 )

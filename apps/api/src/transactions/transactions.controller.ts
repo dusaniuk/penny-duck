@@ -28,7 +28,10 @@ export class TransactionsController {
   ) {}
 
   @TsRestHandler(transactionContract.create)
-  handleCreate(@CurrentOrg() organizationId: string) {
+  handleCreate(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload
+  ) {
     return tsRestHandler(transactionContract.create, async ({ body }) => {
       const transaction = await this.commandBus.execute(
         new CreateTransactionCommand({
@@ -43,6 +46,7 @@ export class TransactionsController {
           originalAmount: body.originalAmount,
           originalCurrency: body.originalCurrency,
           exchangeRate: body.exchangeRate,
+          madeById: body.madeById ?? user.sub,
         })
       )
       return { status: 201 as const, body: transaction }
@@ -71,6 +75,7 @@ export class TransactionsController {
           transfer: query.transfer,
           dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
           dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+          madeById: query.madeById,
         })
       )
       return {
@@ -105,6 +110,7 @@ export class TransactionsController {
             originalAmount: body.originalAmount,
             originalCurrency: body.originalCurrency,
             exchangeRate: body.exchangeRate,
+            madeById: body.madeById,
           })
         )
         return { status: 200 as const, body: transaction }
@@ -136,7 +142,10 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.createReimbursement)
-  handleCreateReimbursement(@CurrentOrg() organizationId: string) {
+  handleCreateReimbursement(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload
+  ) {
     return tsRestHandler(
       transactionContract.createReimbursement,
       async ({ params, body }) => {
@@ -148,6 +157,7 @@ export class TransactionsController {
             amount: body.amount,
             date: new Date(body.date),
             exchangeRate: body.exchangeRate,
+            madeById: body.madeById ?? user.sub,
           })
         )
         return { status: 201 as const, body: transaction }
@@ -176,7 +186,10 @@ export class TransactionsController {
   }
 
   @TsRestHandler(transactionContract.createTransfer)
-  handleCreateTransfer(@CurrentOrg() organizationId: string) {
+  handleCreateTransfer(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload
+  ) {
     return tsRestHandler(
       transactionContract.createTransfer,
       async ({ body }) => {
@@ -191,6 +204,7 @@ export class TransactionsController {
             originalAmount: body.originalAmount,
             originalCurrency: body.originalCurrency,
             exchangeRate: body.exchangeRate,
+            madeById: body.madeById ?? user.sub,
           })
         )
         return {
@@ -214,6 +228,7 @@ export class TransactionsController {
             originalAmount: body.originalAmount,
             originalCurrency: body.originalCurrency,
             exchangeRate: body.exchangeRate,
+            madeById: body.madeById,
           })
         )
         return {

@@ -19,6 +19,7 @@ export interface CreateTransferInput {
   originalAmount?: number | null
   originalCurrency?: string | null
   exchangeRate?: number | null
+  madeById: string
 }
 
 export class CreateTransferCommand extends Command<[Transaction, Transaction]> {
@@ -59,6 +60,13 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
     if (!fromAccount || !toAccount)
       throw new NotFoundException("Account not found")
 
+    const isMember = await this.transactionRepo.isMemberOfOrg(
+      input.madeById,
+      input.organizationId
+    )
+    if (!isMember)
+      throw new BadRequestException("User is not a member of this organization")
+
     const transferId = randomUUID()
 
     const hasExchangeRate =
@@ -84,6 +92,7 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         exchangeRate: input.exchangeRate ?? null,
         transferId,
         reimbursementId: null,
+        madeById: input.madeById,
       },
       {
         organizationId: input.organizationId,
@@ -98,6 +107,7 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
         exchangeRate: null,
         transferId,
         reimbursementId: null,
+        madeById: input.madeById,
       }
     )
 

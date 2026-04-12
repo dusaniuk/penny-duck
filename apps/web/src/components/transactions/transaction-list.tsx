@@ -6,6 +6,7 @@ interface TransactionListProps {
   accounts: Array<Account>
   categories: Array<Category>
   homeCurrency: string
+  showMember: boolean
   loading: boolean
   hasMore: boolean
   onLoadMore: () => void
@@ -104,6 +105,7 @@ export function TransactionList({
   accounts,
   categories,
   homeCurrency,
+  showMember,
   loading,
   hasMore,
   onLoadMore,
@@ -194,6 +196,7 @@ export function TransactionList({
                     ? (transferPairAccount.get(t.transferId) ?? null)
                     : null
                 }
+                showMember={showMember}
                 onEdit={onEdit}
                 onReimburse={onReimburse}
                 onSettle={onSettle}

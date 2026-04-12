@@ -16,6 +16,7 @@ import { BadRequestException } from "@nestjs/common"
 let commandBus: CommandBus
 let queryBus: QueryBus
 let organizationId: string
+let userId: string
 
 beforeAll(async () => {
   const ctx = await createTestApp()
@@ -29,6 +30,7 @@ beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
   organizationId = result.accessToken.organizationId
+  userId = result.accessToken.sub
 })
 
 describe("Transfers", () => {
@@ -47,6 +49,7 @@ describe("Transfers", () => {
         toAccountId: acc2.id,
         amount: 500,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -82,6 +85,7 @@ describe("Transfers", () => {
         originalAmount: 4152,
         originalCurrency: "UAH",
         exchangeRate: 41.52,
+        madeById: userId,
       })
     )
 
@@ -108,6 +112,7 @@ describe("Transfers", () => {
           toAccountId: acc.id,
           amount: 100,
           date: new Date(),
+          madeById: userId,
         })
       )
     ).rejects.toThrow(BadRequestException)
@@ -128,6 +133,7 @@ describe("Transfers", () => {
         toAccountId: acc2.id,
         amount: 500,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -159,6 +165,7 @@ describe("Transfers", () => {
         toAccountId: acc2.id,
         amount: 500,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -187,6 +194,7 @@ describe("Transfers", () => {
         toAccountId: acc2.id,
         amount: 500,
         date: new Date(),
+        madeById: userId,
       })
     )
 

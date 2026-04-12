@@ -14,7 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import type { Account, Category } from "@workspace/api-contract"
+import type { Account, Category, Member } from "@workspace/api-contract"
 
 type AccountData = Account
 type CategoryData = Category
@@ -26,6 +26,7 @@ interface TransactionFilters {
   settled?: boolean
   dateFrom?: string
   dateTo?: string
+  madeById?: string
 }
 
 interface TransactionFilterSheetProps {
@@ -35,6 +36,7 @@ interface TransactionFilterSheetProps {
   onApply: (filters: TransactionFilters) => void
   accounts: Array<AccountData>
   categories: Array<CategoryData>
+  members: Array<Member>
 }
 
 export function TransactionFilterSheet({
@@ -44,6 +46,7 @@ export function TransactionFilterSheet({
   onApply,
   accounts,
   categories,
+  members,
 }: TransactionFilterSheetProps) {
   const parents = categories.filter((c) => c.parentId === null)
   const childrenByParent = categories.reduce<
@@ -74,6 +77,9 @@ export function TransactionFilterSheet({
 
     const dateTo = form.get("dateTo") as string
     if (dateTo) next.dateTo = dateTo
+
+    const madeById = form.get("madeById") as string
+    if (madeById && madeById !== "__all__") next.madeById = madeById
 
     onApply(next)
     onOpenChange(false)
@@ -160,6 +166,28 @@ export function TransactionFilterSheet({
                 </SelectContent>
               </Select>
             </Field>
+
+            {members.length > 1 && (
+              <Field>
+                <FieldLabel>Member</FieldLabel>
+                <Select
+                  name="madeById"
+                  defaultValue={filters.madeById ?? "__all__"}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All members</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
 
             <Field>
               <FieldLabel>Date from</FieldLabel>

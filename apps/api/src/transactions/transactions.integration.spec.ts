@@ -22,6 +22,7 @@ import { ListTransactionsQuery } from "./queries/list-transactions.query"
 let commandBus: CommandBus
 let queryBus: QueryBus
 let organizationId: string
+let userId: string
 let accountId: string
 let categoryId: string
 
@@ -37,6 +38,7 @@ beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
   organizationId = result.accessToken.organizationId
+  userId = result.accessToken.sub
   await flushEvents()
 
   const account = await commandBus.execute(
@@ -59,6 +61,7 @@ describe("Transactions", () => {
         categoryId,
         date: new Date(),
         note: "lunch",
+        madeById: userId,
       })
     )
 
@@ -78,6 +81,7 @@ describe("Transactions", () => {
         amount: 1000,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -94,6 +98,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -118,6 +123,7 @@ describe("Transactions", () => {
         originalAmount: 4152,
         originalCurrency: "UAH",
         exchangeRate: 41.52,
+        madeById: userId,
       })
     )
 
@@ -135,6 +141,7 @@ describe("Transactions", () => {
         amount: 50,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -156,6 +163,7 @@ describe("Transactions", () => {
           amount: 10 * (i + 1),
           categoryId,
           date: new Date(),
+          madeById: userId,
         })
       )
     }
@@ -177,6 +185,7 @@ describe("Transactions", () => {
         amount: 50,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(
@@ -187,6 +196,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -207,6 +217,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(
@@ -221,6 +232,7 @@ describe("Transactions", () => {
         amount: 50,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -245,6 +257,7 @@ describe("Transactions", () => {
         amount: 50,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -268,6 +281,7 @@ describe("Transactions", () => {
         amount: 50,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -287,6 +301,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -310,6 +325,7 @@ describe("Transactions", () => {
         amount: 200,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -328,6 +344,7 @@ describe("Transactions", () => {
         amount: 500,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -350,6 +367,7 @@ describe("Transactions", () => {
         amount: 200,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -383,6 +401,7 @@ describe("Transactions", () => {
         amount: 200,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -415,6 +434,7 @@ describe("Transactions", () => {
         amount: 500,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -442,6 +462,7 @@ describe("Transactions", () => {
         amount: 200,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -462,6 +483,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -473,6 +495,7 @@ describe("Transactions", () => {
         accountId,
         amount: 30,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -498,6 +521,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -509,6 +533,7 @@ describe("Transactions", () => {
         accountId: account2.id,
         amount: 30,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -539,6 +564,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -551,6 +577,7 @@ describe("Transactions", () => {
         amount: 300,
         date: new Date(),
         exchangeRate: 0.1,
+        madeById: userId,
       })
     )
 
@@ -576,6 +603,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -588,6 +616,7 @@ describe("Transactions", () => {
           accountId,
           amount: 100,
           date: new Date(),
+          madeById: userId,
         })
       )
     ).rejects.toThrow(BadRequestException)
@@ -602,6 +631,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -613,6 +643,7 @@ describe("Transactions", () => {
           accountId,
           amount: 50,
           date: new Date(),
+          madeById: userId,
         })
       )
     ).rejects.toThrow(BadRequestException)
@@ -634,6 +665,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -646,6 +678,7 @@ describe("Transactions", () => {
           accountId: uahAccount.id,
           amount: 300,
           date: new Date(),
+          madeById: userId,
         })
       )
     ).rejects.toThrow(BadRequestException)
@@ -664,6 +697,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -675,6 +709,7 @@ describe("Transactions", () => {
         accountId: account2.id,
         amount: 30,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -723,6 +758,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -734,6 +770,7 @@ describe("Transactions", () => {
         accountId: account2.id,
         amount: 30,
         date: new Date(),
+        madeById: userId,
       })
     )
 
@@ -772,6 +809,7 @@ describe("Transactions", () => {
         amount: 100,
         categoryId,
         date: new Date(),
+        madeById: userId,
       })
     )
     await commandBus.execute(new SettleTransactionCommand(tx.id, organizationId))
@@ -783,6 +821,7 @@ describe("Transactions", () => {
         accountId: account2.id,
         amount: 30,
         date: new Date(),
+        madeById: userId,
       })
     )
 

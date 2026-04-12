@@ -13,6 +13,7 @@ export interface CreateReimbursementInput {
   amount: number
   date: Date
   exchangeRate?: number | null
+  madeById: string
 }
 
 export class CreateReimbursementCommand extends Command<Transaction> {
@@ -43,6 +44,13 @@ export class CreateReimbursementHandler
     if (!expense) throw new NotFoundException("Transaction not found")
     if (expense.amount >= 0)
       throw new BadRequestException("Can only reimburse expenses")
+
+    const isMember = await this.transactionRepo.isMemberOfOrg(
+      input.madeById,
+      input.organizationId
+    )
+    if (!isMember)
+      throw new BadRequestException("User is not a member of this organization")
 
     const receivingAccount = await this.accountRepo.findById(
       input.accountId,
@@ -119,6 +127,7 @@ export class CreateReimbursementHandler
         exchangeRate: isCrossCurrency ? input.exchangeRate! : null,
         transferId,
         reimbursementId: input.transactionId,
+        madeById: input.madeById,
       },
       {
         organizationId: input.organizationId,
@@ -133,6 +142,7 @@ export class CreateReimbursementHandler
         exchangeRate: null,
         transferId,
         reimbursementId: input.transactionId,
+        madeById: input.madeById,
       }
     )
 

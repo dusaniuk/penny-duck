@@ -16,13 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
-import type { Account, Transaction } from "@workspace/api-contract"
+import type { Account, Member, Transaction } from "@workspace/api-contract"
 
 interface ReimbursementDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   transaction: Transaction | null
   accounts: Array<Account>
+  members: Array<Member>
+  currentUserId: string
   exchangeRates?: Record<string, Record<string, number>>
   onSubmit: (data: {
     transactionId: string
@@ -30,6 +32,7 @@ interface ReimbursementDialogProps {
     amount: number
     date: string
     exchangeRate?: number
+    madeById?: string
   }) => Promise<void>
 }
 
@@ -38,6 +41,8 @@ export function ReimbursementDialog({
   onOpenChange,
   transaction,
   accounts,
+  members,
+  currentUserId,
   exchangeRates,
   onSubmit,
 }: ReimbursementDialogProps) {
@@ -45,6 +50,7 @@ export function ReimbursementDialog({
   const [amount, setAmount] = useState("")
   const [exchangeRate, setExchangeRate] = useState("")
   const [date, setDate] = useState("")
+  const [madeById, setMadeById] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -99,9 +105,10 @@ export function ReimbursementDialog({
       setExchangeRate("")
       setConvertedAmount("")
       setDate(new Date().toISOString().split("T")[0])
+      setMadeById(currentUserId)
       setError(null)
     }
-  }, [open])
+  }, [open, currentUserId])
 
   useEffect(() => {
     if (isCrossCurrency && exchangeRates) {
@@ -131,6 +138,7 @@ export function ReimbursementDialog({
         ...(isCrossCurrency && exchangeRate
           ? { exchangeRate: 1 / parseFloat(exchangeRate) }
           : {}),
+        ...(members.length > 1 ? { madeById } : {}),
       })
       onOpenChange(false)
     } catch (err) {
@@ -235,6 +243,29 @@ export function ReimbursementDialog({
                 required
               />
             </Field>
+
+            {members.length > 1 && (
+              <Field>
+                <FieldLabel>Made by</FieldLabel>
+                <Select value={madeById} onValueChange={setMadeById} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                            {m.name.charAt(0).toUpperCase()}
+                          </span>
+                          {m.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
 
             {error && <p className="text-xs text-destructive">{error}</p>}
 

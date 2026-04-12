@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import type { Account, Category, Transaction } from "@workspace/api-contract"
+import type { Account, Category, Member, Transaction } from "@workspace/api-contract"
 import { queryClient, tsr } from "@/lib/api"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
@@ -20,6 +20,7 @@ interface TransactionFilters {
   settled?: boolean
   dateFrom?: string
   dateTo?: string
+  madeById?: string
 }
 
 export const Route = createFileRoute("/_app/transactions")({
@@ -60,6 +61,7 @@ function TransactionsPage() {
           dateTo: filters.dateTo
             ? new Date(filters.dateTo).toISOString()
             : undefined,
+          madeById: filters.madeById,
         },
       },
     })
@@ -85,6 +87,12 @@ function TransactionsPage() {
 
   const { data: meData } = tsr.users.getMe.useQuery({ queryKey: ["users", "me"] })
   const homeCurrency = meData?.body.homeCurrency ?? "UAH"
+  const currentUserId = meData?.body.id ?? ""
+
+  const { data: membersData } = tsr.users.getMembers.useQuery({
+    queryKey: ["users", "members"],
+  })
+  const members: Array<Member> = membersData?.body ?? []
 
   const { data: ratesData } = tsr.exchangeRates.latest.useQuery({
     queryKey: ["exchange-rates", "latest"],
@@ -146,6 +154,7 @@ function TransactionsPage() {
           dateTo: filters.dateTo
             ? new Date(filters.dateTo).toISOString()
             : undefined,
+          madeById: filters.madeById,
         },
       })
       setExtraTransactions((prev) => [
@@ -193,6 +202,7 @@ function TransactionsPage() {
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
+    madeById?: string
   }) {
     if (editTransaction) {
       const { type: _, ...updateFields } = data
@@ -221,6 +231,7 @@ function TransactionsPage() {
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
+    madeById?: string
   }) {
     if (editTransaction?.transferId) {
       const { fromAccountId: _, toAccountId: __, ...updateData } = data
@@ -290,6 +301,13 @@ function TransactionsPage() {
       label: [filters.dateFrom, filters.dateTo].filter(Boolean).join(" – "),
     })
   }
+  if (filters.madeById) {
+    const member = members.find((m) => m.id === filters.madeById)
+    activeFilterBadges.push({
+      key: "madeById",
+      label: member?.name ?? "Member",
+    })
+  }
   function removeFilter(key: string) {
     setFilters((prev) => {
       const next = { ...prev }
@@ -355,6 +373,7 @@ function TransactionsPage() {
         accounts={accounts}
         categories={categories}
         homeCurrency={homeCurrency}
+        showMember={members.length > 1}
         loading={loading}
         hasMore={allTransactions.length < total}
         onLoadMore={handleLoadMore}
@@ -383,6 +402,8 @@ function TransactionsPage() {
         defaultType={formType}
         accounts={accounts}
         categories={categories}
+        members={members}
+        currentUserId={currentUserId}
         onSubmit={handleTransactionSubmit}
         onDelete={
           editTransaction
@@ -401,6 +422,8 @@ function TransactionsPage() {
           if (!o) setEditTransaction(null)
         }}
         transaction={editTransaction}
+        members={members}
+        currentUserId={currentUserId}
         pairedAccountId={
           editTransaction?.transferId
             ? (allTransactions.find(
@@ -431,6 +454,8 @@ function TransactionsPage() {
         transaction={reimburseTransaction}
         accounts={accounts}
         exchangeRates={latestRates}
+        members={members}
+        currentUserId={currentUserId}
         onSubmit={async (data) => {
           await createReimbursementMutation.mutateAsync({
             params: { id: data.transactionId },
@@ -439,6 +464,7 @@ function TransactionsPage() {
               amount: data.amount,
               date: data.date,
               exchangeRate: data.exchangeRate,
+              madeById: data.madeById,
             },
           })
         }}
@@ -464,6 +490,7 @@ function TransactionsPage() {
         }}
         accounts={accounts}
         categories={categories}
+        members={members}
       />
     </div>
   )

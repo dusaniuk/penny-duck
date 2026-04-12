@@ -16,6 +16,7 @@ interface UpdateFields {
   originalAmount?: number | null
   originalCurrency?: string | null
   exchangeRate?: number | null
+  madeById?: string
 }
 
 export class UpdateTransactionCommand extends Command<Transaction> {
@@ -86,6 +87,16 @@ export class UpdateTransactionHandler implements ICommandHandler<UpdateTransacti
         updateData.originalCurrency = fields.originalCurrency
         updateData.exchangeRate = fields.exchangeRate
       }
+    }
+
+    if (fields.madeById !== undefined) {
+      const isMember = await this.transactionRepo.isMemberOfOrg(
+        fields.madeById,
+        cmd.organizationId
+      )
+      if (!isMember)
+        throw new BadRequestException("User is not a member of this organization")
+      updateData.madeById = fields.madeById
     }
 
     const row = await this.transactionRepo.update(cmd.id, cmd.organizationId, updateData)

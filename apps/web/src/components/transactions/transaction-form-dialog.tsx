@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
-import type { Account, Category, Transaction } from "@workspace/api-contract"
+import type { Account, Category, Member, Transaction } from "@workspace/api-contract"
 import { getCategoryIcon } from "@/lib/category-icons"
 
 type AccountData = Account
@@ -29,6 +29,8 @@ interface TransactionFormDialogProps {
   defaultType?: "expense" | "income"
   accounts: Array<AccountData>
   categories: Array<CategoryData>
+  members: Array<Member>
+  currentUserId: string
   onSubmit: (data: {
     accountId: string
     type: string
@@ -40,6 +42,7 @@ interface TransactionFormDialogProps {
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
+    madeById?: string
   }) => Promise<void>
   onDelete?: () => void
   onSettle?: () => void
@@ -52,6 +55,8 @@ export function TransactionFormDialog({
   defaultType = "expense",
   accounts,
   categories,
+  members,
+  currentUserId,
   onSubmit,
   onDelete,
   onSettle,
@@ -69,6 +74,7 @@ export function TransactionFormDialog({
   const [exchangeRate, setExchangeRate] = useState("")
   const [originalAmount, setOriginalAmount] = useState("")
   const [originalCurrency, setOriginalCurrency] = useState("")
+  const [madeById, setMadeById] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -103,9 +109,10 @@ export function TransactionFormDialog({
       setExchangeRate(transaction?.exchangeRate?.toString() ?? "")
       setOriginalAmount(transaction?.originalAmount?.toString() ?? "")
       setOriginalCurrency(transaction?.originalCurrency ?? "")
+      setMadeById(transaction?.madeBy?.id ?? currentUserId)
       setError(null)
     }
-  }, [open, transaction, defaultType])
+  }, [open, transaction, defaultType, currentUserId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -130,6 +137,7 @@ export function TransactionFormDialog({
               originalCurrency,
             }
           : {}),
+        ...(members.length > 1 ? { madeById } : {}),
       })
       onOpenChange(false)
     } catch (err) {
@@ -204,6 +212,29 @@ export function TransactionFormDialog({
                 </SelectContent>
               </Select>
             </Field>
+
+            {members.length > 1 && (
+              <Field>
+                <FieldLabel>Made by</FieldLabel>
+                <Select value={madeById} onValueChange={setMadeById} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                            {m.name.charAt(0).toUpperCase()}
+                          </span>
+                          {m.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
 
             <Field>
               <FieldLabel>Category</FieldLabel>

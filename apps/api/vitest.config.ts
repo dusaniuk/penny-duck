@@ -16,6 +16,7 @@ export default defineConfig({
     setupFiles: [resolve(__dirname, "./src/test/env-setup.ts")],
   },
   resolve: {
+    conditions: ["default"],
     alias: {
       "@": resolve(__dirname, "./src"),
     },

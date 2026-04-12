@@ -19,6 +19,7 @@ export interface CreateTransactionInput {
   originalAmount?: number | null
   originalCurrency?: string | null
   exchangeRate?: number | null
+  madeById: string
 }
 
 export class CreateTransactionCommand extends Command<Transaction> {
@@ -47,6 +48,13 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
       input.exchangeRate
     )
 
+    const isMember = await this.transactionRepo.isMemberOfOrg(
+      input.madeById,
+      input.organizationId
+    )
+    if (!isMember)
+      throw new BadRequestException("User is not a member of this organization")
+
     const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
     const row = await this.transactionRepo.insert({
@@ -62,6 +70,7 @@ export class CreateTransactionHandler implements ICommandHandler<CreateTransacti
       exchangeRate: input.exchangeRate ?? null,
       transferId: null,
       reimbursementId: null,
+      madeById: input.madeById,
     })
 
     return toResponse(row)

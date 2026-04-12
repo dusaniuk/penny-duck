@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
-import type { Account, Transaction } from "@workspace/api-contract"
+import type { Account, Member, Transaction } from "@workspace/api-contract"
 
 type AccountData = Account
 type TransactionData = Transaction
@@ -26,6 +26,8 @@ interface TransferFormDialogProps {
   transaction?: TransactionData | null
   pairedAccountId?: string | null
   accounts: Array<AccountData>
+  members: Array<Member>
+  currentUserId: string
   exchangeRates?: Record<string, Record<string, number>>
   onSubmit: (data: {
     fromAccountId: string
@@ -36,6 +38,7 @@ interface TransferFormDialogProps {
     originalAmount?: number
     originalCurrency?: string
     exchangeRate?: number
+    madeById?: string
   }) => Promise<void>
   onDelete?: () => void
 }
@@ -46,6 +49,8 @@ export function TransferFormDialog({
   transaction,
   pairedAccountId,
   accounts,
+  members,
+  currentUserId,
   exchangeRates,
   onSubmit,
   onDelete,
@@ -57,6 +62,7 @@ export function TransferFormDialog({
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState("")
   const [note, setNote] = useState("")
+  const [madeById, setMadeById] = useState("")
   const [showExchangeRate, setShowExchangeRate] = useState(false)
   const [exchangeRate, setExchangeRate] = useState("")
   const [receiveAmount, setReceiveAmount] = useState("")
@@ -108,12 +114,13 @@ export function TransferFormDialog({
           : new Date().toISOString().split("T")[0]
       )
       setNote(transaction?.note ?? "")
+      setMadeById(transaction?.madeBy?.id ?? currentUserId)
       setShowExchangeRate(transaction?.exchangeRate != null)
       setExchangeRate(transaction?.exchangeRate?.toString() ?? "")
       setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
       setError(null)
     }
-  }, [open, transaction])
+  }, [open, transaction, currentUserId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -133,6 +140,7 @@ export function TransferFormDialog({
               originalCurrency: toAccount?.currency ?? "",
             }
           : {}),
+        ...(members.length > 1 ? { madeById } : {}),
       })
       onOpenChange(false)
     } catch (err) {
@@ -228,6 +236,29 @@ export function TransferFormDialog({
                 maxLength={500}
               />
             </Field>
+
+            {members.length > 1 && (
+              <Field>
+                <FieldLabel>Made by</FieldLabel>
+                <Select value={madeById} onValueChange={setMadeById} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                            {m.name.charAt(0).toUpperCase()}
+                          </span>
+                          {m.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
 
             {!showExchangeRate && !forceExchangeRate && (
               <div className="border-t pt-3">

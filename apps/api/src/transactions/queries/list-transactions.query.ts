@@ -15,6 +15,7 @@ interface ListFilters {
   transfer?: boolean
   dateFrom?: Date
   dateTo?: Date
+  madeById?: string
 }
 
 export class ListTransactionsQuery extends Query<{

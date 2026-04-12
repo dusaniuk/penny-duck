@@ -25,6 +25,7 @@ interface TransactionRowProps {
   accounts: Array<AccountData>
   categories: Array<CategoryData>
   pairedAccountName?: string | null
+  showMember?: boolean
   onEdit: (transaction: TransactionData) => void
   onReimburse?: (transaction: TransactionData) => void
   onSettle: (transaction: TransactionData) => void
@@ -36,6 +37,7 @@ export function TransactionRow({
   accounts,
   categories,
   pairedAccountName,
+  showMember,
   onEdit,
   onReimburse,
   onSettle,
@@ -138,6 +140,18 @@ export function TransactionRow({
     )
   }
 
+  function renderMemberBadge() {
+    if (!showMember || !transaction.madeBy) return null
+    return (
+      <span
+        className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium leading-none text-primary"
+        title={transaction.madeBy.name}
+      >
+        {transaction.madeBy.name.charAt(0).toUpperCase()}
+      </span>
+    )
+  }
+
   function renderRight() {
     return (
       <div className="shrink-0 text-right">
@@ -145,7 +159,8 @@ export function TransactionRow({
           {amountPrefix}
           {transaction.amount.toFixed(2)} {account?.currency}
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
+          {renderMemberBadge()}
           {isTransfer && transaction.originalAmount != null ? (
             `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
           ) : (

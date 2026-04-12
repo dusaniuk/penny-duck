@@ -15,6 +15,7 @@ import { CreateTransactionCommand } from "../transactions/commands/create-transa
 let commandBus: CommandBus
 let queryBus: QueryBus
 let organizationId: string
+let userId: string
 
 beforeAll(async () => {
   const ctx = await createTestApp()
@@ -28,6 +29,7 @@ beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
   organizationId = result.accessToken.organizationId
+  userId = result.accessToken.sub
 })
 
 describe("Accounts", () => {
@@ -121,6 +123,7 @@ describe("Accounts", () => {
         amount: 50,
         categoryId: categories[0].id,
         date: new Date(),
+        madeById: userId,
       })
     )
 
