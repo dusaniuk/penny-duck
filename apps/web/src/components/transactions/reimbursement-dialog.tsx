@@ -142,7 +142,7 @@ export function ReimbursementDialog({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-h-[90vh] overflow-y-auto">
+      <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add reimbursement</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>

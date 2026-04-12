@@ -9,15 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@workspace/ui/components/drawer"
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -32,16 +23,6 @@ function ResponsiveDialog({
   onOpenChange,
   children,
 }: ResponsiveDialogProps) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        {children}
-      </Drawer>
-    )
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children}
@@ -59,14 +40,18 @@ function ResponsiveDialogContent({
 
   if (isMobile) {
     return (
-      <DrawerContent>
-        <div
-          className={cn("flex-1 min-h-0 overflow-y-auto px-4 pb-4", className)}
-          {...props}
-        >
+      <DialogContent
+        className={cn(
+          "top-0 left-0 h-dvh max-w-none -translate-x-0 -translate-y-0 rounded-none ring-0 data-open:zoom-in-100 data-open:slide-in-from-bottom-4 data-closed:zoom-out-100 data-closed:slide-out-to-bottom-4",
+          className
+        )}
+        showCloseButton={showCloseButton}
+        {...props}
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {children}
         </div>
-      </DrawerContent>
+      </DialogContent>
     )
   }
 
@@ -81,12 +66,6 @@ function ResponsiveDialogHeader({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return <DrawerHeader className={className} {...props} />
-  }
-
   return <DialogHeader className={className} {...props} />
 }
 
@@ -94,12 +73,6 @@ function ResponsiveDialogFooter({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return <DrawerFooter className={className} {...props} />
-  }
-
   return <DialogFooter className={className} {...props} />
 }
 
@@ -107,12 +80,6 @@ function ResponsiveDialogTitle({
   className,
   ...props
 }: React.ComponentProps<typeof DialogTitle>) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return <DrawerTitle className={className} {...props} />
-  }
-
   return <DialogTitle className={className} {...props} />
 }
 
@@ -120,24 +87,12 @@ function ResponsiveDialogDescription({
   className,
   ...props
 }: React.ComponentProps<typeof DialogDescription>) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return <DrawerDescription className={className} {...props} />
-  }
-
   return <DialogDescription className={className} {...props} />
 }
 
 function ResponsiveDialogClose({
   ...props
 }: React.ComponentProps<typeof DialogClose>) {
-  const isMobile = useIsMobile()
-
-  if (isMobile) {
-    return <DrawerClose {...props} />
-  }
-
   return <DialogClose {...props} />
 }
 

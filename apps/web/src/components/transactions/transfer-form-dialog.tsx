@@ -146,7 +146,7 @@ export function TransferFormDialog({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-h-[90vh] overflow-y-auto">
+      <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>
             {isEdit ? "Edit Transfer" : "New Transfer"}
