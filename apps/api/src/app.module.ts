@@ -9,6 +9,7 @@ import { AccountsModule } from "./accounts/accounts.module"
 import { CategoriesModule } from "./categories/categories.module"
 import { TransactionsModule } from "./transactions/transactions.module"
 import { ExchangeRatesModule } from "./exchange-rates/exchange-rates.module"
+import { UsersModule } from "./users/users.module"
 import { AppController } from "./app.controller"
 import { AppService } from "./app.service"
 
@@ -20,6 +21,7 @@ const throttleLimit = isProduction ? 100 : 10_000
     ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
+    UsersModule,
     AccountsModule,
     CategoriesModule,
     TransactionsModule,

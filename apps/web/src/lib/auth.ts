@@ -61,7 +61,7 @@ export const getAuthUser = createServerFn().handler(
         didRefresh = true
       }
 
-      const res = await fetch(`${SSR_API_URL}/auth/me`, {
+      const res = await fetch(`${SSR_API_URL}/users/me`, {
         headers: { Cookie: `access_token=${accessToken}` },
       })
 
@@ -73,7 +73,7 @@ export const getAuthUser = createServerFn().handler(
         accessToken = await refreshTokens(SSR_API_URL)
         if (!accessToken) return null
 
-        const retryRes = await fetch(`${SSR_API_URL}/auth/me`, {
+        const retryRes = await fetch(`${SSR_API_URL}/users/me`, {
           headers: { Cookie: `access_token=${accessToken}` },
         })
         if (!retryRes.ok) return null

@@ -1,6 +1,7 @@
 import { initContract } from "@ts-rest/core"
 import { z } from "zod"
 import { MessageSchema } from "./common"
+import { UserSchema } from "./users"
 
 const c = initContract()
 
@@ -13,13 +14,6 @@ export const SignupSchema = z.object({
 export const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-})
-
-export const AuthUserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string(),
-  name: z.string(),
-  homeCurrency: z.string(),
 })
 
 export const authContract = c.router({
@@ -36,7 +30,7 @@ export const authContract = c.router({
     path: "/auth/login",
     body: LoginSchema,
     responses: {
-      200: AuthUserSchema,
+      200: UserSchema,
     },
   },
   refresh: {
@@ -53,13 +47,6 @@ export const authContract = c.router({
     body: c.noBody(),
     responses: {
       200: MessageSchema,
-    },
-  },
-  me: {
-    method: "GET",
-    path: "/auth/me",
-    responses: {
-      200: AuthUserSchema,
     },
   },
 })

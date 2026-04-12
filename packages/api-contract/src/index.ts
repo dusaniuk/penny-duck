@@ -9,9 +9,14 @@ export {
 export {
   SignupSchema,
   LoginSchema,
-  AuthUserSchema,
   authContract,
 } from "./schemas/auth"
+
+export {
+  UserSchema,
+  UpdateProfileSchema,
+  userContract,
+} from "./schemas/users"
 
 export {
   AccountSchema,

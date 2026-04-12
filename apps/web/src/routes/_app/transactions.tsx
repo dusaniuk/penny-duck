@@ -83,7 +83,7 @@ function TransactionsPage() {
   })
   const categories: Array<Category> = categoriesData?.body ?? []
 
-  const { data: meData } = tsr.auth.me.useQuery({ queryKey: ["auth", "me"] })
+  const { data: meData } = tsr.users.getMe.useQuery({ queryKey: ["users", "me"] })
   const homeCurrency = meData?.body.homeCurrency ?? "UAH"
 
   const { data: ratesData } = tsr.exchangeRates.latest.useQuery({

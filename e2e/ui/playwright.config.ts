@@ -21,7 +21,7 @@ export default defineConfig({
   webServer: [
     {
       command: "pnpm --filter api dev",
-      url: `${env.API_BASE_URL}/auth/me`,
+      url: `${env.API_BASE_URL}/users/me`,
       ignoreHTTPSErrors: true,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

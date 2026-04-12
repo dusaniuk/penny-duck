@@ -2,11 +2,11 @@ import { test, expect } from "@playwright/test"
 import { env } from "../../shared/env"
 import { signupAndLogin } from "../../shared/factories"
 
-test.describe("GET /auth/me", () => {
+test.describe("GET /users/me", () => {
   test("returns current user when authenticated", async ({ request }) => {
     const user = await signupAndLogin(request)
 
-    const res = await request.get("/auth/me")
+    const res = await request.get("/users/me")
 
     expect(res.status()).toBe(200)
 
@@ -17,7 +17,7 @@ test.describe("GET /auth/me", () => {
   })
 
   test("returns 401 without access token", async () => {
-    const res = await fetch(`${env.API_BASE_URL}/auth/me`)
+    const res = await fetch(`${env.API_BASE_URL}/users/me`)
     expect(res.status).toBe(401)
   })
 })

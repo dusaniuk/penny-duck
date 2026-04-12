@@ -7,6 +7,7 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import appCss from "@workspace/ui/globals.css?url"
+import { Toaster } from "sonner"
 import { queryClient, tsr } from "@/lib/api"
 
 export const Route = createRootRoute({
@@ -54,6 +55,7 @@ function RootLayout() {
       <tsr.ReactQueryProvider>
         <TooltipProvider>
           <Outlet />
+          <Toaster richColors />
         </TooltipProvider>
       </tsr.ReactQueryProvider>
     </QueryClientProvider>

@@ -10,7 +10,6 @@ import { SignupCommand } from "./commands/signup.command"
 import { LoginCommand } from "./commands/login.command"
 import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
-import { GetCurrentUserQuery } from "./queries/get-current-user.query"
 import { GetCategoriesQuery } from "../../categories/queries/get-categories.query"
 import { InvalidCredentialsError } from "../domain/errors/auth.errors"
 
@@ -149,14 +148,4 @@ describe("Auth", () => {
     expect(rejected).toHaveLength(1)
   })
 
-  it("gets current user", async () => {
-    const login = await signupUser()
-
-    const user = await queryBus.execute(
-      new GetCurrentUserQuery(login.user.id, login.user.email)
-    )
-
-    expect(user.id).toBe(login.user.id)
-    expect(user.email).toBe(login.user.email)
-  })
 })

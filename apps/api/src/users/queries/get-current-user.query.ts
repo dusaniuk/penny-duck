@@ -1,0 +1,32 @@
+import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
+import { UnauthorizedException } from "@nestjs/common"
+import { UserRepository } from "../user.repository"
+
+export class GetCurrentUserQuery {
+  constructor(public readonly userId: string) {}
+}
+
+export interface CurrentUserResult {
+  id: string
+  email: string
+  name: string
+  homeCurrency: string
+}
+
+@QueryHandler(GetCurrentUserQuery)
+export class GetCurrentUserHandler
+  implements IQueryHandler<GetCurrentUserQuery>
+{
+  constructor(private readonly userRepo: UserRepository) {}
+
+  async execute(query: GetCurrentUserQuery): Promise<CurrentUserResult> {
+    const user = await this.userRepo.findById(query.userId)
+    if (!user) throw new UnauthorizedException()
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      homeCurrency: user.homeCurrency,
+    }
+  }
+}

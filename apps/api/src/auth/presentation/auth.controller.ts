@@ -3,9 +3,8 @@ import {
   Res,
   UnauthorizedException,
   UseFilters,
-  UseGuards,
 } from "@nestjs/common"
-import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { CommandBus } from "@nestjs/cqrs"
 import { Throttle } from "@nestjs/throttler"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { Response } from "express"
@@ -15,22 +14,15 @@ import { LoginCommand } from "../application/commands/login.command"
 import { LogoutCommand } from "../application/commands/logout.command"
 import { RefreshTokensCommand } from "../application/commands/refresh-tokens.command"
 import { SignupCommand } from "../application/commands/signup.command"
-import { GetCurrentUserQuery } from "../application/queries/get-current-user.query"
 import { CookieService } from "../infrastructure/services/cookie.service"
-import {
-  JwtService,
-  type AccessTokenPayload,
-} from "../infrastructure/services/jwt.service"
+import { JwtService } from "../infrastructure/services/jwt.service"
 import { AuthExceptionFilter } from "./auth-exception.filter"
-import { AuthGuard } from "./auth.guard"
-import { CurrentUser } from "./auth.decorator"
 
 @Controller()
 @UseFilters(AuthExceptionFilter)
 export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
     private readonly jwtService: JwtService,
     private readonly cookieService: CookieService
   ) {}
@@ -102,16 +94,4 @@ export class AuthController {
     })
   }
 
-  @TsRestHandler(authContract.me)
-  @UseGuards(AuthGuard)
-  handleMe(@CurrentUser() user: AccessTokenPayload) {
-    return tsRestHandler(authContract.me, async () => {
-      return {
-        status: 200 as const,
-        body: await this.queryBus.execute(
-          new GetCurrentUserQuery(user.sub, user.email)
-        ),
-      }
-    })
-  }
 }

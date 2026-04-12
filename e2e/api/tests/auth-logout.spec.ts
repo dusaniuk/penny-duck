@@ -24,7 +24,7 @@ test.describe("POST /auth/logout", () => {
     await signupAndLogin(request)
 
     // Verify we're logged in
-    const meBeforeLogout = await request.get("/auth/me")
+    const meBeforeLogout = await request.get("/users/me")
     expect(meBeforeLogout.status()).toBe(200)
 
     // Logout

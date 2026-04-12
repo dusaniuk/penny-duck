@@ -15,8 +15,8 @@ export default defineConfig({
   },
   webServer: {
     command: "pnpm --filter api dev",
-    url: `${env.API_BASE_URL}/auth/me`,
-    // API returns 401 for /auth/me when no token — that's expected and means it's ready
+    url: `${env.API_BASE_URL}/users/me`,
+    // API returns 401 for /users/me when no token — that's expected and means it's ready
     ignoreHTTPSErrors: true,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

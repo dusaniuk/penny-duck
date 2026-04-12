@@ -9,7 +9,6 @@ import { SignupHandler } from "./application/commands/signup.command"
 import { LoginHandler } from "./application/commands/login.command"
 import { RefreshTokensHandler } from "./application/commands/refresh-tokens.command"
 import { LogoutHandler } from "./application/commands/logout.command"
-import { GetCurrentUserHandler } from "./application/queries/get-current-user.query"
 import { TokenReuseDetectedHandler } from "./application/event-handlers/token-reuse-detected.handler"
 
 import { UserRepository } from "./infrastructure/repositories/user.repository"
@@ -28,7 +27,6 @@ const commandHandlers = [
   RefreshTokensHandler,
   LogoutHandler,
 ]
-const queryHandlers = [GetCurrentUserHandler]
 const eventHandlers = [TokenReuseDetectedHandler]
 
 @Module({
@@ -46,7 +44,6 @@ const eventHandlers = [TokenReuseDetectedHandler]
   controllers: [AuthController],
   providers: [
     ...commandHandlers,
-    ...queryHandlers,
     ...eventHandlers,
     UserRepository,
     RefreshTokenRepository,
