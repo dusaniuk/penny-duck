@@ -63,7 +63,7 @@ export function TransactionFab({
   }
 
   return (
-    <div ref={containerRef} className="fixed bottom-6 right-6 z-50">
+    <div ref={containerRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       <div
         className={`mb-3 flex flex-col items-end gap-2 transition-all ${
           open
