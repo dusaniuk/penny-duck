@@ -8,7 +8,8 @@ export class SignupCommand {
   constructor(
     public readonly name: string,
     public readonly email: string,
-    public readonly password: string
+    public readonly password: string,
+    public readonly inviteCode?: string
   ) {}
 }
 
@@ -30,6 +31,13 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
     )
     if (existing) return { message: "Account created successfully" }
 
+    // If invite code provided, validate it
+    let targetOrg: { id: string } | null = null
+    if (command.inviteCode) {
+      targetOrg = await this.orgRepo.findByInviteCode(command.inviteCode)
+      if (!targetOrg) return { message: "Account created successfully" }
+    }
+
     const user = await User.register(
       command.name,
       command.email,
@@ -37,13 +45,20 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
     )
     const savedUser = await this.userRepo.save(user)
 
-    const org = await this.orgRepo.createWithOwner(
-      `${savedUser.name}'s Space`,
-      savedUser.id
-    )
+    let orgId: string
+    if (targetOrg) {
+      await this.orgRepo.addMember(targetOrg.id, savedUser.id)
+      orgId = targetOrg.id
+    } else {
+      const org = await this.orgRepo.createWithOwner(
+        `${savedUser.name}'s Space`,
+        savedUser.id
+      )
+      orgId = org.id
+    }
 
     this.eventBus.publish(
-      new UserRegisteredEvent(savedUser.id, savedUser.email, org.id)
+      new UserRegisteredEvent(savedUser.id, savedUser.email, orgId)
     )
 
     return { message: "Account created successfully" }

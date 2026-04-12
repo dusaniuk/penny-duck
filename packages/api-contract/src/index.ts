@@ -15,8 +15,10 @@ export {
 export {
   UserSchema,
   UpdateProfileSchema,
+  MemberSchema,
   userContract,
 } from "./schemas/users"
+export type { Member } from "./schemas/users"
 
 export {
   AccountSchema,

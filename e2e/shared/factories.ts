@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker"
-import { expect, type APIRequestContext, type Page } from "@playwright/test"
+import { type APIRequestContext, type Page, expect } from "@playwright/test"
 
 export function createUserData() {
   return {
@@ -38,6 +38,13 @@ export async function signupAndLoginViaPage(page: Page) {
 
   await expect(page).toHaveURL(/\/dashboard/)
   return user
+}
+
+export async function generateInviteLink(request: APIRequestContext) {
+  const res = await request.post("/auth/invite-code")
+  expect(res.status()).toBe(200)
+  const body = await res.json()
+  return body as { inviteCode: string; inviteUrl: string }
 }
 
 export function createTransactionData(

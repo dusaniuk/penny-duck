@@ -1,5 +1,5 @@
 import { Link, useMatchRoute } from "@tanstack/react-router"
-import { IconArrowLeft, IconUser } from "@tabler/icons-react"
+import { IconArrowLeft, IconUser, IconUsers } from "@tabler/icons-react"
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,7 @@ import {
 
 const settingsNav = [
   { title: "Profile", url: "/settings/profile", icon: IconUser },
+  { title: "Members", url: "/settings/members", icon: IconUsers },
 ]
 
 export function SettingsSidebar(props: React.ComponentProps<typeof Sidebar>) {

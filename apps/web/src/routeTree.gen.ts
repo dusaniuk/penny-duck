@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsMembersRouteImport } from './routes/settings/members'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
@@ -25,6 +27,11 @@ import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -48,6 +55,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMembersRoute = SettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => SettingsRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -83,6 +95,7 @@ const AppAccountsRoute = AppAccountsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/settings': typeof SettingsRouteWithChildren
   '/accounts': typeof AppAccountsRoute
   '/categories': typeof AppCategoriesRoute
@@ -90,17 +103,20 @@ export interface FileRoutesByFullPath {
   '/transactions': typeof AppTransactionsRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
+  '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/invite': typeof InviteRoute
   '/accounts': typeof AppAccountsRoute
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/transactions': typeof AppTransactionsRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
+  '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings': typeof SettingsIndexRoute
 }
@@ -109,6 +125,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/invite': typeof InviteRoute
   '/settings': typeof SettingsRouteWithChildren
   '/_app/accounts': typeof AppAccountsRoute
   '/_app/categories': typeof AppCategoriesRoute
@@ -116,6 +133,7 @@ export interface FileRoutesById {
   '/_app/transactions': typeof AppTransactionsRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
+  '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
 }
@@ -123,6 +141,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invite'
     | '/settings'
     | '/accounts'
     | '/categories'
@@ -130,17 +149,20 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/login'
     | '/signup'
+    | '/settings/members'
     | '/settings/profile'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invite'
     | '/accounts'
     | '/categories'
     | '/dashboard'
     | '/transactions'
     | '/login'
     | '/signup'
+    | '/settings/members'
     | '/settings/profile'
     | '/settings'
   id:
@@ -148,6 +170,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/_auth'
+    | '/invite'
     | '/settings'
     | '/_app/accounts'
     | '/_app/categories'
@@ -155,6 +178,7 @@ export interface FileRouteTypes {
     | '/_app/transactions'
     | '/_auth/login'
     | '/_auth/signup'
+    | '/settings/members'
     | '/settings/profile'
     | '/settings/'
   fileRoutesById: FileRoutesById
@@ -163,6 +187,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  InviteRoute: typeof InviteRoute
   SettingsRoute: typeof SettingsRouteWithChildren
 }
 
@@ -173,6 +198,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -208,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/members': {
+      id: '/settings/members'
+      path: '/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof SettingsMembersRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/_auth/signup': {
@@ -284,11 +323,13 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface SettingsRouteChildren {
+  SettingsMembersRoute: typeof SettingsMembersRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsMembersRoute: SettingsMembersRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
@@ -301,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  InviteRoute: InviteRoute,
   SettingsRoute: SettingsRouteWithChildren,
 }
 export const routeTree = rootRouteImport

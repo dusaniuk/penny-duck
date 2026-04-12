@@ -1,0 +1,1 @@
+ALTER TABLE "app"."organizations" ALTER COLUMN "invite_code" SET DATA TYPE varchar(32);

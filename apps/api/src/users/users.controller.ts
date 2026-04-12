@@ -3,9 +3,10 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { userContract } from "@workspace/api-contract"
 import { AuthGuard } from "@/auth/presentation/auth.guard"
-import { CurrentUser } from "@/auth/presentation/auth.decorator"
+import { CurrentOrg, CurrentUser } from "@/auth/presentation/auth.decorator"
 import type { AccessTokenPayload } from "@/auth/infrastructure/services/jwt.service"
 import { GetCurrentUserQuery } from "./queries/get-current-user.query"
+import { GetMembersQuery } from "./queries/get-members.query"
 import { UpdateProfileCommand } from "./commands/update-profile.command"
 
 @Controller()
@@ -35,6 +36,18 @@ export class UsersController {
         status: 200 as const,
         body: await this.commandBus.execute(
           new UpdateProfileCommand(user.sub, body.name, body.homeCurrency)
+        ),
+      }
+    })
+  }
+
+  @TsRestHandler(userContract.getMembers)
+  handleGetMembers(@CurrentOrg() organizationId: string) {
+    return tsRestHandler(userContract.getMembers, async () => {
+      return {
+        status: 200 as const,
+        body: await this.queryBus.execute(
+          new GetMembersQuery(organizationId)
         ),
       }
     })

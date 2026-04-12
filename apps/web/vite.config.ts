@@ -9,6 +9,11 @@ const apiUrl = process.env.API_URL ?? "http://localhost:3030"
 
 const config = defineConfig({
   envDir: "../../",
+  server: {
+    watch: {
+      ignored: ["**/routeTree.gen.ts"],
+    },
+  },
   plugins: [
     nitro({
       routeRules: {

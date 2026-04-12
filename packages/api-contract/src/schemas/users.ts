@@ -15,6 +15,16 @@ export const UpdateProfileSchema = z.object({
   homeCurrency: z.string().length(3).optional(),
 })
 
+export const MemberSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  email: z.string(),
+  role: z.string(),
+  joinedAt: z.string(),
+})
+
+export type Member = z.infer<typeof MemberSchema>
+
 export const userContract = c.router({
   getMe: {
     method: "GET",
@@ -29,6 +39,13 @@ export const userContract = c.router({
     body: UpdateProfileSchema,
     responses: {
       200: UserSchema,
+    },
+  },
+  getMembers: {
+    method: "GET",
+    path: "/users/members",
+    responses: {
+      200: z.array(MemberSchema),
     },
   },
 })

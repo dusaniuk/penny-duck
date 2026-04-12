@@ -9,7 +9,9 @@ import { SignupHandler } from "./application/commands/signup.command"
 import { LoginHandler } from "./application/commands/login.command"
 import { RefreshTokensHandler } from "./application/commands/refresh-tokens.command"
 import { LogoutHandler } from "./application/commands/logout.command"
+import { GenerateInviteCodeHandler } from "./application/commands/generate-invite-code.command"
 import { TokenReuseDetectedHandler } from "./application/event-handlers/token-reuse-detected.handler"
+import { GetInviteHandler } from "./application/queries/get-invite.query"
 
 import { UserRepository } from "./infrastructure/repositories/user.repository"
 import { RefreshTokenRepository } from "./infrastructure/repositories/refresh-token.repository"
@@ -26,7 +28,9 @@ const commandHandlers = [
   LoginHandler,
   RefreshTokensHandler,
   LogoutHandler,
+  GenerateInviteCodeHandler,
 ]
+const queryHandlers = [GetInviteHandler]
 const eventHandlers = [TokenReuseDetectedHandler]
 
 @Module({
@@ -44,6 +48,7 @@ const eventHandlers = [TokenReuseDetectedHandler]
   controllers: [AuthController],
   providers: [
     ...commandHandlers,
+    ...queryHandlers,
     ...eventHandlers,
     UserRepository,
     RefreshTokenRepository,
