@@ -25,7 +25,10 @@ export function SettingsSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
+            >
               <Link to="/dashboard" onClick={() => setOpenMobile(false)}>
                 <IconArrowLeft className="size-5!" />
                 <span className="text-sm font-medium">Back to app</span>
