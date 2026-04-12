@@ -54,6 +54,7 @@ export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQu
     const currencyByAccountId = new Map(
       accounts.map((a) => [a.id, a.currency])
     )
+    const usedCurrencies = [...new Set(accounts.map((a) => a.currency))]
 
     const results: Transaction[] = []
     for (const row of data) {
@@ -64,7 +65,8 @@ export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQu
         const rate = await this.exchangeRateService.getRate(
           currency,
           query.homeCurrency,
-          row.date
+          row.date,
+          usedCurrencies
         )
         homeAmount = Math.abs(row.amount) * rate
       }

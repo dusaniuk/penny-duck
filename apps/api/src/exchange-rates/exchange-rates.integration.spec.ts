@@ -85,6 +85,19 @@ describe("ExchangeRateService", () => {
     // No self-pairs
     expect(rates["UAH"]["UAH"]).toBeUndefined()
   })
+
+  it("only stores rates for used currencies", async () => {
+    const usedCurrencies = ["UAH", "PLN"]
+    await service.getRate("UAH", "PLN", new Date(), usedCurrencies)
+
+    const allStored = await repo.findRates(
+      new Date().toISOString().split("T")[0],
+      "UAH"
+    )
+    const storedTargets = Object.keys(allStored)
+    // Should only contain currencies from the used list (excluding base)
+    expect(storedTargets).toEqual(["PLN"])
+  })
 })
 
 describe("GetLatestRatesQuery", () => {

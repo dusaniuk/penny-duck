@@ -11,7 +11,12 @@ export class ExchangeRateService {
     private readonly repo: ExchangeRateRepository
   ) {}
 
-  async getRate(base: string, target: string, date: Date): Promise<number> {
+  async getRate(
+    base: string,
+    target: string,
+    date: Date,
+    usedCurrencies?: string[]
+  ): Promise<number> {
     if (base === target) return 1
 
     const dateStr = date.toISOString().split("T")[0]
@@ -20,13 +25,18 @@ export class ExchangeRateService {
     if (cached !== null) return cached
 
     const allRates = await this.client.fetchRates(base, date)
-    // Filter to fiat ISO codes only (max 3 chars) — crypto codes like 1INCH exceed DB column length.
-    // Also drop rates that overflow pg integer when stored as rate × 1_000_000 (max 2,147,483,647).
     const PG_INT_MAX = 2_147_483_647
+    const allowedTargets = usedCurrencies
+      ? new Set(usedCurrencies.map((c) => c.toUpperCase()))
+      : null
+    const baseUpper = base.toUpperCase()
     const rates = Object.fromEntries(
       Object.entries(allRates).filter(
         ([code, value]) =>
-          code.length <= 3 && Math.round(value * 1_000_000) <= PG_INT_MAX
+          code.length <= 3 &&
+          code.toUpperCase() !== baseUpper &&
+          Math.round(value * 1_000_000) <= PG_INT_MAX &&
+          (!allowedTargets || allowedTargets.has(code.toUpperCase()))
       )
     )
     await this.repo.upsertRates(dateStr, base, rates)
@@ -50,7 +60,7 @@ export class ExchangeRateService {
       result[base] = {}
       for (const target of currencies) {
         if (base === target) continue
-        result[base][target] = await this.getRate(base, target, today)
+        result[base][target] = await this.getRate(base, target, today, currencies)
       }
     }
 
