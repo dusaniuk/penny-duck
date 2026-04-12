@@ -129,8 +129,8 @@ export function TransactionList({
   if (transactions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-        <p className="text-sm">No transactions yet</p>
-        <p className="mt-1 text-xs">
+        <p className="text-base">No transactions yet</p>
+        <p className="mt-1 text-sm">
           Use the + button to create your first transaction
         </p>
       </div>
@@ -166,11 +166,11 @@ export function TransactionList({
       {groups.map((group) => (
         <div key={group.label}>
           <div className="flex items-center justify-between px-3 py-1.5">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               {group.label}
             </span>
             <span
-              className={`text-xs tabular-nums ${
+              className={`text-sm tabular-nums ${
                 group.subtotal < 0
                   ? "text-red-400"
                   : group.subtotal > 0
@@ -210,7 +210,7 @@ export function TransactionList({
             type="button"
             onClick={onLoadMore}
             disabled={loadingMore}
-            className="rounded-md px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            className="rounded-md px-4 py-2 text-base text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>

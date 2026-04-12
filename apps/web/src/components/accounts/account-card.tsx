@@ -31,10 +31,10 @@ export function AccountCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {account.type} · {account.currency}
             </p>
-            <p className="mt-0.5 truncate font-heading text-sm font-medium">
+            <p className="mt-0.5 truncate font-heading text-base font-medium">
               {account.name}
             </p>
           </div>
@@ -70,9 +70,9 @@ export function AccountCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-xl font-semibold tabular-nums">
+        <p className="text-2xl font-semibold tabular-nums">
           {account.balance.toFixed(2)}{" "}
-          <span className="text-sm font-normal text-muted-foreground">
+          <span className="text-base font-normal text-muted-foreground">
             {account.currency}
           </span>
         </p>
@@ -90,7 +90,7 @@ export function AddAccountCard({ onClick }: AddAccountCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[100px] w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-foreground/20 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+      className="flex min-h-[100px] w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-foreground/20 text-base text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
     >
       + Add Account
     </button>

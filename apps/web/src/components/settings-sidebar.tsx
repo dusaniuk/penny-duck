@@ -32,7 +32,7 @@ export function SettingsSidebar(props: React.ComponentProps<typeof Sidebar>) {
             >
               <Link to="/dashboard" onClick={() => setOpenMobile(false)}>
                 <IconArrowLeft className="size-5!" />
-                <span className="text-sm font-medium">Back to app</span>
+                <span className="text-base font-medium">Back to app</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

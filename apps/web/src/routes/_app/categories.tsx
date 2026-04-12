@@ -65,7 +65,7 @@ function CategoriesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Categories</h1>
+        <h1 className="font-heading text-2xl font-semibold">Categories</h1>
       </div>
 
       {loading ? (

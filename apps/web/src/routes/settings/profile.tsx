@@ -62,8 +62,8 @@ function ProfilePage() {
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold">Profile</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-xl font-semibold">Profile</h2>
+        <p className="text-base text-muted-foreground">
           Manage your name and preferences
         </p>
       </div>
@@ -82,7 +82,7 @@ function ProfilePage() {
         <Field>
           <FieldLabel>Email</FieldLabel>
           <Input value={user.email} disabled />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Email cannot be changed
           </p>
         </Field>

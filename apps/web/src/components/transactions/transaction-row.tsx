@@ -73,12 +73,12 @@ export function TransactionRow({
     if (isReimbursement) {
       return (
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <span className="shrink-0 text-sm text-amber-400">↩</span>
+          <span className="shrink-0 text-base text-amber-400">↩</span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-amber-400">
+            <p className="truncate text-base font-medium text-amber-400">
               Return
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground">
               {transaction.note ?? account?.name ?? "Unknown"}
             </p>
           </div>
@@ -89,10 +89,10 @@ export function TransactionRow({
     if (isTransfer) {
       return (
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <span className="shrink-0 text-sm text-muted-foreground">↔</span>
+          <span className="shrink-0 text-base text-muted-foreground">↔</span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">Transfer</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-base font-medium">Transfer</p>
+            <p className="truncate text-sm text-muted-foreground">
               {account?.name ?? "Unknown"}
               {pairedAccountName && ` → ${pairedAccountName}`}
               {transaction.exchangeRate != null && (
@@ -109,7 +109,7 @@ export function TransactionRow({
 
     return (
       <div className="flex items-center gap-2.5 overflow-hidden">
-        <span className="flex size-5 shrink-0 items-center justify-center text-sm">
+        <span className="flex size-5 shrink-0 items-center justify-center text-base">
           {(() => {
             const resolved = getCategoryIcon(category?.icon ?? null)
             if (resolved) return <resolved.component className="size-4" />
@@ -118,11 +118,11 @@ export function TransactionRow({
         </span>
         <div className="min-w-0">
           <p
-            className={`truncate text-sm font-medium ${!category ? "italic text-muted-foreground" : ""}`}
+            className={`truncate text-base font-medium ${!category ? "italic text-muted-foreground" : ""}`}
           >
             {category?.name ?? "Uncategorized"}
           </p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate text-sm text-muted-foreground">
             {isUnsettled && (
               <span className="text-amber-400">unsettled </span>
             )}
@@ -141,11 +141,11 @@ export function TransactionRow({
   function renderRight() {
     return (
       <div className="shrink-0 text-right">
-        <p className={`text-sm font-semibold tabular-nums ${amountColor}`}>
+        <p className={`text-base font-semibold tabular-nums ${amountColor}`}>
           {amountPrefix}
           {transaction.amount.toFixed(2)} {account?.currency}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {isTransfer && transaction.originalAmount != null ? (
             `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
           ) : (

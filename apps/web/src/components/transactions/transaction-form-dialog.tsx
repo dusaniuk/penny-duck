@@ -155,7 +155,7 @@ export function TransactionFormDialog({
               <button
                 type="button"
                 onClick={() => setType("expense")}
-                className={`flex-1 py-2 text-center text-sm font-medium transition-colors ${
+                className={`flex-1 py-2 text-center text-base font-medium transition-colors ${
                   type === "expense"
                     ? "bg-red-500/15 text-red-500"
                     : "text-muted-foreground hover:bg-muted"
@@ -166,7 +166,7 @@ export function TransactionFormDialog({
               <button
                 type="button"
                 onClick={() => setType("income")}
-                className={`flex-1 py-2 text-center text-sm font-medium transition-colors ${
+                className={`flex-1 py-2 text-center text-base font-medium transition-colors ${
                   type === "income"
                     ? "bg-green-500/15 text-green-500"
                     : "text-muted-foreground hover:bg-muted"
@@ -277,7 +277,7 @@ export function TransactionFormDialog({
                 <button
                   type="button"
                   onClick={() => setUnsettled(!unsettled)}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
                     unsettled
                       ? "border-amber-400 bg-amber-400/20 text-amber-400"
                       : "border-border text-muted-foreground hover:text-foreground"
@@ -290,7 +290,7 @@ export function TransactionFormDialog({
                 <button
                   type="button"
                   onClick={() => setShowExchangeRate(true)}
-                  className="text-xs text-primary hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   + Exchange rate
                 </button>
@@ -300,7 +300,7 @@ export function TransactionFormDialog({
             {showExchangeRate && (
               <div className="rounded-md border border-blue-400/30 bg-blue-400/5 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-blue-400">
+                  <span className="text-sm font-medium text-blue-400">
                     Exchange rate
                   </span>
                   <button
@@ -311,7 +311,7 @@ export function TransactionFormDialog({
                       setOriginalAmount("")
                       setOriginalCurrency("")
                     }}
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground"
                   >
                     ✕
                   </button>
@@ -352,7 +352,7 @@ export function TransactionFormDialog({
               </div>
             )}
 
-            {error && <p className="text-xs text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
             <div className="flex items-center justify-between pt-1">
               <div className="flex gap-2">

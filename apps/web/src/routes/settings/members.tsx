@@ -37,8 +37,8 @@ function MembersPage() {
     <div className="max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Members</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-xl font-semibold">Members</h2>
+          <p className="text-base text-muted-foreground">
             People in your organization
           </p>
         </div>
@@ -46,7 +46,7 @@ function MembersPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-base text-muted-foreground">Loading...</p>
       ) : (
         <div className="divide-y">
           {members.map((member) => (
@@ -62,8 +62,8 @@ function MembersPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{member.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="truncate text-base font-medium">{member.name}</p>
+                <p className="truncate text-sm text-muted-foreground">
                   {member.email}
                 </p>
               </div>
@@ -119,7 +119,7 @@ function InviteButton() {
           </ResponsiveDialogHeader>
           <div className="flex gap-2 p-4 pt-0">
             {generateMutation.isPending ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 Generating link...
               </p>
             ) : inviteUrl ? (
@@ -134,7 +134,7 @@ function InviteButton() {
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-destructive">
+              <p className="text-base text-destructive">
                 Failed to generate invite link
               </p>
             )}

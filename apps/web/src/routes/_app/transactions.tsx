@@ -308,13 +308,13 @@ function TransactionsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Transactions</h1>
+        <h1 className="font-heading text-2xl font-semibold">Transactions</h1>
         <div className="flex items-center gap-2">
           {unsettledCount > 0 && (
             <button
               type="button"
               onClick={handleToggleUnsettled}
-              className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
                 filters.settled === false
                   ? "border-amber-400 bg-amber-400/20 text-amber-400"
                   : "border-amber-400/50 text-amber-400 hover:bg-amber-400/10"

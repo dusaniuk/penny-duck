@@ -69,7 +69,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search icons..."
-              className="h-8 pl-7 text-xs"
+              className="h-9 pl-7 text-sm"
             />
           </div>
         </div>
@@ -99,7 +99,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
             </div>
           ))}
           {filtered.length === 0 && (
-            <p className="py-4 text-center text-xs text-muted-foreground">
+            <p className="py-4 text-center text-sm text-muted-foreground">
               No icons found
             </p>
           )}

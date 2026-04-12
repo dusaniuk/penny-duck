@@ -57,9 +57,9 @@ export function NavUser({
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-base leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-sm">{user.email}</span>
               </div>
               <IconSelector className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -77,9 +77,9 @@ export function NavUser({
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-base leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-sm">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

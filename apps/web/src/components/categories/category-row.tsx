@@ -50,7 +50,7 @@ function CategoryIcon({ icon }: { icon: string | null }) {
     )
   }
   return (
-    <span className="flex size-4 shrink-0 items-center justify-center text-sm">
+    <span className="flex size-4 shrink-0 items-center justify-center text-base">
       {icon ?? ""}
     </span>
   )
@@ -93,7 +93,7 @@ function EditableRow({ initial, onSave, onCancel, indent }: EditableRowProps) {
         onChange={(e) => setName(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Category name"
-        className="h-8 flex-1 text-sm"
+        className="h-9 flex-1 text-base"
         autoFocus
         disabled={saving}
       />
@@ -159,9 +159,9 @@ export function CategoryRow({
                 <IconChevronRight className="size-4 shrink-0 text-muted-foreground" />
               )}
               <CategoryIcon icon={parent.icon} />
-              <span className="flex-1 text-sm font-medium">{parent.name}</span>
+              <span className="flex-1 text-base font-medium">{parent.name}</span>
               {!open && children.length > 0 && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {children.length}
                 </span>
               )}
@@ -209,7 +209,7 @@ export function CategoryRow({
                   className="flex items-center gap-2 border-b border-border/50 py-2 pl-10 pr-3 last:border-b-0"
                 >
                   <CategoryIcon icon={child.icon} />
-                  <span className="flex-1 text-sm text-muted-foreground">
+                  <span className="flex-1 text-base text-muted-foreground">
                     {child.name}
                   </span>
                   <DropdownMenu>
@@ -246,7 +246,7 @@ export function CategoryRow({
               <button
                 type="button"
                 onClick={() => setAddingChild(true)}
-                className="flex w-full items-center gap-2 py-2 pl-10 pr-3 text-xs text-muted-foreground transition-colors hover:bg-muted/50"
+                className="flex w-full items-center gap-2 py-2 pl-10 pr-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
               >
                 <IconPlus className="size-3.5" />
                 Add subcategory
