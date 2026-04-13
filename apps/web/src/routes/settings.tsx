@@ -12,6 +12,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
+import { ThemeToggle } from "@workspace/ui/components/theme-toggle"
 import type { NavItem } from "@/components/app-sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { getAuthUser } from "@/lib/auth"
@@ -58,6 +59,9 @@ function SettingsLayout() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+          </div>
+          <div className="ml-auto px-4">
+            <ThemeToggle />
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
