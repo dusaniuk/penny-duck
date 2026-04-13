@@ -120,14 +120,12 @@ export function TransactionRow({
         </span>
         <div className="min-w-0">
           <p
-            className={`truncate text-base font-medium ${!category ? "italic text-muted-foreground" : ""}`}
+            className={`truncate text-base font-medium ${!category ? "text-muted-foreground italic" : ""}`}
           >
             {category?.name ?? "Uncategorized"}
           </p>
           <p className="truncate text-sm text-muted-foreground">
-            {isUnsettled && (
-              <span className="text-amber-400">unsettled </span>
-            )}
+            {isUnsettled && <span className="text-amber-400">unsettled </span>}
             {transaction.note && (
               <span>
                 {isUnsettled ? "· " : ""}
@@ -144,7 +142,7 @@ export function TransactionRow({
     if (!showMember || !transaction.madeBy) return null
     return (
       <span
-        className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium leading-none text-primary"
+        className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] leading-none font-medium text-primary"
         title={transaction.madeBy.name}
       >
         {transaction.madeBy.name.charAt(0).toUpperCase()}
@@ -161,11 +159,9 @@ export function TransactionRow({
         </p>
         <p className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
           {renderMemberBadge()}
-          {isTransfer && transaction.originalAmount != null ? (
-            `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
-          ) : (
-            account?.name ?? ""
-          )}
+          {isTransfer && transaction.originalAmount != null
+            ? `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
+            : (account?.name ?? "")}
         </p>
       </div>
     )
@@ -174,9 +170,7 @@ export function TransactionRow({
   return (
     <div
       className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
-        isUnsettled
-          ? "border-l-3 border-l-amber-400 bg-amber-400/5"
-          : ""
+        isUnsettled ? "border-l-3 border-l-amber-400 bg-amber-400/5" : ""
       }`}
     >
       {renderLeft()}
@@ -199,24 +193,14 @@ export function TransactionRow({
             </DropdownMenuItem>
 
             {canReimburse && onReimburse && (
-              <DropdownMenuItem
-                className="text-amber-500 focus:text-amber-500"
-                onSelect={() => onReimburse(transaction)}
-              >
+              <DropdownMenuItem onSelect={() => onReimburse(transaction)}>
                 <IconCash />
                 Add reimbursement
               </DropdownMenuItem>
             )}
 
             {!isTransfer && (
-              <DropdownMenuItem
-                className={
-                  isUnsettled
-                    ? "text-green-500 focus:text-green-500"
-                    : undefined
-                }
-                onSelect={() => onSettle(transaction)}
-              >
+              <DropdownMenuItem onSelect={() => onSettle(transaction)}>
                 {isUnsettled ? <IconCheck /> : <IconAlertCircle />}
                 {isUnsettled ? "Mark settled" : "Mark unsettled"}
               </DropdownMenuItem>
