@@ -409,13 +409,6 @@ function TransactionsPage() {
               }
             : undefined
         }
-        onSettle={
-          editTransaction && !editTransaction.transferId
-            ? () => {
-                settleMutation.mutate({ params: { id: editTransaction.id } })
-              }
-            : undefined
-        }
       />
 
       <ReimbursementDialog

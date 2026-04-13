@@ -59,7 +59,6 @@ interface TransactionFormDialogProps {
     madeById?: string
   }) => Promise<void>
   onDelete?: () => void
-  onSettle?: () => void
 }
 
 export function TransactionFormDialog({
@@ -76,7 +75,6 @@ export function TransactionFormDialog({
   onSubmitTransaction,
   onSubmitTransfer,
   onDelete,
-  onSettle,
 }: TransactionFormDialogProps) {
   const isEdit = !!transaction
   const isTransferEdit = isEdit && !!transaction.transferId
@@ -216,7 +214,7 @@ export function TransactionFormDialog({
           categoryId,
           date: new Date(date).toISOString(),
           ...(note ? { note } : {}),
-          ...(!isEdit && unsettled ? { settled: false } : {}),
+          settled: !unsettled,
           ...(members.length > 1 ? { madeById } : {}),
         })
       }
@@ -228,7 +226,6 @@ export function TransactionFormDialog({
     }
   }
 
-  const canToggleSettle = isEdit && !isTransferEdit && onSettle
   const toAccountOptions = accounts.filter((a) => a.id !== fromAccountId)
 
   return (
@@ -483,6 +480,19 @@ export function TransactionFormDialog({
                     {unsettled ? "Unsettled" : "Mark unsettled"}
                   </button>
                 )}
+                {isEdit && !isTransferEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setUnsettled(!unsettled)}
+                    className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
+                      unsettled
+                        ? "border-amber-400 bg-amber-400/20 text-amber-400"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {unsettled ? "Unsettled" : "Mark unsettled"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -499,17 +509,6 @@ export function TransactionFormDialog({
                     disabled={loading}
                   >
                     Delete
-                  </Button>
-                )}
-                {canToggleSettle && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onSettle}
-                    disabled={loading}
-                  >
-                    {transaction.settled ? "Mark unsettled" : "Mark settled"}
                   </Button>
                 )}
               </div>
