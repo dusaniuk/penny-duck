@@ -11,7 +11,6 @@ import { TransactionFilterSheet } from "@/components/transactions/transaction-fi
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 import { TransactionList } from "@/components/transactions/transaction-list"
 import { ReimbursementDialog } from "@/components/transactions/reimbursement-dialog"
-import { TransferFormDialog } from "@/components/transactions/transfer-form-dialog"
 
 interface TransactionFilters {
   accountId?: string
@@ -35,8 +34,6 @@ function TransactionsPage() {
   const [filters, setFilters] = useState<TransactionFilters>({})
 
   const [formOpen, setFormOpen] = useState(false)
-  const [formType, setFormType] = useState<"expense" | "income">("expense")
-  const [transferFormOpen, setTransferFormOpen] = useState(false)
   const [editTransaction, setEditTransaction] =
     useState<Transaction | null>(null)
   const [deleteTransaction, setDeleteTransaction] =
@@ -170,26 +167,12 @@ function TransactionsPage() {
 
   function handleClickTransaction(t: Transaction) {
     setEditTransaction(t)
-    if (t.transferId) {
-      setTransferFormOpen(true)
-    } else {
-      setFormOpen(true)
-    }
+    setFormOpen(true)
   }
 
-  function handleExpense() {
+  function handleOpenCreate() {
     setEditTransaction(null)
-    setFormType("expense")
     setFormOpen(true)
-  }
-  function handleIncome() {
-    setEditTransaction(null)
-    setFormType("income")
-    setFormOpen(true)
-  }
-  function handleTransfer() {
-    setEditTransaction(null)
-    setTransferFormOpen(true)
   }
 
   async function handleTransactionSubmit(data: {
@@ -200,9 +183,6 @@ function TransactionsPage() {
     date: string
     note?: string
     settled?: boolean
-    originalAmount?: number
-    originalCurrency?: string
-    exchangeRate?: number
     madeById?: string
   }) {
     if (editTransaction) {
@@ -387,11 +367,7 @@ function TransactionsPage() {
         onDelete={(t) => setDeleteTransaction(t)}
       />
 
-      <TransactionFab
-        onExpense={handleExpense}
-        onIncome={handleIncome}
-        onTransfer={handleTransfer}
-      />
+      <TransactionFab onOpen={handleOpenCreate} />
 
       <TransactionFormDialog
         open={formOpen}
@@ -400,31 +376,11 @@ function TransactionsPage() {
           if (!o) setEditTransaction(null)
         }}
         transaction={editTransaction}
-        defaultType={formType}
         accounts={accounts}
         categories={categories}
         members={members}
         currentUserId={currentUserId}
-        onSubmit={handleTransactionSubmit}
-        onDelete={
-          editTransaction
-            ? () => {
-                setFormOpen(false)
-                setDeleteTransaction(editTransaction)
-              }
-            : undefined
-        }
-      />
-
-      <TransferFormDialog
-        open={transferFormOpen}
-        onOpenChange={(o) => {
-          setTransferFormOpen(o)
-          if (!o) setEditTransaction(null)
-        }}
-        transaction={editTransaction}
-        members={members}
-        currentUserId={currentUserId}
+        exchangeRates={latestRates}
         pairedAccountId={
           editTransaction?.transferId
             ? (allTransactions.find(
@@ -434,14 +390,20 @@ function TransactionsPage() {
               )?.accountId ?? null)
             : null
         }
-        accounts={accounts}
-        exchangeRates={latestRates}
-        onSubmit={handleTransferSubmit}
+        onSubmitTransaction={handleTransactionSubmit}
+        onSubmitTransfer={handleTransferSubmit}
         onDelete={
           editTransaction
             ? () => {
-                setTransferFormOpen(false)
+                setFormOpen(false)
                 setDeleteTransaction(editTransaction)
+              }
+            : undefined
+        }
+        onSettle={
+          editTransaction && !editTransaction.transferId
+            ? () => {
+                settleMutation.mutate({ params: { id: editTransaction.id } })
               }
             : undefined
         }
