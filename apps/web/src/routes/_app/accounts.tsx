@@ -7,6 +7,7 @@ import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { queryClient, tsr } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/accounts")({
+  staticData: { breadcrumb: "Accounts" },
   component: AccountsPage,
 })
 

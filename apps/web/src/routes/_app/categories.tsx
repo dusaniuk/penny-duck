@@ -6,6 +6,7 @@ import { CategoryDeleteDialog } from "@/components/categories/category-delete-di
 import { queryClient, tsr } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/categories")({
+  staticData: { breadcrumb: "Categories" },
   component: CategoriesPage,
 })
 

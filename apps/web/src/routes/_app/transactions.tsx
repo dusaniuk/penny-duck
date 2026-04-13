@@ -24,6 +24,7 @@ interface TransactionFilters {
 }
 
 export const Route = createFileRoute("/_app/transactions")({
+  staticData: { breadcrumb: "Transactions" },
   component: TransactionsPage,
 })
 

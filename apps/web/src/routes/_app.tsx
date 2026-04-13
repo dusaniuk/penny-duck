@@ -1,4 +1,10 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import {
+  Link,
+  Outlet,
+  createFileRoute,
+  redirect,
+  useMatches,
+} from "@tanstack/react-router"
 import {
   IconCashBanknote,
   IconCategory,
@@ -9,7 +15,6 @@ import {
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -45,6 +50,12 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const { user } = Route.useRouteContext()
+  const matches = useMatches()
+  const crumbs = matches.filter(
+    (m) =>
+      m.staticData.breadcrumb ||
+      (m.loaderData as Record<string, unknown> | undefined)?.crumb,
+  )
 
   return (
     <SidebarProvider>
@@ -67,15 +78,27 @@ function AppLayout() {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Build Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
+                {crumbs.map((match, i) => {
+                  const isLast = i === crumbs.length - 1
+                  const label = (match.staticData.breadcrumb ??
+                    (match.loaderData as Record<string, unknown> | undefined)
+                      ?.crumb) as string
+                  return (
+                    <BreadcrumbItem key={match.id}>
+                      {i > 0 && <BreadcrumbSeparator />}
+                      {isLast ? (
+                        <BreadcrumbPage>{label}</BreadcrumbPage>
+                      ) : (
+                        <Link
+                          to={match.pathname}
+                          className="text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {label}
+                        </Link>
+                      )}
+                    </BreadcrumbItem>
+                  )
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
