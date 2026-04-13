@@ -114,6 +114,10 @@ Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup
 - **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
 - **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
 
+## Legal
+
+When features change (e.g., new data collected, third-party integrations, auth changes), review and update `apps/web/src/content/legal/terms.mdx` and `apps/web/src/content/legal/privacy.mdx` accordingly.
+
 ## Branching & Releases
 
 - **`main`** is the production branch — linked to Railway, every push triggers a deploy

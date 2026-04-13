@@ -114,6 +114,23 @@ function SignupPage() {
                     ? "Creating account..."
                     : "Sign up"}
                 </Button>
+                <p className="text-center text-xs text-muted-foreground">
+                  By creating an account, you agree to our{" "}
+                  <Link
+                    to="/legal/terms"
+                    className="underline hover:text-foreground"
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    to="/legal/privacy"
+                    className="underline hover:text-foreground"
+                  >
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
                 <FieldDescription className="text-center">
                   Already have an account? <Link to="/login">Log in</Link>
                 </FieldDescription>

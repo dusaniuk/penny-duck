@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as InviteRouteImport } from './routes/invite'
+import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,8 @@ import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
+import { Route as PublicLegalTermsRouteImport } from './routes/_public/legal/terms'
+import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -32,6 +35,10 @@ const SettingsRoute = SettingsRouteImport.update({
 const InviteRoute = InviteRouteImport.update({
   id: '/invite',
   path: '/invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -92,6 +99,16 @@ const AppAccountsRoute = AppAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => AppRoute,
 } as any)
+const PublicLegalTermsRoute = PublicLegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLegalPrivacyRoute = PublicLegalPrivacyRouteImport.update({
+  id: '/legal/privacy',
+  path: '/legal/privacy',
+  getParentRoute: () => PublicRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -106,6 +123,8 @@ export interface FileRoutesByFullPath {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
+  '/legal/privacy': typeof PublicLegalPrivacyRoute
+  '/legal/terms': typeof PublicLegalTermsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,12 +138,15 @@ export interface FileRoutesByTo {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings': typeof SettingsIndexRoute
+  '/legal/privacy': typeof PublicLegalPrivacyRoute
+  '/legal/terms': typeof PublicLegalTermsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
   '/invite': typeof InviteRoute
   '/settings': typeof SettingsRouteWithChildren
   '/_app/accounts': typeof AppAccountsRoute
@@ -136,6 +158,8 @@ export interface FileRoutesById {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
+  '/_public/legal/privacy': typeof PublicLegalPrivacyRoute
+  '/_public/legal/terms': typeof PublicLegalTermsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -152,6 +176,8 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings/'
+    | '/legal/privacy'
+    | '/legal/terms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,11 +191,14 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings'
+    | '/legal/privacy'
+    | '/legal/terms'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/_auth'
+    | '/_public'
     | '/invite'
     | '/settings'
     | '/_app/accounts'
@@ -181,12 +210,15 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings/'
+    | '/_public/legal/privacy'
+    | '/_public/legal/terms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
   InviteRoute: typeof InviteRoute
   SettingsRoute: typeof SettingsRouteWithChildren
 }
@@ -205,6 +237,13 @@ declare module '@tanstack/react-router' {
       path: '/invite'
       fullPath: '/invite'
       preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -291,6 +330,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_public/legal/terms': {
+      id: '/_public/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof PublicLegalTermsRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/legal/privacy': {
+      id: '/_public/legal/privacy'
+      path: '/legal/privacy'
+      fullPath: '/legal/privacy'
+      preLoaderRoute: typeof PublicLegalPrivacyRouteImport
+      parentRoute: typeof PublicRoute
+    }
   }
 }
 
@@ -322,6 +375,19 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PublicRouteChildren {
+  PublicLegalPrivacyRoute: typeof PublicLegalPrivacyRoute
+  PublicLegalTermsRoute: typeof PublicLegalTermsRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicLegalPrivacyRoute: PublicLegalPrivacyRoute,
+  PublicLegalTermsRoute: PublicLegalTermsRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 interface SettingsRouteChildren {
   SettingsMembersRoute: typeof SettingsMembersRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -342,6 +408,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
   InviteRoute: InviteRoute,
   SettingsRoute: SettingsRouteWithChildren,
 }

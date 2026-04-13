@@ -4,6 +4,7 @@ import viteReact from "@vitejs/plugin-react"
 import viteTsConfigPaths from "vite-tsconfig-paths"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
+import mdx from "@mdx-js/rollup"
 
 const apiUrl = process.env.API_URL ?? "http://localhost:3030"
 
@@ -37,6 +38,7 @@ const config = defineConfig({
       projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
+    mdx(),
     tanstackStart(),
     viteReact(),
   ],
