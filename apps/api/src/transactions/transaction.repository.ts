@@ -231,7 +231,7 @@ export class TransactionRepository {
       .from(transactions)
       .leftJoin(users, eq(transactions.madeById, users.id))
       .where(where)
-      .orderBy(desc(transactions.date))
+      .orderBy(desc(transactions.date), desc(transactions.createdAt))
       .limit(filters.limit)
       .offset(offset)
 
