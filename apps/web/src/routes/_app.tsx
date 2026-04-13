@@ -1,5 +1,12 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import {
+  IconCashBanknote,
+  IconCategory,
+  IconLayoutDashboard,
+  IconReceipt,
+  IconWallet,
+} from "@tabler/icons-react"
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -13,8 +20,17 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
+import type { NavItem } from "@/components/app-sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { NavUser } from "@/components/nav-user"
 import { getAuthUser } from "@/lib/auth"
+
+const mainNav: Array<NavItem> = [
+  { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
+  { title: "Transactions", url: "/transactions", icon: IconReceipt },
+  { title: "Accounts", url: "/accounts", icon: IconWallet },
+  { title: "Categories", url: "/categories", icon: IconCategory },
+]
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
@@ -32,7 +48,15 @@ function AppLayout() {
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} />
+      <AppSidebar
+        header={{
+          label: "Penny Duck",
+          url: "/dashboard",
+          icon: IconCashBanknote,
+        }}
+        nav={mainNav}
+        footer={<NavUser user={user} />}
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">

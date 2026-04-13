@@ -1,12 +1,19 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { IconArrowLeft, IconUser, IconUsers } from "@tabler/icons-react"
+import { Separator } from "@workspace/ui/components/separator"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
-import { Separator } from "@workspace/ui/components/separator"
-import { SettingsSidebar } from "@/components/settings-sidebar"
+import type { NavItem } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 import { getAuthUser } from "@/lib/auth"
+
+const settingsNav: Array<NavItem> = [
+  { title: "Profile", url: "/settings/profile", icon: IconUser },
+  { title: "Members", url: "/settings/members", icon: IconUsers },
+]
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: async () => {
@@ -22,7 +29,14 @@ export const Route = createFileRoute("/settings")({
 function SettingsLayout() {
   return (
     <SidebarProvider>
-      <SettingsSidebar />
+      <AppSidebar
+        header={{
+          label: "Back to app",
+          url: "/dashboard",
+          icon: IconArrowLeft,
+        }}
+        nav={settingsNav}
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2">
           <div className="flex items-center gap-2 px-4">
