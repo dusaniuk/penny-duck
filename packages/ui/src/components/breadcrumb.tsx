@@ -63,7 +63,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("text-base font-medium text-foreground", className)}
+      className={cn("font-normal text-foreground", className)}
       {...props}
     />
   )
@@ -82,7 +82,9 @@ function BreadcrumbSeparator({
       className={cn("[&>svg]:size-3.5", className)}
       {...props}
     >
-      {children ?? <IconChevronRight />}
+      {children ?? (
+        <IconChevronRight />
+      )}
     </li>
   )
 }
@@ -97,12 +99,13 @@ function BreadcrumbEllipsis({
       role="presentation"
       aria-hidden="true"
       className={cn(
-        "flex size-4 items-center justify-center [&>svg]:size-3.5",
+        "flex size-5 items-center justify-center [&>svg]:size-4",
         className
       )}
       {...props}
     >
-      <IconDots />
+      <IconDots
+      />
       <span className="sr-only">More</span>
     </span>
   )
