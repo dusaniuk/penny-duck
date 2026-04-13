@@ -131,7 +131,7 @@ git push origin main --tags
 
 - **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users
 - While on `0.x`, no need to bump major for breaking changes
-- After merging, delete the version branch (local + remote)
+- After merging, delete the version branch (local + remote), then create the next version branch (bump minor)
 
 ## graphify
 
