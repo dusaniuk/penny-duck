@@ -192,7 +192,7 @@ export function TransactionRow({
               <IconDotsVertical className="size-4" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem onSelect={() => onEdit(transaction)}>
               <IconEdit />
               Edit
