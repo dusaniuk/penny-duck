@@ -3,7 +3,12 @@ import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import type { Account, Category, Member, Transaction } from "@workspace/api-contract"
+import type {
+  Account,
+  Category,
+  Member,
+  Transaction,
+} from "@workspace/api-contract"
 import { queryClient, tsr } from "@/lib/api"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
@@ -34,35 +39,35 @@ function TransactionsPage() {
   const [filters, setFilters] = useState<TransactionFilters>({})
 
   const [formOpen, setFormOpen] = useState(false)
-  const [editTransaction, setEditTransaction] =
-    useState<Transaction | null>(null)
+  const [editTransaction, setEditTransaction] = useState<Transaction | null>(
+    null
+  )
   const [deleteTransaction, setDeleteTransaction] =
     useState<Transaction | null>(null)
   const [reimburseTransaction, setReimburseTransaction] =
     useState<Transaction | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
-  const { data: txData, isLoading: loading } =
-    tsr.transactions.list.useQuery({
-      queryKey: ["transactions", filters, page],
-      queryData: {
-        query: {
-          page,
-          limit: PAGE_SIZE,
-          accountId: filters.accountId,
-          type: filters.type as "expense" | "income" | undefined,
-          categoryId: filters.categoryId,
-          settled: filters.settled,
-          dateFrom: filters.dateFrom
-            ? new Date(filters.dateFrom).toISOString()
-            : undefined,
-          dateTo: filters.dateTo
-            ? new Date(filters.dateTo).toISOString()
-            : undefined,
-          madeById: filters.madeById,
-        },
+  const { data: txData, isLoading: loading } = tsr.transactions.list.useQuery({
+    queryKey: ["transactions", filters, page],
+    queryData: {
+      query: {
+        page,
+        limit: PAGE_SIZE,
+        accountId: filters.accountId,
+        type: filters.type as "expense" | "income" | undefined,
+        categoryId: filters.categoryId,
+        settled: filters.settled,
+        dateFrom: filters.dateFrom
+          ? new Date(filters.dateFrom).toISOString()
+          : undefined,
+        dateTo: filters.dateTo
+          ? new Date(filters.dateTo).toISOString()
+          : undefined,
+        madeById: filters.madeById,
       },
-    })
+    },
+  })
 
   const transactions = txData?.body.data ?? []
   const total = txData?.body.total ?? 0
@@ -83,7 +88,9 @@ function TransactionsPage() {
   })
   const categories: Array<Category> = categoriesData?.body ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({ queryKey: ["users", "me"] })
+  const { data: meData } = tsr.users.getMe.useQuery({
+    queryKey: ["users", "me"],
+  })
   const homeCurrency = meData?.body.homeCurrency ?? "UAH"
   const currentUserId = meData?.body.id ?? ""
 
@@ -98,7 +105,9 @@ function TransactionsPage() {
   const latestRates = ratesData?.body.rates ?? {}
 
   const [loadingMore, setLoadingMore] = useState(false)
-  const [extraTransactions, setExtraTransactions] = useState<Array<Transaction>>([])
+  const [extraTransactions, setExtraTransactions] = useState<
+    Array<Transaction>
+  >([])
 
   const allTransactions =
     page === 1 ? transactions : [...transactions, ...extraTransactions]
