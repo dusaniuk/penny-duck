@@ -25,6 +25,57 @@ export const MemberSchema = z.object({
 
 export type Member = z.infer<typeof MemberSchema>
 
+export const DeleteAccountSchema = z.object({
+  email: z.string().email(),
+})
+
+export const MessageSchema = z.object({
+  message: z.string(),
+})
+
+export const ExportAccountSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  type: z.string(),
+  currency: z.string(),
+  initialBalance: z.number(),
+  createdAt: z.string(),
+})
+
+export const ExportCategorySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  icon: z.string().nullable(),
+  parentId: z.string().uuid().nullable(),
+  createdAt: z.string(),
+})
+
+export const ExportTransactionSchema = z.object({
+  id: z.string().uuid(),
+  amount: z.number(),
+  note: z.string().nullable(),
+  date: z.string(),
+  settled: z.boolean(),
+  accountId: z.string().uuid(),
+  categoryId: z.string().uuid().nullable(),
+  originalAmount: z.number().nullable(),
+  originalCurrency: z.string().nullable(),
+  exchangeRate: z.number().nullable(),
+  createdAt: z.string(),
+})
+
+export const ExportDataSchema = z.object({
+  exportedAt: z.string(),
+  user: UserSchema,
+  organization: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+  }),
+  accounts: z.array(ExportAccountSchema),
+  categories: z.array(ExportCategorySchema),
+  transactions: z.array(ExportTransactionSchema),
+})
+
 export const userContract = c.router({
   getMe: {
     method: "GET",
@@ -39,6 +90,21 @@ export const userContract = c.router({
     body: UpdateProfileSchema,
     responses: {
       200: UserSchema,
+    },
+  },
+  deleteMe: {
+    method: "DELETE",
+    path: "/users/me",
+    body: DeleteAccountSchema,
+    responses: {
+      200: MessageSchema,
+    },
+  },
+  exportData: {
+    method: "GET",
+    path: "/users/me/export",
+    responses: {
+      200: ExportDataSchema,
     },
   },
   getMembers: {

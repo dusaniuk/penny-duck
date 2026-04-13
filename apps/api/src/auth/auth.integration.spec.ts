@@ -1,5 +1,7 @@
 import { UnauthorizedException } from "@nestjs/common"
 import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { eq } from "drizzle-orm"
+import { type DbClient, users } from "@workspace/db"
 import {
   createTestApp,
   closeTestApp,
@@ -19,12 +21,14 @@ import { OrganizationRepository } from "../organizations/organization.repository
 
 let commandBus: CommandBus
 let queryBus: QueryBus
+let db: DbClient
 let orgRepo: OrganizationRepository
 
 beforeAll(async () => {
   const ctx = await createTestApp()
   commandBus = ctx.commandBus
   queryBus = ctx.queryBus
+  db = ctx.db
   orgRepo = ctx.app.get(OrganizationRepository)
 })
 
@@ -288,5 +292,19 @@ describe("Auth", () => {
 
       expect(result.message).toBe("Account created successfully")
     })
+  })
+
+  it("records agreedToTermsAt on signup", async () => {
+    await commandBus.execute(
+      new SignupCommand("Terms User", "terms@example.com", "password12345678")
+    )
+
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, "terms@example.com"))
+      .limit(1)
+
+    expect(user[0].agreedToTermsAt).toBeInstanceOf(Date)
   })
 })

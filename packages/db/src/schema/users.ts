@@ -9,6 +9,7 @@ export const users = appSchema.table("users", {
   homeCurrency: varchar("home_currency", { length: 3 })
     .notNull()
     .default("UAH"),
+  agreedToTermsAt: timestamp("agreed_to_terms_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

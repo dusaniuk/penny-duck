@@ -33,6 +33,7 @@ export class UserRepository {
     email: string
     name: string
     passwordHash: string
+    agreedToTermsAt?: Date
   }): Promise<UserRow> {
     const [row] = await this.db.insert(users).values(data).returning()
     return row

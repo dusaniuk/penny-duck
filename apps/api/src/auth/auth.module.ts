@@ -53,6 +53,6 @@ const queryHandlers = [GetInviteHandler]
     TokenCleanupService,
     AuthGuard,
   ],
-  exports: [AuthGuard, JwtService],
+  exports: [AuthGuard, JwtService, CookieService],
 })
 export class AuthModule {}

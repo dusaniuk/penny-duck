@@ -55,7 +55,7 @@ export async function flushEvents(ms = 100) {
 }
 
 export async function signupUser(
-  overrides?: Partial<{ name: string; email: string; password: string }>
+  overrides?: Partial<{ name: string; email: string; password: string; inviteCode: string }>
 ) {
   const email = overrides?.email ?? faker.internet.email()
   const password = overrides?.password ?? faker.internet.password({ length: 16 })
@@ -64,7 +64,8 @@ export async function signupUser(
     new SignupCommand(
       overrides?.name ?? faker.person.fullName(),
       email,
-      password
+      password,
+      overrides?.inviteCode
     )
   )
 

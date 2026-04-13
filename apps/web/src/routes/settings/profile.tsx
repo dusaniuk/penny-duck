@@ -11,9 +11,12 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/combobox"
+import { Button } from "@workspace/ui/components/button"
+import { Separator } from "@workspace/ui/components/separator"
 import { CURRENCIES } from "@workspace/shared/currencies"
 import { toast } from "sonner"
 import { tsr } from "@/lib/api"
+import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog"
 
 const currencyItems = CURRENCIES.map((c) => ({
   ...c,
@@ -29,6 +32,7 @@ export const Route = createFileRoute("/settings/profile")({
 function ProfilePage() {
   const { user } = Route.useRouteContext()
   const [name, setName] = useState(user.name)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const [currency, setCurrency] = useState<CurrencyItem | null>(
@@ -57,6 +61,13 @@ function ProfilePage() {
     if (item && item.code !== user.homeCurrency) {
       updateMutation.mutate({ body: { homeCurrency: item.code } })
     }
+  }
+
+  function handleExport() {
+    const a = document.createElement("a")
+    a.href = "/api/users/me/export"
+    a.download = "penny-duck-export.json"
+    a.click()
   }
 
   return (
@@ -109,6 +120,36 @@ function ProfilePage() {
           </Combobox>
         </Field>
       </FieldGroup>
+
+      <Separator className="my-8" />
+
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold">Your Data</h2>
+        <p className="text-base text-muted-foreground">
+          Download a copy of all your data
+        </p>
+      </div>
+      <Button variant="outline" onClick={handleExport}>
+        Download my data
+      </Button>
+
+      <Separator className="my-8" />
+
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-destructive">Danger Zone</h2>
+        <p className="text-base text-muted-foreground">
+          Permanently delete your account and all data you own
+        </p>
+      </div>
+      <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+        Delete account
+      </Button>
+
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        userEmail={user.email}
+      />
     </div>
   )
 }

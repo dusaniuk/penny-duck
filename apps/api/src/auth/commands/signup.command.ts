@@ -50,6 +50,7 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
       email: command.email.trim().toLowerCase(),
       name: command.name,
       passwordHash,
+      agreedToTermsAt: new Date(),
     })
 
     let orgId: string

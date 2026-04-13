@@ -1,0 +1,1 @@
+ALTER TABLE "app"."users" ADD COLUMN "agreed_to_terms_at" timestamp with time zone;
