@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
-import type { Category } from "@workspace/api-contract"
+import type { Account, Category } from "@workspace/api-contract"
 import { tsr } from "@/lib/api"
 import { SpendingsCard } from "@/components/spendings/spendings-card"
+import { BalanceCard } from "@/components/dashboard/balance-card"
 
 export const Route = createFileRoute("/_app/dashboard")({
   staticData: { breadcrumb: "Dashboard" },
@@ -14,6 +15,12 @@ function DashboardPage() {
   })
   const categories: Array<Category> = categoriesData?.body ?? []
 
+  const { data: accountsData, isLoading: accountsLoading } =
+    tsr.accounts.list.useQuery({
+      queryKey: ["accounts"],
+    })
+  const accounts: Array<Account> = accountsData?.body ?? []
+
   const { data: meData } = tsr.users.getMe.useQuery({
     queryKey: ["users", "me"],
   })
@@ -21,10 +28,14 @@ function DashboardPage() {
 
   return (
     <>
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
+        <BalanceCard
+          accounts={accounts}
+          homeCurrency={homeCurrency}
+          loading={accountsLoading}
+        />
         <SpendingsCard categories={categories} homeCurrency={homeCurrency} />
-        <div className="aspect-video rounded-xl bg-muted/50" />
-        <div className="aspect-video rounded-xl bg-muted/50" />
+        <div className="rounded-xl bg-muted/50" />
       </div>
       <div className="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min" />
     </>

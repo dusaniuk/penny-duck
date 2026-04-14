@@ -102,16 +102,18 @@ describe("ExchangeRateService", () => {
 
 describe("GetLatestRatesQuery", () => {
   let organizationId: string
+  let userId: string
 
   beforeEach(async () => {
     await truncateAll()
     const result = await signupUser()
     organizationId = result.accessToken.organizationId
+    userId = result.accessToken.sub
   })
 
   it("returns empty rates when user has one currency", async () => {
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank", "bank", "UAH"),
+      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH"),
     )
 
     const result = await queryBus.execute(new GetLatestRatesQuery(organizationId))
@@ -120,10 +122,10 @@ describe("GetLatestRatesQuery", () => {
 
   it("returns cross-pairs for multiple currencies", async () => {
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "UAH Bank", "bank", "UAH"),
+      new CreateAccountCommand(organizationId, userId, "UAH Bank", "bank", "UAH"),
     )
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "USD Cash", "cash", "USD"),
+      new CreateAccountCommand(organizationId, userId, "USD Cash", "cash", "USD"),
     )
 
     const result = await queryBus.execute(new GetLatestRatesQuery(organizationId))

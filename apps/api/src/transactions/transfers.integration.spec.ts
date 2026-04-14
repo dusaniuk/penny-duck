@@ -36,10 +36,10 @@ beforeEach(async () => {
 describe("Transfers", () => {
   it("creates a same-currency transfer", async () => {
     const acc1 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 1", "bank", "UAH", 5000)
+      new CreateAccountCommand(organizationId, userId, "Bank 1", "bank", "UAH", 5000)
     )
     const acc2 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 2", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Bank 2", "bank", "UAH", 1000)
     )
 
     const [outgoing, incoming] = await commandBus.execute(
@@ -61,18 +61,18 @@ describe("Transfers", () => {
     expect(incoming.type).toBe("income")
     expect(outgoing.transferId).toBe(incoming.transferId)
 
-    const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, organizationId))
-    const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, organizationId))
+    const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, organizationId, userId))
+    const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, organizationId, userId))
     expect(a1.balance).toBe(4500)
     expect(a2.balance).toBe(1500)
   })
 
   it("creates a cross-currency transfer", async () => {
     const usd = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "USD", "bank", "USD", 1000)
+      new CreateAccountCommand(organizationId, userId, "USD", "bank", "USD", 1000)
     )
     const uah = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "UAH", "bank", "UAH", 0)
+      new CreateAccountCommand(organizationId, userId, "UAH", "bank", "UAH", 0)
     )
 
     const [outgoing, incoming] = await commandBus.execute(
@@ -93,15 +93,15 @@ describe("Transfers", () => {
     expect(outgoing.exchangeRate).toBe(41.52)
     expect(incoming.amount).toBe(4152)
 
-    const u = await queryBus.execute(new GetAccountQuery(usd.id, organizationId))
-    const h = await queryBus.execute(new GetAccountQuery(uah.id, organizationId))
+    const u = await queryBus.execute(new GetAccountQuery(usd.id, organizationId, userId))
+    const h = await queryBus.execute(new GetAccountQuery(uah.id, organizationId, userId))
     expect(u.balance).toBe(900)
     expect(h.balance).toBe(4152)
   })
 
   it("rejects transfer to same account", async () => {
     const acc = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank", "bank", "UAH", 5000)
+      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 5000)
     )
 
     await expect(
@@ -120,10 +120,10 @@ describe("Transfers", () => {
 
   it("updates a transfer", async () => {
     const acc1 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 1", "bank", "UAH", 5000)
+      new CreateAccountCommand(organizationId, userId, "Bank 1", "bank", "UAH", 5000)
     )
     const acc2 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 2", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Bank 2", "bank", "UAH", 1000)
     )
 
     const [outgoing] = await commandBus.execute(
@@ -152,10 +152,10 @@ describe("Transfers", () => {
 
   it("deletes a transfer and restores balances", async () => {
     const acc1 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 1", "bank", "UAH", 5000)
+      new CreateAccountCommand(organizationId, userId, "Bank 1", "bank", "UAH", 5000)
     )
     const acc2 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 2", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Bank 2", "bank", "UAH", 1000)
     )
 
     const [outgoing] = await commandBus.execute(
@@ -173,18 +173,18 @@ describe("Transfers", () => {
       new DeleteTransferCommand(outgoing.transferId!, organizationId)
     )
 
-    const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, organizationId))
-    const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, organizationId))
+    const a1 = await queryBus.execute(new GetAccountQuery(acc1.id, organizationId, userId))
+    const a2 = await queryBus.execute(new GetAccountQuery(acc2.id, organizationId, userId))
     expect(a1.balance).toBe(5000)
     expect(a2.balance).toBe(1000)
   })
 
   it("rejects deleting transfer via regular transaction endpoint", async () => {
     const acc1 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 1", "bank", "UAH", 5000)
+      new CreateAccountCommand(organizationId, userId, "Bank 1", "bank", "UAH", 5000)
     )
     const acc2 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank 2", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Bank 2", "bank", "UAH", 1000)
     )
 
     const [outgoing] = await commandBus.execute(

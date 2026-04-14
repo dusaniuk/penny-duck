@@ -10,6 +10,7 @@ export const AccountSchema = z.object({
   type: z.string(),
   currency: z.string(),
   balance: z.number(),
+  homeBalance: z.number(),
 })
 
 export const CreateAccountSchema = z.object({

@@ -35,7 +35,7 @@ beforeEach(async () => {
 describe("Accounts", () => {
   it("creates an account with initial balance", async () => {
     const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Main Bank", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Main Bank", "bank", "UAH", 1000)
     )
 
     expect(account.name).toBe("Main Bank")
@@ -47,7 +47,7 @@ describe("Accounts", () => {
 
   it("defaults balance to 0", async () => {
     const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Cash", "cash", "USD")
+      new CreateAccountCommand(organizationId, userId, "Cash", "cash", "USD")
     )
 
     expect(account.balance).toBe(0)
@@ -55,24 +55,24 @@ describe("Accounts", () => {
 
   it("lists accounts for user", async () => {
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank", "bank", "UAH")
+      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH")
     )
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Cash", "cash", "USD")
+      new CreateAccountCommand(organizationId, userId, "Cash", "cash", "USD")
     )
 
-    const accounts = await queryBus.execute(new GetAccountsQuery(organizationId))
+    const accounts = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
 
     expect(accounts).toHaveLength(2)
   })
 
   it("gets a single account", async () => {
     const created = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank", "bank", "UAH", 500)
+      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 500)
     )
 
     const account = await queryBus.execute(
-      new GetAccountQuery(created.id, organizationId)
+      new GetAccountQuery(created.id, organizationId, userId)
     )
 
     expect(account.id).toBe(created.id)
@@ -82,11 +82,11 @@ describe("Accounts", () => {
 
   it("updates an account", async () => {
     const created = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Old Name", "bank", "UAH")
+      new CreateAccountCommand(organizationId, userId, "Old Name", "bank", "UAH")
     )
 
     const updated = await commandBus.execute(
-      new UpdateAccountCommand(created.id, organizationId, "New Name", "cash")
+      new UpdateAccountCommand(created.id, organizationId, userId, "New Name", "cash")
     )
 
     expect(updated.name).toBe("New Name")
@@ -95,18 +95,18 @@ describe("Accounts", () => {
 
   it("deletes an account", async () => {
     const created = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "To Delete", "bank", "UAH")
+      new CreateAccountCommand(organizationId, userId, "To Delete", "bank", "UAH")
     )
 
     await commandBus.execute(new DeleteAccountCommand(created.id, organizationId))
 
-    const accounts = await queryBus.execute(new GetAccountsQuery(organizationId))
+    const accounts = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
     expect(accounts).toHaveLength(0)
   })
 
   it("rejects deleting account with transactions", async () => {
     const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, "Bank", "bank", "UAH", 1000)
+      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 1000)
     )
 
     const categories = await queryBus.execute(
@@ -134,17 +134,19 @@ describe("Accounts", () => {
 
   it("isolates accounts between users", async () => {
     await commandBus.execute(
-      new CreateAccountCommand(organizationId, "User1 Bank", "bank", "UAH")
+      new CreateAccountCommand(organizationId, userId, "User1 Bank", "bank", "UAH")
     )
 
     const otherUser = await signupUser()
+    const otherOrgId = otherUser.accessToken.organizationId
+    const otherUserId = otherUser.accessToken.sub
     await commandBus.execute(
-      new CreateAccountCommand(otherUser.accessToken.organizationId, "User2 Bank", "bank", "USD")
+      new CreateAccountCommand(otherOrgId, otherUserId, "User2 Bank", "bank", "USD")
     )
 
-    const user1Accounts = await queryBus.execute(new GetAccountsQuery(organizationId))
+    const user1Accounts = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
     const user2Accounts = await queryBus.execute(
-      new GetAccountsQuery(otherUser.accessToken.organizationId)
+      new GetAccountsQuery(otherOrgId, otherUserId)
     )
 
     expect(user1Accounts).toHaveLength(1)

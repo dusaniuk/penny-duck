@@ -37,8 +37,8 @@ export function SpendingsCard({
     : []
 
   return (
-    <Link to="/spendings" className="block">
-      <Card className="transition-colors hover:bg-muted/50">
+    <Link to="/spendings" className="block h-full">
+      <Card className="h-full transition-colors hover:bg-muted/50">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Spendings</CardTitle>
           <span className="text-xs text-muted-foreground">
