@@ -8,6 +8,7 @@ import {
 import {
   IconCashBanknote,
   IconCategory,
+  IconChartBar,
   IconChartDonut,
   IconLayoutDashboard,
   IconReceipt,
@@ -35,6 +36,7 @@ import { getAuthUser } from "@/lib/auth"
 const mainNav: Array<NavItem> = [
   { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
   { title: "Spendings", url: "/spendings", icon: IconChartDonut },
+  { title: "Income vs Expenses", url: "/income-expenses", icon: IconChartBar },
   { title: "Transactions", url: "/transactions", icon: IconReceipt },
   { title: "Accounts", url: "/accounts", icon: IconWallet },
   { title: "Categories", url: "/categories", icon: IconCategory },

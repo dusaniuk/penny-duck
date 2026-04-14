@@ -52,3 +52,10 @@ export {
   ExchangeRatesResponseSchema,
   exchangeRateContract,
 } from "./schemas/exchange-rates"
+
+export {
+  MonthlySummaryItemSchema,
+  MonthlySummaryQuerySchema,
+  statsContract,
+} from "./schemas/stats"
+export type { MonthlySummaryItem } from "./schemas/stats"

@@ -3,6 +3,7 @@ import type { Account, Category } from "@workspace/api-contract"
 import { tsr } from "@/lib/api"
 import { SpendingsCard } from "@/components/spendings/spendings-card"
 import { BalanceCard } from "@/components/dashboard/balance-card"
+import { IncomeExpensesCard } from "@/components/dashboard/income-expenses-card"
 
 export const Route = createFileRoute("/_app/dashboard")({
   staticData: { breadcrumb: "Dashboard" },
@@ -35,7 +36,7 @@ function DashboardPage() {
           loading={accountsLoading}
         />
         <SpendingsCard categories={categories} homeCurrency={homeCurrency} />
-        <div className="rounded-xl bg-muted/50" />
+        <IncomeExpensesCard />
       </div>
       <div className="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min" />
     </>
