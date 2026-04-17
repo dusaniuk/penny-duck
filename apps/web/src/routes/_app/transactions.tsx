@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import { IconFilter } from "@tabler/icons-react"
+import { IconFilter, IconPlus } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import type {
@@ -16,6 +16,7 @@ import { TransactionFilterSheet } from "@/components/transactions/transaction-fi
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 import { TransactionList } from "@/components/transactions/transaction-list"
 import { ReimbursementDialog } from "@/components/transactions/reimbursement-dialog"
+import { useTransactionCreate } from "@/components/transactions/use-transaction-create"
 
 interface TransactionFilters {
   accountId?: string
@@ -47,6 +48,13 @@ function TransactionsPage() {
   const [reimburseTransaction, setReimburseTransaction] =
     useState<Transaction | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+
+  const { openCreate, dialog: createDialog } = useTransactionCreate({
+    onSuccess: () => {
+      setExtraTransactions([])
+      setPage(1)
+    },
+  })
 
   const { data: txData, isLoading: loading } = tsr.transactions.list.useQuery({
     queryKey: ["transactions", filters, page],
@@ -117,9 +125,6 @@ function TransactionsPage() {
     queryClient.invalidateQueries({ queryKey: ["accounts"] })
   }
 
-  const createMutation = tsr.transactions.create.useMutation({
-    onSuccess: invalidateAll,
-  })
   const updateMutation = tsr.transactions.update.useMutation({
     onSuccess: invalidateAll,
   })
@@ -127,9 +132,6 @@ function TransactionsPage() {
     onSuccess: invalidateAll,
   })
   const settleMutation = tsr.transactions.settle.useMutation({
-    onSuccess: invalidateAll,
-  })
-  const createTransferMutation = tsr.transactions.createTransfer.useMutation({
     onSuccess: invalidateAll,
   })
   const updateTransferMutation = tsr.transactions.updateTransfer.useMutation({
@@ -179,11 +181,6 @@ function TransactionsPage() {
     setFormOpen(true)
   }
 
-  function handleOpenCreate() {
-    setEditTransaction(null)
-    setFormOpen(true)
-  }
-
   async function handleTransactionSubmit(data: {
     accountId: string
     type: string
@@ -194,20 +191,12 @@ function TransactionsPage() {
     settled?: boolean
     madeById?: string
   }) {
-    if (editTransaction) {
-      const { type: _, ...updateFields } = data
-      await updateMutation.mutateAsync({
-        params: { id: editTransaction.id },
-        body: updateFields,
-      })
-    } else {
-      await createMutation.mutateAsync({
-        body: {
-          ...data,
-          type: data.type as "expense" | "income",
-        },
-      })
-    }
+    if (!editTransaction) return
+    const { type: _, ...updateFields } = data
+    await updateMutation.mutateAsync({
+      params: { id: editTransaction.id },
+      body: updateFields,
+    })
     setExtraTransactions([])
     setPage(1)
   }
@@ -223,15 +212,12 @@ function TransactionsPage() {
     exchangeRate?: number
     madeById?: string
   }) {
-    if (editTransaction?.transferId) {
-      const { fromAccountId: _, toAccountId: __, ...updateData } = data
-      await updateTransferMutation.mutateAsync({
-        params: { transferId: editTransaction.transferId },
-        body: updateData,
-      })
-    } else {
-      await createTransferMutation.mutateAsync({ body: data })
-    }
+    if (!editTransaction?.transferId) return
+    const { fromAccountId: _, toAccountId: __, ...updateData } = data
+    await updateTransferMutation.mutateAsync({
+      params: { transferId: editTransaction.transferId },
+      body: updateData,
+    })
     setExtraTransactions([])
     setPage(1)
   }
@@ -318,6 +304,10 @@ function TransactionsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-semibold">Transactions</h1>
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={openCreate}>
+            <IconPlus className="size-4" />
+            New
+          </Button>
           {unsettledCount > 0 && (
             <button
               type="button"
@@ -376,7 +366,8 @@ function TransactionsPage() {
         onDelete={(t) => setDeleteTransaction(t)}
       />
 
-      <TransactionFab onOpen={handleOpenCreate} />
+      <TransactionFab onOpen={openCreate} />
+      {createDialog}
 
       <TransactionFormDialog
         open={formOpen}
