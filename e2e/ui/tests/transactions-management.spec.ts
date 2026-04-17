@@ -59,11 +59,9 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Open FAB menu
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    // Click Expense
-    await page.getByText("Expense").click()
-
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("42.50")
 
     // Select account
@@ -93,10 +91,9 @@ test.describe("Transactions management", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Income").click()
-
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Income" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("1000")
     await dialog.getByText("Select account").click()
     await page.getByRole("option", { name: new RegExp(account.name) }).click()
@@ -122,10 +119,9 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create unsettled expense
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Expense").click()
-
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")
     await dialog.getByText("Select account").click()
     await page.getByRole("option", { name: new RegExp(account.name) }).click()
@@ -156,9 +152,9 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create a transaction first
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Expense").click()
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("50")
     await dialog.getByText("Select account").click()
     await page.getByRole("option", { name: new RegExp(account.name) }).click()
@@ -174,7 +170,7 @@ test.describe("Transactions management", () => {
     await page.getByRole("menuitem", { name: "Edit" }).click()
 
     const editDialog = page.getByRole("dialog")
-    await expect(editDialog.getByText("Edit Transaction")).toBeVisible()
+    await expect(editDialog.getByText("Edit Expense")).toBeVisible()
 
     const amountInput = editDialog.getByPlaceholder("0.00").first()
     await amountInput.clear()
@@ -196,9 +192,9 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create a transaction
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Expense").click()
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("99.99")
     await dialog.getByText("Select account").click()
     await page.getByRole("option", { name: new RegExp(account.name) }).click()
@@ -247,10 +243,9 @@ test.describe("Transfers", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Transfer").click()
-
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("500")
 
     // Select From account
@@ -285,10 +280,9 @@ test.describe("Transfers", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6 > button").click()
-    await page.getByText("Transfer").click()
-
+    await page.locator(".fixed.bottom-6.right-6").click()
     const dialog = page.getByRole("dialog")
+    await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")
 
     await dialog.getByText("Source account").click()
@@ -297,12 +291,7 @@ test.describe("Transfers", () => {
     await dialog.getByText("Destination account").click()
     await page.getByRole("option", { name: /UAH Acc/ }).click()
 
-    // Exchange rate section should auto-expand
-    await expect(
-      dialog.getByText("required — different currencies"),
-    ).toBeVisible()
-
-    // Fill exchange rate
+    // Exchange rate section appears when accounts have different currencies
     await dialog.getByPlaceholder("41.52").fill("41.52")
 
     // Receive amount should auto-calculate
