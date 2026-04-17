@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte } from "drizzle-orm"
+import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm"
 import { type DbClient, organizationMembers, transactions, users } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
@@ -205,8 +205,17 @@ export class TransactionRepository {
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
-    if (!filters.accountId)
+    if (filters.accountId) {
+      // Reimbursement transfers come as a sign-opposite pair: a negative
+      // bookkeeping entry on the original expense account and a positive
+      // entry on the receiving account. Only the receiving (positive) side
+      // should ever appear in an account view.
+      conditions.push(
+        or(isNull(transactions.reimbursementId), gt(transactions.amount, 0))!
+      )
+    } else {
       conditions.push(isNull(transactions.reimbursementId))
+    }
     if (filters.transfer === true)
       conditions.push(isNotNull(transactions.transferId))
     if (filters.transfer === false)

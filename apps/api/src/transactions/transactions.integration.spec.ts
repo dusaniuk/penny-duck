@@ -794,6 +794,20 @@ describe("Transactions", () => {
     expect(accountList.data).toHaveLength(1)
     expect(accountList.data[0].amount).toBe(30)
     expect(accountList.data[0].reimbursementId).toBe(tx.id)
+
+    // Filtering by the original expense account should NOT show the
+    // reimbursement's outgoing bookkeeping entry — only the reduced expense.
+    const expenseAccountList = await queryBus.execute(
+      new ListTransactionsQuery(organizationId, "UAH", {
+        page: 1,
+        limit: 100,
+        accountId,
+      })
+    )
+
+    expect(expenseAccountList.data).toHaveLength(1)
+    expect(expenseAccountList.data[0].id).toBe(tx.id)
+    expect(expenseAccountList.data[0].amount).toBe(70)
   })
 
   it("deleting an expense cascades to its reimbursement transfers", async () => {
