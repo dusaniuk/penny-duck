@@ -167,11 +167,13 @@ export function ReimbursementDialog({
                   <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} — {a.balance.toFixed(2)} {a.currency}
-                    </SelectItem>
-                  ))}
+                  {accounts
+                    .filter((a) => a.id !== transaction.accountId)
+                    .map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} — {a.balance.toFixed(2)} {a.currency}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>
