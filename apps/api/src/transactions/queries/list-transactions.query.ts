@@ -24,6 +24,7 @@ export class ListTransactionsQuery extends Query<{
 }> {
   constructor(
     public readonly organizationId: string,
+    public readonly userId: string,
     public readonly homeCurrency: string,
     public readonly filters: ListFilters
   ) {
@@ -50,7 +51,8 @@ export class ListTransactionsHandler implements IQueryHandler<ListTransactionsQu
     if (data.length === 0) return { data: [], total }
 
     const accounts = await this.accountRepo.findAllByOrganizationId(
-      query.organizationId
+      query.organizationId,
+      query.userId
     )
     const currencyByAccountId = new Map(
       accounts.map((a) => [a.id, a.currency])

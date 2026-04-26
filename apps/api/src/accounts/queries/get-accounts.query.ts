@@ -23,7 +23,7 @@ export class GetAccountsHandler implements IQueryHandler<GetAccountsQuery> {
 
   async execute(query: GetAccountsQuery): Promise<Account[]> {
     const [rows, user] = await Promise.all([
-      this.accountRepo.findAllByOrganizationId(query.organizationId),
+      this.accountRepo.findAllByOrganizationId(query.organizationId, query.userId),
       this.userRepo.findById(query.userId),
     ])
 
@@ -51,6 +51,7 @@ export class GetAccountsHandler implements IQueryHandler<GetAccountsQuery> {
       currency: r.currency,
       balance: r.balance,
       homeBalance: r.balance * (rates.get(r.currency) ?? 1),
+      isDefault: r.isDefault,
     }))
   }
 }

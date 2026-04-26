@@ -9,6 +9,8 @@ import { TradeRepository } from "@/investments/trade.repository"
 import { CreateAccountHandler } from "./commands/create-account.command"
 import { UpdateAccountHandler } from "./commands/update-account.command"
 import { DeleteAccountHandler } from "./commands/delete-account.command"
+import { SetDefaultAccountHandler } from "./commands/set-default-account.command"
+import { ClearDefaultAccountHandler } from "./commands/clear-default-account.command"
 import { GetAccountsHandler } from "./queries/get-accounts.query"
 import { GetAccountHandler } from "./queries/get-account.query"
 import { AccountRepository } from "./account.repository"
@@ -18,6 +20,8 @@ const commandHandlers = [
   CreateAccountHandler,
   UpdateAccountHandler,
   DeleteAccountHandler,
+  SetDefaultAccountHandler,
+  ClearDefaultAccountHandler,
 ]
 const queryHandlers = [GetAccountsHandler, GetAccountHandler]
 

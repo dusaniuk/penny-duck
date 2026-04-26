@@ -1,5 +1,6 @@
-import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react"
+import { IconDotsVertical, IconEdit, IconStar, IconTrash } from "@tabler/icons-react"
 import { Link } from "@tanstack/react-router"
+import { Badge } from "@workspace/ui/components/badge"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ interface AccountCardProps {
   account: AccountData
   onEdit: (account: AccountData) => void
   onDelete: (account: AccountData) => void
+  onSetDefault: (account: AccountData) => void
   onClick: (account: AccountData) => void
   holdings?: number
 }
@@ -30,6 +32,7 @@ export function AccountCard({
   account,
   onEdit,
   onDelete,
+  onSetDefault,
   onClick,
   holdings,
 }: AccountCardProps) {
@@ -45,8 +48,18 @@ export function AccountCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-muted-foreground">
-              {account.type} · {account.currency}
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                {account.type} · {account.currency}
+              </span>
+              {account.isDefault && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] uppercase tracking-wide"
+                >
+                  Default
+                </Badge>
+              )}
             </p>
             <p className="mt-0.5 truncate font-heading text-base font-medium">
               {account.name}
@@ -59,7 +72,17 @@ export function AccountCard({
             >
               <IconDotsVertical className="size-4 text-muted-foreground" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="min-w-[10rem]">
+              <DropdownMenuItem
+                disabled={account.isDefault}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSetDefault(account)
+                }}
+              >
+                <IconStar />
+                <span className="whitespace-nowrap">Set as default</span>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()

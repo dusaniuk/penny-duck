@@ -14,6 +14,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     queryKey: ["accounts"],
   })
   const accounts: Array<Account> = accountsData?.body ?? []
+  const defaultAccountId = accounts.find((a) => a.isDefault)?.id
 
   const { data: categoriesData } = tsr.categories.list.useQuery({
     queryKey: ["categories"],
@@ -89,6 +90,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       members={members}
       currentUserId={currentUserId}
       exchangeRates={latestRates}
+      defaultAccountId={defaultAccountId}
       onSubmitTransaction={handleSubmitTransaction}
       onSubmitTransfer={handleSubmitTransfer}
     />

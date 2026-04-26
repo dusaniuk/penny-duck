@@ -65,7 +65,7 @@ export class TransactionsController {
       const page = query.page ?? 1
       const limit = query.limit ?? 50
       const { data, total } = await this.queryBus.execute(
-        new ListTransactionsQuery(organizationId, homeCurrency, {
+        new ListTransactionsQuery(organizationId, user.sub, homeCurrency, {
           page,
           limit,
           accountId: query.accountId,

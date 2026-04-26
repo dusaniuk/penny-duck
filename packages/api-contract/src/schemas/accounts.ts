@@ -11,6 +11,7 @@ export const AccountSchema = z.object({
   currency: z.string(),
   balance: z.number(),
   homeBalance: z.number(),
+  isDefault: z.boolean(),
 })
 
 export const CreateAccountSchema = z.object({
@@ -61,6 +62,22 @@ export const accountContract = c.router({
   delete: {
     method: "DELETE",
     path: "/accounts/:id",
+    body: c.noBody(),
+    responses: {
+      200: MessageSchema,
+    },
+  },
+  setDefault: {
+    method: "PUT",
+    path: "/accounts/:id/default",
+    body: c.noBody(),
+    responses: {
+      200: AccountSchema,
+    },
+  },
+  clearDefault: {
+    method: "DELETE",
+    path: "/accounts/:id/default",
     body: c.noBody(),
     responses: {
       200: MessageSchema,

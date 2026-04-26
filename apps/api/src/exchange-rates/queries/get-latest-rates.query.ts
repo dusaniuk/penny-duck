@@ -6,7 +6,10 @@ export class GetLatestRatesQuery extends Query<{
   date: string
   rates: Record<string, Record<string, number>>
 }> {
-  constructor(public readonly organizationId: string) {
+  constructor(
+    public readonly organizationId: string,
+    public readonly userId: string,
+  ) {
     super()
   }
 }
@@ -23,6 +26,7 @@ export class GetLatestRatesHandler
   async execute(query: GetLatestRatesQuery) {
     const accounts = await this.accountRepo.findAllByOrganizationId(
       query.organizationId,
+      query.userId,
     )
     const currencies = [...new Set(accounts.map((a) => a.currency))]
 

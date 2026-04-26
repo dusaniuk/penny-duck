@@ -54,7 +54,8 @@ export class CreateReimbursementHandler
 
     const receivingAccount = await this.accountRepo.findById(
       input.accountId,
-      input.organizationId
+      input.organizationId,
+      input.madeById
     )
     if (!receivingAccount) throw new NotFoundException("Account not found")
 
@@ -67,7 +68,8 @@ export class CreateReimbursementHandler
     } else {
       const expenseAccount = await this.accountRepo.findById(
         expense.accountId,
-        input.organizationId
+        input.organizationId,
+        input.madeById
       )
       if (!expenseAccount) throw new NotFoundException("Account not found")
 
@@ -108,7 +110,8 @@ export class CreateReimbursementHandler
 
     const expenseAccount = await this.accountRepo.findById(
       expense.accountId,
-      input.organizationId
+      input.organizationId,
+      input.madeById
     )
     const isCrossCurrency =
       expenseAccount!.currency !== receivingAccount.currency

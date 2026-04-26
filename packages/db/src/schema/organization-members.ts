@@ -2,6 +2,7 @@ import { index, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { organizations } from "./organizations"
 import { users } from "./users"
+import { accounts } from "./accounts"
 
 export const organizationMembers = appSchema.table(
   "organization_members",
@@ -14,6 +15,9 @@ export const organizationMembers = appSchema.table(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: varchar("role", { length: 20 }).notNull(),
+    defaultAccountId: uuid("default_account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
     joinedAt: timestamp("joined_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

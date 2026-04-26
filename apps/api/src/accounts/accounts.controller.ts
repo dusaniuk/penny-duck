@@ -8,6 +8,8 @@ import type { AccessTokenPayload } from "../auth/jwt.service"
 import { CreateAccountCommand } from "./commands/create-account.command"
 import { UpdateAccountCommand } from "./commands/update-account.command"
 import { DeleteAccountCommand } from "./commands/delete-account.command"
+import { SetDefaultAccountCommand } from "./commands/set-default-account.command"
+import { ClearDefaultAccountCommand } from "./commands/clear-default-account.command"
 import { GetAccountsQuery } from "./queries/get-accounts.query"
 import { GetAccountQuery } from "./queries/get-account.query"
 
@@ -79,12 +81,41 @@ export class AccountsController {
   }
 
   @TsRestHandler(accountContract.delete)
-  handleDelete(@CurrentOrg() organizationId: string) {
+  handleDelete(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload,
+  ) {
     return tsRestHandler(accountContract.delete, async ({ params }) => {
       await this.commandBus.execute(
-        new DeleteAccountCommand(params.id, organizationId)
+        new DeleteAccountCommand(params.id, organizationId, user.sub)
       )
       return { status: 200 as const, body: { message: "Account deleted" } }
+    })
+  }
+
+  @TsRestHandler(accountContract.setDefault)
+  handleSetDefault(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload,
+  ) {
+    return tsRestHandler(accountContract.setDefault, async ({ params }) => {
+      const account = await this.commandBus.execute(
+        new SetDefaultAccountCommand(user.sub, organizationId, params.id)
+      )
+      return { status: 200 as const, body: account }
+    })
+  }
+
+  @TsRestHandler(accountContract.clearDefault)
+  handleClearDefault(
+    @CurrentOrg() organizationId: string,
+    @CurrentUser() user: AccessTokenPayload,
+  ) {
+    return tsRestHandler(accountContract.clearDefault, async () => {
+      await this.commandBus.execute(
+        new ClearDefaultAccountCommand(user.sub, organizationId)
+      )
+      return { status: 200 as const, body: { message: "Default cleared" } }
     })
   }
 }

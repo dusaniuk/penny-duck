@@ -28,11 +28,15 @@ export class UpdateAccountHandler
   ) {}
 
   async execute(cmd: UpdateAccountCommand): Promise<Account> {
-    const existing = await this.accountRepo.findById(cmd.id, cmd.organizationId)
+    const existing = await this.accountRepo.findById(
+      cmd.id,
+      cmd.organizationId,
+      cmd.userId,
+    )
     if (!existing) throw new NotFoundException("Account not found")
 
     const [row, user] = await Promise.all([
-      this.accountRepo.update(cmd.id, cmd.organizationId, {
+      this.accountRepo.update(cmd.id, cmd.organizationId, cmd.userId, {
         name: cmd.name,
         type: cmd.type,
       }),
@@ -53,6 +57,7 @@ export class UpdateAccountHandler
       currency: row.currency,
       balance: row.balance,
       homeBalance: row.balance * rate,
+      isDefault: row.isDefault,
     }
   }
 }

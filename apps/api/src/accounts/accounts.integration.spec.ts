@@ -8,6 +8,9 @@ import {
 import { CreateAccountCommand } from "./commands/create-account.command"
 import { UpdateAccountCommand } from "./commands/update-account.command"
 import { DeleteAccountCommand } from "./commands/delete-account.command"
+import { SetDefaultAccountCommand } from "./commands/set-default-account.command"
+import { ClearDefaultAccountCommand } from "./commands/clear-default-account.command"
+import { GenerateInviteCodeCommand } from "../auth/commands/generate-invite-code.command"
 import { GetAccountsQuery } from "./queries/get-accounts.query"
 import { GetAccountQuery } from "./queries/get-account.query"
 import { CreateTransactionCommand } from "../transactions/commands/create-transaction.command"
@@ -98,7 +101,7 @@ describe("Accounts", () => {
       new CreateAccountCommand(organizationId, userId, "To Delete", "bank", "UAH")
     )
 
-    await commandBus.execute(new DeleteAccountCommand(created.id, organizationId))
+    await commandBus.execute(new DeleteAccountCommand(created.id, organizationId, userId))
 
     const accounts = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
     expect(accounts).toHaveLength(0)
@@ -128,7 +131,7 @@ describe("Accounts", () => {
     )
 
     await expect(
-      commandBus.execute(new DeleteAccountCommand(account.id, organizationId))
+      commandBus.execute(new DeleteAccountCommand(account.id, organizationId, userId))
     ).rejects.toThrow()
   })
 
@@ -153,5 +156,128 @@ describe("Accounts", () => {
     expect(user2Accounts).toHaveLength(1)
     expect(user1Accounts[0].name).toBe("User1 Bank")
     expect(user2Accounts[0].name).toBe("User2 Bank")
+  })
+
+  describe("default account", () => {
+    it("marks an account as the default for the current user", async () => {
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      const b = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank B", "bank", "UAH")
+      )
+
+      await commandBus.execute(
+        new SetDefaultAccountCommand(userId, organizationId, a.id)
+      )
+
+      const list = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
+      const aRow = list.find((x: { id: string }) => x.id === a.id)!
+      const bRow = list.find((x: { id: string }) => x.id === b.id)!
+      expect(aRow.isDefault).toBe(true)
+      expect(bRow.isDefault).toBe(false)
+    })
+
+    it("replaces the previous default when set on a different account", async () => {
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      const b = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank B", "bank", "UAH")
+      )
+
+      await commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, a.id))
+      await commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, b.id))
+
+      const list = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
+      expect(list.find((x: { id: string }) => x.id === a.id)!.isDefault).toBe(false)
+      expect(list.find((x: { id: string }) => x.id === b.id)!.isDefault).toBe(true)
+    })
+
+    it("rejects setting default for an account in another org", async () => {
+      const second = await signupUser()
+      const otherOrgId = second.accessToken.organizationId
+      const otherUserId = second.accessToken.sub
+      const foreign = await commandBus.execute(
+        new CreateAccountCommand(otherOrgId, otherUserId, "Foreign", "bank", "USD")
+      )
+
+      await expect(
+        commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, foreign.id))
+      ).rejects.toThrow("Account not found")
+    })
+
+    it("clears the default for the current user", async () => {
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      await commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, a.id))
+
+      await commandBus.execute(new ClearDefaultAccountCommand(userId, organizationId))
+
+      const list = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
+      expect(list.find((x: { id: string }) => x.id === a.id)!.isDefault).toBe(false)
+    })
+
+    it("clearing when no default is set is a no-op", async () => {
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      await expect(
+        commandBus.execute(new ClearDefaultAccountCommand(userId, organizationId))
+      ).resolves.toBeUndefined()
+
+      const list = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
+      expect(list.find((x: { id: string }) => x.id === a.id)!.isDefault).toBe(false)
+    })
+
+    it("clears default when the default account is deleted", async () => {
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      const b = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank B", "bank", "UAH")
+      )
+      await commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, a.id))
+
+      await commandBus.execute(new DeleteAccountCommand(a.id, organizationId, userId))
+
+      const list = await queryBus.execute(new GetAccountsQuery(organizationId, userId))
+      expect(list.find((x: { id: string }) => x.id === a.id)).toBeUndefined()
+      expect(list.find((x: { id: string }) => x.id === b.id)!.isDefault).toBe(false)
+    })
+
+    it("two users in the same org each see their own default", async () => {
+      const { inviteCode } = await commandBus.execute(
+        new GenerateInviteCodeCommand(userId, organizationId)
+      )
+      const second = await signupUser({ inviteCode })
+      const secondUserId = second.accessToken.sub
+      expect(second.accessToken.organizationId).toBe(organizationId)
+
+      const a = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank A", "bank", "UAH")
+      )
+      const b = await commandBus.execute(
+        new CreateAccountCommand(organizationId, userId, "Bank B", "bank", "UAH")
+      )
+
+      await commandBus.execute(new SetDefaultAccountCommand(userId, organizationId, a.id))
+      await commandBus.execute(
+        new SetDefaultAccountCommand(secondUserId, organizationId, b.id)
+      )
+
+      const userOneList = await queryBus.execute(
+        new GetAccountsQuery(organizationId, userId)
+      )
+      const userTwoList = await queryBus.execute(
+        new GetAccountsQuery(organizationId, secondUserId)
+      )
+
+      expect(userOneList.find((x: { id: string }) => x.id === a.id)!.isDefault).toBe(true)
+      expect(userOneList.find((x: { id: string }) => x.id === b.id)!.isDefault).toBe(false)
+      expect(userTwoList.find((x: { id: string }) => x.id === a.id)!.isDefault).toBe(false)
+      expect(userTwoList.find((x: { id: string }) => x.id === b.id)!.isDefault).toBe(true)
+    })
   })
 })

@@ -8,7 +8,8 @@ import { countOpenPositionsFromTrades } from "@/investments/helpers/count-open-p
 export class DeleteAccountCommand extends Command<void> {
   constructor(
     public readonly id: string,
-    public readonly organizationId: string
+    public readonly organizationId: string,
+    public readonly userId: string
   ) {
     super()
   }
@@ -25,7 +26,7 @@ export class DeleteAccountHandler
   ) {}
 
   async execute(cmd: DeleteAccountCommand): Promise<void> {
-    const account = await this.accountRepo.findById(cmd.id, cmd.organizationId)
+    const account = await this.accountRepo.findById(cmd.id, cmd.organizationId, cmd.userId)
     if (!account) throw new NotFoundException("Account not found")
 
     const trades = await this.tradeRepo.findAllByAccount(cmd.id)

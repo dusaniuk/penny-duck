@@ -53,6 +53,7 @@ export class CreateAccountHandler
       currency: row.currency,
       balance: row.balance,
       homeBalance: row.balance * rate,
+      isDefault: row.isDefault,
     }
   }
 }

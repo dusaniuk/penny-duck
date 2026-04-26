@@ -116,7 +116,7 @@ describe("GetLatestRatesQuery", () => {
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH"),
     )
 
-    const result = await queryBus.execute(new GetLatestRatesQuery(organizationId))
+    const result = await queryBus.execute(new GetLatestRatesQuery(organizationId, userId))
     expect(result.rates).toEqual({})
   })
 
@@ -128,7 +128,7 @@ describe("GetLatestRatesQuery", () => {
       new CreateAccountCommand(organizationId, userId, "USD Cash", "cash", "USD"),
     )
 
-    const result = await queryBus.execute(new GetLatestRatesQuery(organizationId))
+    const result = await queryBus.execute(new GetLatestRatesQuery(organizationId, userId))
     expect(result.rates["UAH"]["USD"]).toBeGreaterThan(0)
     expect(result.rates["USD"]["UAH"]).toBeGreaterThan(0)
   })

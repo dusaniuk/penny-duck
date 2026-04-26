@@ -25,7 +25,7 @@ export class GetAccountHandler implements IQueryHandler<GetAccountQuery> {
 
   async execute(query: GetAccountQuery): Promise<Account> {
     const [row, user] = await Promise.all([
-      this.accountRepo.findById(query.id, query.organizationId),
+      this.accountRepo.findById(query.id, query.organizationId, query.userId),
       this.userRepo.findById(query.userId),
     ])
     if (!row) throw new NotFoundException("Account not found")
@@ -44,6 +44,7 @@ export class GetAccountHandler implements IQueryHandler<GetAccountQuery> {
       currency: row.currency,
       balance: row.balance,
       homeBalance: row.balance * rate,
+      isDefault: row.isDefault,
     }
   }
 }

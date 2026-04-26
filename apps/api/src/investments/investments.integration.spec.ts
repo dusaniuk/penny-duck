@@ -347,7 +347,7 @@ describe("Investments", () => {
     )
 
     await expect(
-      commandBus.execute(new DeleteAccountCommand(account.id, organizationId))
+      commandBus.execute(new DeleteAccountCommand(account.id, organizationId, userId))
     ).rejects.toThrow(/position/i)
   })
 

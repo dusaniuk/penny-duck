@@ -37,6 +37,7 @@ interface TransactionFormDialogProps {
   currentUserId: string
   exchangeRates?: Record<string, Record<string, number>>
   pairedAccountId?: string | null
+  defaultAccountId?: string
   onSubmitTransaction: (data: {
     accountId: string
     type: string
@@ -72,6 +73,7 @@ export function TransactionFormDialog({
   currentUserId,
   exchangeRates,
   pairedAccountId,
+  defaultAccountId,
   onSubmitTransaction,
   onSubmitTransfer,
   onDelete,
@@ -131,7 +133,7 @@ export function TransactionFormDialog({
         setType(defaultType)
       }
       setAmount(transaction ? transaction.amount.toString() : "")
-      setAccountId(transaction?.accountId ?? "")
+      setAccountId(transaction?.accountId ?? defaultAccountId ?? "")
       setCategoryId(transaction?.categoryId ?? "")
       setDate(
         transaction?.date
@@ -144,12 +146,12 @@ export function TransactionFormDialog({
       setError(null)
 
       // Transfer fields
-      setFromAccountId(transaction?.accountId ?? "")
+      setFromAccountId(transaction?.accountId ?? defaultAccountId ?? "")
       setToAccountId(pairedAccountId ?? "")
       setTransferExchangeRate(transaction?.exchangeRate?.toString() ?? "")
       setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
     }
-  }, [open, transaction, defaultType, currentUserId, pairedAccountId])
+  }, [open, transaction, defaultType, currentUserId, pairedAccountId, defaultAccountId])
 
   useEffect(() => {
     if (

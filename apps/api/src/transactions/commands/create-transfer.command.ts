@@ -54,8 +54,8 @@ export class CreateTransferHandler implements ICommandHandler<CreateTransferComm
     )
 
     const [fromAccount, toAccount] = await Promise.all([
-      this.accountRepo.findById(input.fromAccountId, input.organizationId),
-      this.accountRepo.findById(input.toAccountId, input.organizationId),
+      this.accountRepo.findById(input.fromAccountId, input.organizationId, input.madeById),
+      this.accountRepo.findById(input.toAccountId, input.organizationId, input.madeById),
     ])
     if (!fromAccount || !toAccount)
       throw new NotFoundException("Account not found")

@@ -47,6 +47,10 @@ function AccountsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
+  const setDefaultMutation = tsr.accounts.setDefault.useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
+
   function handleOpenCreate() {
     setEditAccount(null)
     setFormOpen(true)
@@ -55,6 +59,10 @@ function AccountsPage() {
   function handleEdit(account: AccountData) {
     setEditAccount(account)
     setFormOpen(true)
+  }
+
+  function handleSetDefault(account: AccountData) {
+    setDefaultMutation.mutate({ params: { id: account.id } })
   }
 
   async function handleOpenDelete(account: AccountData) {
@@ -123,6 +131,7 @@ function AccountsPage() {
               account={account}
               onEdit={handleEdit}
               onDelete={handleOpenDelete}
+              onSetDefault={handleSetDefault}
               onClick={() => {}}
               holdings={
                 account.type === "brokerage" && holdingsLoaded
