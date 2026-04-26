@@ -1,4 +1,5 @@
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react"
+import { Link } from "@tanstack/react-router"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   DropdownMenu,
@@ -15,6 +16,14 @@ interface AccountCardProps {
   onEdit: (account: AccountData) => void
   onDelete: (account: AccountData) => void
   onClick: (account: AccountData) => void
+  holdings?: number
+}
+
+function fmtMoney(n: number) {
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function AccountCard({
@@ -22,7 +31,12 @@ export function AccountCard({
   onEdit,
   onDelete,
   onClick,
+  holdings,
 }: AccountCardProps) {
+  const isBrokerageWithHoldings =
+    account.type === "brokerage" && holdings !== undefined
+  const primary = isBrokerageWithHoldings ? holdings : account.balance
+  const showCashBadge = isBrokerageWithHoldings && account.balance !== 0
   return (
     <Card
       className="cursor-pointer transition-shadow hover:shadow-md"
@@ -71,11 +85,27 @@ export function AccountCard({
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-semibold tabular-nums">
-          {account.balance.toFixed(2)}{" "}
+          {fmtMoney(primary)}{" "}
           <span className="text-base font-normal text-muted-foreground">
             {account.currency}
           </span>
         </p>
+        {showCashBadge && (
+          <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+            {account.balance >= 0 ? "+ " : "− "}
+            {fmtMoney(Math.abs(account.balance))} {account.currency} cash
+          </p>
+        )}
+        {account.type === "brokerage" && (
+          <Link
+            to="/investments/$accountId"
+            params={{ accountId: account.id }}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 inline-block text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            View investments →
+          </Link>
+        )}
       </CardContent>
     </Card>
   )

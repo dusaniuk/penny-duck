@@ -120,9 +120,11 @@ export function TransactionRow({
         </span>
         <div className="min-w-0">
           <p
-            className={`truncate text-base font-medium ${!category ? "text-muted-foreground italic" : ""}`}
+            className={`flex items-center gap-1.5 truncate text-base font-medium ${!category ? "text-muted-foreground italic" : ""}`}
           >
-            {category?.name ?? "Uncategorized"}
+            <span className="truncate">
+              {category?.name ?? "Uncategorized"}
+            </span>
           </p>
           <p className="truncate text-sm text-muted-foreground">
             {isUnsettled && <span className="text-amber-400">unsettled </span>}

@@ -36,6 +36,8 @@ pnpm --filter @workspace/db drizzle-kit migrate     # Apply migrations
 pnpm --filter @workspace/db drizzle-kit studio      # Open Drizzle Studio
 ```
 
+**Always pass `--name` when generating migrations** so the SQL file gets a meaningful kebab-case name from the start (e.g. `pnpm db:generate --name add-investments` produces `0015_add-investments.sql`). Skipping `--name` yields a random superhero/villain name like `0015_open_betty_ross.sql`, which carries zero information in PR diffs and deploy logs.
+
 ### Tests
 
 ```bash

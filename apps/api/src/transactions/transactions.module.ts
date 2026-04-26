@@ -16,6 +16,7 @@ import { DeleteTransferHandler } from "./commands/delete-transfer.command"
 import { GetTransactionHandler } from "./queries/get-transaction.query"
 import { ListTransactionsHandler } from "./queries/list-transactions.query"
 import { AccountRepository } from "@/accounts/account.repository"
+import { TradeRepository } from "@/investments/trade.repository"
 import { TransactionRepository } from "./transaction.repository"
 import { TransactionsController } from "./transactions.controller"
 
@@ -40,6 +41,7 @@ const queryHandlers = [GetTransactionHandler, ListTransactionsHandler]
     ...queryHandlers,
     TransactionRepository,
     AccountRepository,
+    TradeRepository,
     UserRepository,
   ],
   exports: [TransactionRepository],

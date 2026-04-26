@@ -23,3 +23,15 @@ export const rate = customType<{ data: number; driverValue: number }>({
     return Math.round(value * 1_000_000)
   },
 })
+
+export const quantity = customType<{ data: number; driverValue: string }>({
+  dataType() {
+    return "numeric(18,8)"
+  },
+  fromDriver(value) {
+    return Number(value)
+  },
+  toDriver(value: number) {
+    return value.toString()
+  },
+})

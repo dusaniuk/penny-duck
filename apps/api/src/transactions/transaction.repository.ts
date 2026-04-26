@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common"
-import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm"
-import { type DbClient, organizationMembers, transactions, users } from "@workspace/db"
+import { and, count, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, or } from "drizzle-orm"
+import { type DbClient, accounts, organizationMembers, transactions, users } from "@workspace/db"
 import { DB_CLIENT } from "@/database/database.module"
 
 export type TransactionRow = typeof transactions.$inferSelect
@@ -227,17 +227,27 @@ export class TransactionRepository {
     if (filters.madeById)
       conditions.push(eq(transactions.madeById, filters.madeById))
 
+    // Brokerage accounts have their own home (the Investments page). Imported
+    // IBKR deposits and any other brokerage-account rows shouldn't pollute the
+    // cash-flow list. Hide them by default; show them only when the user
+    // explicitly drills into a specific account.
+    if (!filters.accountId) {
+      conditions.push(ne(accounts.type, "brokerage"))
+    }
+
     const where = and(...conditions)
 
     const [{ total }] = await this.db
       .select({ total: count() })
       .from(transactions)
+      .innerJoin(accounts, eq(accounts.id, transactions.accountId))
       .where(where)
 
     const offset = (filters.page - 1) * filters.limit
     const rows = await this.db
       .select(this.selectWithUser)
       .from(transactions)
+      .innerJoin(accounts, eq(accounts.id, transactions.accountId))
       .leftJoin(users, eq(transactions.madeById, users.id))
       .where(where)
       .orderBy(desc(transactions.date), desc(transactions.createdAt))

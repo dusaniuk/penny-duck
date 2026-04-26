@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
@@ -15,6 +15,20 @@ function AccountsPage() {
   const { data, isLoading: loading } =
     tsr.accounts.list.useQuery({ queryKey: ["accounts"] })
   const accounts = data?.body ?? []
+
+  const hasBrokerage = accounts.some((a) => a.type === "brokerage")
+  const { data: positionsData } = tsr.investments.listPositions.useQuery({
+    queryKey: ["positions"],
+    enabled: hasBrokerage,
+  })
+  const holdingsByAccount = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of positionsData?.body.positions ?? []) {
+      map.set(p.accountId, (map.get(p.accountId) ?? 0) + p.currentValue)
+    }
+    return map
+  }, [positionsData])
+  const holdingsLoaded = positionsData !== undefined
 
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
@@ -110,6 +124,11 @@ function AccountsPage() {
               onEdit={handleEdit}
               onDelete={handleOpenDelete}
               onClick={() => {}}
+              holdings={
+                account.type === "brokerage" && holdingsLoaded
+                  ? (holdingsByAccount.get(account.id) ?? 0)
+                  : undefined
+              }
             />
           ))}
           <AddAccountCard onClick={handleOpenCreate} />

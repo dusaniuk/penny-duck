@@ -19,8 +19,40 @@ export async function truncateAll(): Promise<void> {
   }
   const db = getDb()
   await db.execute(
-    sql`TRUNCATE app.transactions, app.categories, app.accounts, app.refresh_tokens, app.users CASCADE`,
+    sql`TRUNCATE app.trades, app.instruments, app.transactions, app.categories, app.accounts, app.refresh_tokens, app.users CASCADE`,
   )
+}
+
+export async function seedInstrument(data: {
+  symbol: string
+  name: string
+  exchange?: string | null
+  currency: string
+  lastPrice: number
+}): Promise<{ id: string; symbol: string }> {
+  if (!env.DATABASE_URL.includes("test")) {
+    throw new Error(
+      "Refusing to seed: DATABASE_URL does not contain 'test'"
+    )
+  }
+  const db = getDb()
+  const result = await db.execute(sql`
+    INSERT INTO app.instruments (symbol, name, exchange, currency, last_price, last_priced_at)
+    VALUES (
+      ${data.symbol.toUpperCase()},
+      ${data.name},
+      ${data.exchange ?? null},
+      ${data.currency},
+      ${data.lastPrice},
+      NOW()
+    )
+    ON CONFLICT (symbol) DO UPDATE SET
+      last_price = EXCLUDED.last_price,
+      last_priced_at = NOW()
+    RETURNING id, symbol
+  `)
+  const row = result.rows[0] as { id: string; symbol: string }
+  return row
 }
 
 export async function closeDb(): Promise<void> {

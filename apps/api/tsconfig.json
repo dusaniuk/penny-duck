@@ -9,7 +9,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "multer"],
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {

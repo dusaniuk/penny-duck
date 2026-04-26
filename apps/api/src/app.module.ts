@@ -9,6 +9,7 @@ import { AccountsModule } from "./accounts/accounts.module"
 import { CategoriesModule } from "./categories/categories.module"
 import { TransactionsModule } from "./transactions/transactions.module"
 import { ExchangeRatesModule } from "./exchange-rates/exchange-rates.module"
+import { InvestmentsModule } from "./investments/investments.module"
 import { StatsModule } from "./stats/stats.module"
 import { UsersModule } from "./users/users.module"
 import { AppController } from "./app.controller"
@@ -27,6 +28,7 @@ const throttleLimit = isProduction ? 100 : 10_000
     CategoriesModule,
     TransactionsModule,
     ExchangeRatesModule,
+    InvestmentsModule,
     StatsModule,
   ],
   controllers: [AppController],

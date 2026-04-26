@@ -120,6 +120,7 @@ export function AccountFormDialog({
                 <SelectContent>
                   <SelectItem value="bank">Bank</SelectItem>
                   <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="brokerage">Brokerage</SelectItem>
                 </SelectContent>
               </Select>
             </Field>

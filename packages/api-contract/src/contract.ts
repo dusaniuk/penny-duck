@@ -6,6 +6,7 @@ import { categoryContract } from "./schemas/categories"
 import { transactionContract } from "./schemas/transactions"
 import { exchangeRateContract } from "./schemas/exchange-rates"
 import { statsContract } from "./schemas/stats"
+import { investmentsContract } from "./schemas/investments"
 
 const c = initContract()
 
@@ -18,6 +19,7 @@ export const contract = c.router(
     transactions: transactionContract,
     exchangeRates: exchangeRateContract,
     stats: statsContract,
+    investments: investmentsContract,
   },
   {
     pathPrefix: "",

@@ -22,12 +22,15 @@ import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
 import { Route as AppSpendingsRouteImport } from './routes/_app/spendings'
+import { Route as AppInvestmentsRouteImport } from './routes/_app/investments'
 import { Route as AppIncomeExpensesRouteImport } from './routes/_app/income-expenses'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
 import { Route as PublicLegalTermsRouteImport } from './routes/_public/legal/terms'
 import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
+import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments.$accountId'
+import { Route as AppInvestmentsAccountIdSymbolRouteImport } from './routes/_app/investments.$accountId_.$symbol'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -91,6 +94,11 @@ const AppSpendingsRoute = AppSpendingsRouteImport.update({
   path: '/spendings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInvestmentsRoute = AppInvestmentsRouteImport.update({
+  id: '/investments',
+  path: '/investments',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIncomeExpensesRoute = AppIncomeExpensesRouteImport.update({
   id: '/income-expenses',
   path: '/income-expenses',
@@ -121,6 +129,17 @@ const PublicLegalPrivacyRoute = PublicLegalPrivacyRouteImport.update({
   path: '/legal/privacy',
   getParentRoute: () => PublicRoute,
 } as any)
+const AppInvestmentsAccountIdRoute = AppInvestmentsAccountIdRouteImport.update({
+  id: '/$accountId',
+  path: '/$accountId',
+  getParentRoute: () => AppInvestmentsRoute,
+} as any)
+const AppInvestmentsAccountIdSymbolRoute =
+  AppInvestmentsAccountIdSymbolRouteImport.update({
+    id: '/$accountId_/$symbol',
+    path: '/$accountId/$symbol',
+    getParentRoute: () => AppInvestmentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/income-expenses': typeof AppIncomeExpensesRoute
+  '/investments': typeof AppInvestmentsRouteWithChildren
   '/spendings': typeof AppSpendingsRoute
   '/transactions': typeof AppTransactionsRoute
   '/login': typeof AuthLoginRoute
@@ -137,8 +157,10 @@ export interface FileRoutesByFullPath {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
+  '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
   '/legal/terms': typeof PublicLegalTermsRoute
+  '/investments/$accountId/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -147,6 +169,7 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/income-expenses': typeof AppIncomeExpensesRoute
+  '/investments': typeof AppInvestmentsRouteWithChildren
   '/spendings': typeof AppSpendingsRoute
   '/transactions': typeof AppTransactionsRoute
   '/login': typeof AuthLoginRoute
@@ -154,8 +177,10 @@ export interface FileRoutesByTo {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings': typeof SettingsIndexRoute
+  '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
   '/legal/terms': typeof PublicLegalTermsRoute
+  '/investments/$accountId/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -169,6 +194,7 @@ export interface FileRoutesById {
   '/_app/categories': typeof AppCategoriesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/income-expenses': typeof AppIncomeExpensesRoute
+  '/_app/investments': typeof AppInvestmentsRouteWithChildren
   '/_app/spendings': typeof AppSpendingsRoute
   '/_app/transactions': typeof AppTransactionsRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -176,8 +202,10 @@ export interface FileRoutesById {
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/': typeof SettingsIndexRoute
+  '/_app/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/_public/legal/privacy': typeof PublicLegalPrivacyRoute
   '/_public/legal/terms': typeof PublicLegalTermsRoute
+  '/_app/investments/$accountId_/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -189,6 +217,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/income-expenses'
+    | '/investments'
     | '/spendings'
     | '/transactions'
     | '/login'
@@ -196,8 +225,10 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings/'
+    | '/investments/$accountId'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/investments/$accountId/$symbol'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -206,6 +237,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/income-expenses'
+    | '/investments'
     | '/spendings'
     | '/transactions'
     | '/login'
@@ -213,8 +245,10 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings'
+    | '/investments/$accountId'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/investments/$accountId/$symbol'
   id:
     | '__root__'
     | '/'
@@ -227,6 +261,7 @@ export interface FileRouteTypes {
     | '/_app/categories'
     | '/_app/dashboard'
     | '/_app/income-expenses'
+    | '/_app/investments'
     | '/_app/spendings'
     | '/_app/transactions'
     | '/_auth/login'
@@ -234,8 +269,10 @@ export interface FileRouteTypes {
     | '/settings/members'
     | '/settings/profile'
     | '/settings/'
+    | '/_app/investments/$accountId'
     | '/_public/legal/privacy'
     | '/_public/legal/terms'
+    | '/_app/investments/$accountId_/$symbol'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -340,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSpendingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/investments': {
+      id: '/_app/investments'
+      path: '/investments'
+      fullPath: '/investments'
+      preLoaderRoute: typeof AppInvestmentsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/income-expenses': {
       id: '/_app/income-expenses'
       path: '/income-expenses'
@@ -382,14 +426,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLegalPrivacyRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_app/investments/$accountId': {
+      id: '/_app/investments/$accountId'
+      path: '/$accountId'
+      fullPath: '/investments/$accountId'
+      preLoaderRoute: typeof AppInvestmentsAccountIdRouteImport
+      parentRoute: typeof AppInvestmentsRoute
+    }
+    '/_app/investments/$accountId_/$symbol': {
+      id: '/_app/investments/$accountId_/$symbol'
+      path: '/$accountId/$symbol'
+      fullPath: '/investments/$accountId/$symbol'
+      preLoaderRoute: typeof AppInvestmentsAccountIdSymbolRouteImport
+      parentRoute: typeof AppInvestmentsRoute
+    }
   }
 }
+
+interface AppInvestmentsRouteChildren {
+  AppInvestmentsAccountIdRoute: typeof AppInvestmentsAccountIdRoute
+  AppInvestmentsAccountIdSymbolRoute: typeof AppInvestmentsAccountIdSymbolRoute
+}
+
+const AppInvestmentsRouteChildren: AppInvestmentsRouteChildren = {
+  AppInvestmentsAccountIdRoute: AppInvestmentsAccountIdRoute,
+  AppInvestmentsAccountIdSymbolRoute: AppInvestmentsAccountIdSymbolRoute,
+}
+
+const AppInvestmentsRouteWithChildren = AppInvestmentsRoute._addFileChildren(
+  AppInvestmentsRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAccountsRoute: typeof AppAccountsRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppIncomeExpensesRoute: typeof AppIncomeExpensesRoute
+  AppInvestmentsRoute: typeof AppInvestmentsRouteWithChildren
   AppSpendingsRoute: typeof AppSpendingsRoute
   AppTransactionsRoute: typeof AppTransactionsRoute
 }
@@ -399,6 +472,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppIncomeExpensesRoute: AppIncomeExpensesRoute,
+  AppInvestmentsRoute: AppInvestmentsRouteWithChildren,
   AppSpendingsRoute: AppSpendingsRoute,
   AppTransactionsRoute: AppTransactionsRoute,
 }

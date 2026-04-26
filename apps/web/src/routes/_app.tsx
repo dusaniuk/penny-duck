@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import {
   Link,
   Outlet,
@@ -8,6 +9,7 @@ import {
 import {
   IconCashBanknote,
   IconCategory,
+  IconChartLine,
   IconLayoutDashboard,
   IconReceipt,
   IconWallet,
@@ -35,6 +37,7 @@ const mainNav: Array<NavItem> = [
   { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: IconReceipt },
   { title: "Accounts", url: "/accounts", icon: IconWallet },
+  { title: "Investments", url: "/investments", icon: IconChartLine },
   { title: "Categories", url: "/categories", icon: IconCategory },
 ]
 
@@ -85,19 +88,21 @@ function AppLayout() {
                     (match.loaderData as Record<string, unknown> | undefined)
                       ?.crumb) as string
                   return (
-                    <BreadcrumbItem key={match.id}>
+                    <Fragment key={match.id}>
                       {i > 0 && <BreadcrumbSeparator />}
-                      {isLast ? (
-                        <BreadcrumbPage>{label}</BreadcrumbPage>
-                      ) : (
-                        <Link
-                          to={match.pathname}
-                          className="text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          {label}
-                        </Link>
-                      )}
-                    </BreadcrumbItem>
+                      <BreadcrumbItem>
+                        {isLast ? (
+                          <BreadcrumbPage>{label}</BreadcrumbPage>
+                        ) : (
+                          <Link
+                            to={match.pathname}
+                            className="text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            {label}
+                          </Link>
+                        )}
+                      </BreadcrumbItem>
+                    </Fragment>
                   )
                 })}
               </BreadcrumbList>

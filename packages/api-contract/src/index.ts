@@ -59,3 +59,30 @@ export {
   statsContract,
 } from "./schemas/stats"
 export type { MonthlySummaryItem } from "./schemas/stats"
+
+export {
+  InstrumentSchema,
+  PositionSchema,
+  TradeSchema,
+  TradeTypeSchema,
+  CreateTradeSchema,
+  UpdateTradeSchema,
+  ListTradesQuerySchema,
+  PositionsResponseSchema,
+  InvestmentsSummarySchema,
+  ImportTradesRowSchema,
+  ImportTradesSummarySchema,
+  ImportTradesResponseSchema,
+  ImportTradesParseErrorSchema,
+  investmentsContract,
+} from "./schemas/investments"
+export type {
+  Instrument,
+  Position,
+  Trade,
+  InvestmentsSummary,
+  ImportTradesRow,
+  ImportTradesSummary,
+  ImportTradesResponse,
+  ImportTradesParseError,
+} from "./schemas/investments"
