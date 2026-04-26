@@ -154,16 +154,20 @@ export function TransactionRow({
 
   function renderRight() {
     return (
-      <div className="shrink-0 text-right">
-        <p className={`text-base font-semibold tabular-nums ${amountColor}`}>
+      <div className="min-w-0 text-right">
+        <p
+          className={`truncate text-base font-semibold tabular-nums ${amountColor}`}
+        >
           {amountPrefix}
           {transaction.amount.toFixed(2)} {account?.currency}
         </p>
         <p className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
           {renderMemberBadge()}
-          {isTransfer && transaction.originalAmount != null
-            ? `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
-            : (account?.name ?? "")}
+          <span className="min-w-0 truncate">
+            {isTransfer && transaction.originalAmount != null
+              ? `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
+              : (account?.name ?? "")}
+          </span>
         </p>
       </div>
     )
@@ -171,7 +175,7 @@ export function TransactionRow({
 
   return (
     <div
-      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+      className={`flex w-full items-center justify-between gap-3 rounded-md px-0 py-2.5 text-left transition-colors sm:px-3 ${
         isUnsettled ? "border-l-3 border-l-amber-400 bg-amber-400/5" : ""
       }`}
     >

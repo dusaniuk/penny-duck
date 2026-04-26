@@ -167,7 +167,7 @@ export function TransactionList({
     <div className="space-y-4">
       {groups.map((group) => (
         <div key={group.label}>
-          <div className="flex items-center justify-between px-3 py-1.5">
+          <div className="flex items-center justify-between px-0 py-1.5 sm:px-3">
             <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               {group.label}
             </span>
