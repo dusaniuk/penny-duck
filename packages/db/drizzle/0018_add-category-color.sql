@@ -1,0 +1,1 @@
+ALTER TABLE "app"."categories" ADD COLUMN "color" varchar(20);

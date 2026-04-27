@@ -6,6 +6,7 @@ import type { Category, CategoryType } from "@workspace/api-contract"
 interface CategoryListProps {
   type: CategoryType
   categories: Array<Category>
+  allCategories: ReadonlyArray<Category>
   onAddParent: () => void
   onAddChild: (parent: Category) => void
   onEdit: (category: Category, isParent: boolean) => void
@@ -14,20 +15,22 @@ interface CategoryListProps {
 
 export function CategoryList({
   categories,
+  allCategories,
   onAddParent,
   onAddChild,
   onEdit,
   onDelete,
 }: CategoryListProps) {
   const parents = categories.filter((c) => c.parentId === null)
-  const childrenByParentId = categories.reduce<
-    Record<string, Array<Category>>
-  >((acc, c) => {
-    if (c.parentId !== null) {
-      acc[c.parentId] = [...(acc[c.parentId] ?? []), c]
-    }
-    return acc
-  }, {})
+  const childrenByParentId = categories.reduce<Record<string, Array<Category>>>(
+    (acc, c) => {
+      if (c.parentId !== null) {
+        acc[c.parentId] = [...(acc[c.parentId] ?? []), c]
+      }
+      return acc
+    },
+    {}
+  )
 
   return (
     <div className="space-y-2">
@@ -36,6 +39,7 @@ export function CategoryList({
           key={parent.id}
           parent={parent}
           children={childrenByParentId[parent.id] ?? []}
+          allCategories={allCategories}
           onAddChild={onAddChild}
           onEdit={onEdit}
           onDelete={onDelete}

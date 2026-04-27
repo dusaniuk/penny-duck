@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { CategoryDialogMode } from "@/components/categories/category-form-dialog"
+import type { CategoryColor } from "@/lib/category-color"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
 import { CategoryList } from "@/components/categories/category-list"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
@@ -37,6 +38,11 @@ function CategoriesPage() {
     )
     return { expense, income }
   }, [categories])
+
+  const existingTopLevelColors = useMemo(
+    () => categories.filter((c) => c.parentId === null).map((c) => c.color),
+    [categories]
+  )
 
   function getHasChildren(category: Category): boolean {
     return categories.some((c) => c.parentId === category.id)
@@ -75,6 +81,7 @@ function CategoriesPage() {
     icon?: string
     type?: CategoryType
     parentId?: string | null
+    color?: CategoryColor
   }) {
     if (!dialogMode) return
     switch (dialogMode.kind) {
@@ -84,6 +91,7 @@ function CategoriesPage() {
             name: form.name,
             icon: form.icon,
             type: dialogMode.type,
+            ...(form.color ? { color: form.color } : {}),
           },
         })
         break
@@ -104,6 +112,7 @@ function CategoriesPage() {
             icon: form.icon,
             ...(form.type !== undefined ? { type: form.type } : {}),
             ...(form.parentId !== undefined ? { parentId: form.parentId } : {}),
+            ...(form.color ? { color: form.color } : {}),
           },
         })
         break
@@ -150,6 +159,7 @@ function CategoriesPage() {
               onAddChild={openCreateChild}
               onEdit={openEdit}
               onDelete={setDeleteCategory}
+              allCategories={categories}
             />
           </section>
 
@@ -162,6 +172,7 @@ function CategoriesPage() {
               onAddChild={openCreateChild}
               onEdit={openEdit}
               onDelete={setDeleteCategory}
+              allCategories={categories}
             />
           </section>
         </>
@@ -175,6 +186,7 @@ function CategoriesPage() {
         mode={dialogMode}
         parentOptions={dialogParentOptions}
         hasChildren={dialogHasChildren}
+        existingTopLevelColors={existingTopLevelColors}
         onSubmit={handleDialogSubmit}
       />
 

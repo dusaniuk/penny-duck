@@ -1,4 +1,5 @@
 import type { Category, Transaction } from "@workspace/api-contract"
+import { NEUTRAL_COLOR, categoryColor } from "@/lib/category-color"
 
 export interface CategorySpending {
   categoryId: string
@@ -8,33 +9,20 @@ export interface CategorySpending {
   fill: string
 }
 
-const CHART_COLORS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
-  "var(--color-chart-6)",
-  "var(--color-chart-7)",
-  "var(--color-chart-8)",
-]
-
 const OTHER_THRESHOLD = 0.05
 
 export function aggregateByCategory(
   transactions: Array<Transaction>,
-  categories: Array<Category>,
+  categories: Array<Category>
 ): Array<CategorySpending> {
   const categoryMap = new Map(categories.map((c) => [c.id, c]))
 
-  // Only count expenses, exclude transfers and reimbursements
   const expenses = transactions.filter(
-    (t) => t.type === "expense" && !t.transferId && !t.reimbursementId,
+    (t) => t.type === "expense" && !t.transferId && !t.reimbursementId
   )
 
   if (expenses.length === 0) return []
 
-  // Sum by category
   const totals = new Map<string, number>()
   for (const tx of expenses) {
     const key = tx.categoryId ?? "uncategorized"
@@ -43,10 +31,8 @@ export function aggregateByCategory(
 
   const grandTotal = Array.from(totals.values()).reduce((a, b) => a + b, 0)
 
-  // Split into above-threshold and below-threshold
   const above: Array<{ id: string; total: number }> = []
   let otherTotal = 0
-
   for (const [id, total] of totals) {
     if (total / grandTotal >= OTHER_THRESHOLD) {
       above.push({ id, total })
@@ -55,11 +41,14 @@ export function aggregateByCategory(
     }
   }
 
-  // Sort descending by total
   above.sort((a, b) => b.total - a.total)
 
-  const result: Array<CategorySpending> = above.map((item, i) => {
+  const result: Array<CategorySpending> = above.map((item) => {
     const cat = categoryMap.get(item.id)
+    const fill =
+      item.id === "uncategorized" || !cat
+        ? NEUTRAL_COLOR
+        : categoryColor(cat, categories)
     return {
       categoryId: item.id,
       categoryName:
@@ -68,7 +57,7 @@ export function aggregateByCategory(
           : (cat?.name ?? "Unknown"),
       icon: cat?.icon ?? null,
       total: item.total,
-      fill: CHART_COLORS[i % CHART_COLORS.length],
+      fill,
     }
   })
 
@@ -78,7 +67,7 @@ export function aggregateByCategory(
       categoryName: "Other",
       icon: null,
       total: otherTotal,
-      fill: CHART_COLORS[result.length % CHART_COLORS.length],
+      fill: NEUTRAL_COLOR,
     })
   }
 

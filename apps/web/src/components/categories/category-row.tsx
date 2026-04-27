@@ -20,32 +20,44 @@ import {
 } from "@workspace/ui/components/dropdown-menu"
 import type { Category } from "@workspace/api-contract"
 import { getCategoryIcon } from "@/lib/category-icons"
+import { categoryColor } from "@/lib/category-color"
 
 interface CategoryRowProps {
   parent: Category
   children: Array<Category>
+  allCategories: ReadonlyArray<Category>
   onAddChild: (parent: Category) => void
   onEdit: (category: Category, isParent: boolean) => void
   onDelete: (category: Category) => void
 }
 
-function CategoryIcon({ icon }: { icon: string | null }) {
-  const resolved = getCategoryIcon(icon)
-  if (resolved) {
-    return (
-      <resolved.component className="size-4 shrink-0 text-muted-foreground" />
-    )
-  }
+function CategoryIcon({
+  category,
+  all,
+}: {
+  category: Category
+  all: ReadonlyArray<Category>
+}) {
+  const bg = categoryColor(category, all)
+  const resolved = getCategoryIcon(category.icon)
   return (
-    <span className="flex size-4 shrink-0 items-center justify-center text-base">
-      {icon ?? ""}
-    </span>
+    <div
+      className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
+      style={{ backgroundColor: bg }}
+    >
+      {resolved ? (
+        <resolved.component className="size-3.5" />
+      ) : (
+        <span className="text-xs">{category.icon ?? ""}</span>
+      )}
+    </div>
   )
 }
 
 export function CategoryRow({
   parent,
   children,
+  allCategories,
   onAddChild,
   onEdit,
   onDelete,
@@ -56,13 +68,13 @@ export function CategoryRow({
     <Collapsible open={open} onOpenChange={setOpen}>
       <div className="rounded-lg border">
         <div className="flex items-center">
-          <CollapsibleTrigger className="flex flex-1 items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/50">
+          <CollapsibleTrigger className="flex flex-1 items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/50">
             {open ? (
               <IconChevronDown className="size-4 shrink-0 text-muted-foreground" />
             ) : (
               <IconChevronRight className="size-4 shrink-0 text-muted-foreground" />
             )}
-            <CategoryIcon icon={parent.icon} />
+            <CategoryIcon category={parent} all={allCategories} />
             <span className="flex-1 text-base font-medium">{parent.name}</span>
             {!open && children.length > 0 && (
               <span className="text-sm text-muted-foreground">
@@ -95,9 +107,9 @@ export function CategoryRow({
             {children.map((child) => (
               <div
                 key={child.id}
-                className="flex items-center gap-2 border-b border-border/50 py-2 pl-10 pr-3 last:border-b-0"
+                className="flex items-center gap-2 border-b border-border/50 py-2 pr-3 pl-10 last:border-b-0"
               >
-                <CategoryIcon icon={child.icon} />
+                <CategoryIcon category={child} all={allCategories} />
                 <span className="flex-1 text-base text-muted-foreground">
                   {child.name}
                 </span>
@@ -125,7 +137,7 @@ export function CategoryRow({
             <button
               type="button"
               onClick={() => onAddChild(parent)}
-              className="flex w-full items-center gap-2 py-2 pl-10 pr-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+              className="flex w-full items-center gap-2 py-2 pr-3 pl-10 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
             >
               <IconPlus className="size-3.5" />
               Add subcategory

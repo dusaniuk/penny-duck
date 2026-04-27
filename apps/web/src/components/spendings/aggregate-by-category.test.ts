@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { aggregateByCategory } from "./aggregate-by-category"
 import type { Category, Transaction } from "@workspace/api-contract"
+import { NEUTRAL_COLOR, categoryColor } from "@/lib/category-color"
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -25,17 +26,20 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   }
 }
 
-function makeCat(id: string, name: string): Category {
-  return { id, name, type: "expense", parentId: null, icon: null }
+function makeCat(id: string, name: string, color: string | null): Category {
+  return { id, name, type: "expense", parentId: null, icon: null, color }
 }
 
 const categories = [
-  makeCat("cat-1", "Food"),
-  makeCat("cat-2", "Transport"),
-  makeCat("cat-3", "Entertainment"),
-  makeCat("cat-4", "Shopping"),
-  makeCat("cat-5", "Health"),
+  makeCat("cat-1", "Food", "red"),
+  makeCat("cat-2", "Transport", "blue"),
+  makeCat("cat-3", "Entertainment", "magenta"),
+  makeCat("cat-4", "Shopping", "purple"),
+  makeCat("cat-5", "Health", "green"),
 ]
+
+const food = categories[0]
+const transport = categories[1]
 
 describe("aggregateByCategory", () => {
   it("groups expenses by category and sorts descending by total", () => {
@@ -53,14 +57,14 @@ describe("aggregateByCategory", () => {
         categoryName: "Food",
         icon: null,
         total: 500,
-        fill: "var(--color-chart-1)",
+        fill: categoryColor(food, categories),
       },
       {
         categoryId: "cat-2",
         categoryName: "Transport",
         icon: null,
         total: 100,
-        fill: "var(--color-chart-2)",
+        fill: categoryColor(transport, categories),
       },
     ])
   })
@@ -85,19 +89,18 @@ describe("aggregateByCategory", () => {
         categoryName: "Food",
         icon: null,
         total: 500,
-        fill: "var(--color-chart-1)",
+        fill: categoryColor(food, categories),
       },
     ])
   })
 
-  it("merges categories below 5% threshold into Other", () => {
+  it("merges categories below 5% threshold into Other with neutral fill", () => {
     const transactions = [
       makeTx({ categoryId: "cat-1", homeAmount: 900 }),
       makeTx({ categoryId: "cat-2", homeAmount: 60 }),
       makeTx({ categoryId: "cat-3", homeAmount: 40 }),
     ]
 
-    // Total = 1000. cat-2 = 6% (above), cat-3 = 4% (below threshold)
     const result = aggregateByCategory(transactions, categories)
 
     expect(result).toHaveLength(3)
@@ -107,6 +110,7 @@ describe("aggregateByCategory", () => {
       categoryId: "other",
       categoryName: "Other",
       total: 40,
+      fill: NEUTRAL_COLOR,
     })
   })
 
@@ -115,7 +119,7 @@ describe("aggregateByCategory", () => {
     expect(result).toEqual([])
   })
 
-  it("handles transactions with null categoryId as Uncategorized", () => {
+  it("handles transactions with null categoryId as Uncategorized with neutral fill", () => {
     const transactions = [makeTx({ categoryId: null, homeAmount: 100 })]
 
     const result = aggregateByCategory(transactions, categories)
@@ -126,7 +130,7 @@ describe("aggregateByCategory", () => {
         categoryName: "Uncategorized",
         icon: null,
         total: 100,
-        fill: "var(--color-chart-1)",
+        fill: NEUTRAL_COLOR,
       },
     ])
   })

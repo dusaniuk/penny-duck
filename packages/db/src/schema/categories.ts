@@ -13,6 +13,7 @@ export const categories = appSchema.table(
     name: varchar("name", { length: 100 }).notNull(),
     type: varchar("type", { length: 20 }).notNull().default("expense"),
     icon: varchar("icon", { length: 50 }),
+    color: varchar("color", { length: 20 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

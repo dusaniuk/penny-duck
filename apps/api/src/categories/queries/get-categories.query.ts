@@ -23,6 +23,7 @@ export class GetCategoriesHandler implements IQueryHandler<GetCategoriesQuery> {
       type: r.type as CategoryType,
       parentId: r.parentId ?? null,
       icon: r.icon ?? null,
+      color: r.color ?? null,
     }))
   }
 }

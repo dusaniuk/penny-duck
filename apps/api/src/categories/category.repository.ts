@@ -45,6 +45,7 @@ export class CategoryRepository {
     name: string
     type: string
     icon: string | null
+    color: string | null
   }): Promise<CategoryRow> {
     const [row] = await this.db
       .insert(categories)
@@ -61,6 +62,7 @@ export class CategoryRepository {
       type?: string
       icon?: string | null
       parentId?: string | null
+      color?: string | null
     }
   ): Promise<CategoryRow> {
     const [row] = await this.db

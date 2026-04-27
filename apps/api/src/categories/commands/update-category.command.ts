@@ -10,7 +10,8 @@ export class UpdateCategoryCommand extends Command<Category> {
     public readonly name?: string,
     public readonly icon?: string | null,
     public readonly type?: CategoryType,
-    public readonly parentId?: string | null
+    public readonly parentId?: string | null,
+    public readonly color?: string
   ) {
     super()
   }
@@ -24,6 +25,14 @@ export class UpdateCategoryHandler implements ICommandHandler<UpdateCategoryComm
     const existing = await this.categoryRepo.findById(cmd.id, cmd.organizationId)
     if (existing === null) throw new NotFoundException("Category not found")
 
+    // Reject color edits on rows that are (and stay) children
+    const isStayingChild =
+      existing.parentId !== null &&
+      (cmd.parentId === undefined || cmd.parentId !== null)
+    if (isStayingChild && cmd.color !== undefined) {
+      throw new BadRequestException("Subcategories cannot have a color")
+    }
+
     if (cmd.parentId !== undefined) {
       if (cmd.parentId === cmd.id) {
         throw new BadRequestException("Cannot move category into itself")
@@ -31,6 +40,17 @@ export class UpdateCategoryHandler implements ICommandHandler<UpdateCategoryComm
 
       if (cmd.parentId === null && existing.parentId === null) {
         throw new BadRequestException("Category is already top-level")
+      }
+
+      // Promotion (child → parent) requires color
+      if (
+        cmd.parentId === null &&
+        existing.parentId !== null &&
+        (cmd.color === undefined || cmd.color === null)
+      ) {
+        throw new BadRequestException(
+          "A color is required when promoting a subcategory to top-level"
+        )
       }
 
       if (cmd.parentId !== null && cmd.parentId !== existing.parentId) {
@@ -67,11 +87,25 @@ export class UpdateCategoryHandler implements ICommandHandler<UpdateCategoryComm
       )
     }
 
+    // Compute next color value
+    let nextColor: string | null | undefined
+    if (cmd.parentId === null && existing.parentId !== null) {
+      // Promotion — color was validated as required above
+      nextColor = cmd.color
+    } else if (cmd.parentId !== null && cmd.parentId !== undefined) {
+      // Demotion (or sideways move staying child) — clear color
+      nextColor = null
+    } else if (cmd.color !== undefined && existing.parentId === null) {
+      // Editing existing top-level row
+      nextColor = cmd.color
+    }
+
     const row = await this.categoryRepo.update(cmd.id, cmd.organizationId, {
       name: cmd.name,
       icon: cmd.icon,
       type: cmd.type,
       ...(cmd.parentId !== undefined ? { parentId: cmd.parentId } : {}),
+      ...(nextColor !== undefined ? { color: nextColor } : {}),
     })
 
     if (
@@ -92,6 +126,7 @@ export class UpdateCategoryHandler implements ICommandHandler<UpdateCategoryComm
       type: row.type as CategoryType,
       parentId: row.parentId ?? null,
       icon: row.icon ?? null,
+      color: row.color ?? null,
     }
   }
 }

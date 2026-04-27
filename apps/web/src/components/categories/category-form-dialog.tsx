@@ -17,7 +17,10 @@ import {
 } from "@workspace/ui/components/select"
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { IconPicker } from "./icon-picker"
+import { ColorPicker } from "./color-picker"
 import type { Category, CategoryType } from "@workspace/api-contract"
+import type { CategoryColor } from "@/lib/category-color"
+import { PALETTE_TOKENS, pickRandomUnusedColor } from "@/lib/category-color"
 
 const TOP_LEVEL_VALUE = "TOP_LEVEL"
 
@@ -32,12 +35,20 @@ interface CategoryFormDialogProps {
   mode: CategoryDialogMode | null
   parentOptions: Array<Category>
   hasChildren: boolean
+  existingTopLevelColors: ReadonlyArray<string | null>
   onSubmit: (data: {
     name: string
     icon?: string
     type?: CategoryType
     parentId?: string | null
+    color?: CategoryColor
   }) => Promise<void>
+}
+
+function asKnownToken(s: string | null): CategoryColor | null {
+  return s !== null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
+    ? (s as CategoryColor)
+    : null
 }
 
 export function CategoryFormDialog({
@@ -46,6 +57,7 @@ export function CategoryFormDialog({
   mode,
   parentOptions,
   hasChildren,
+  existingTopLevelColors,
   onSubmit,
 }: CategoryFormDialogProps) {
   const [name, setName] = useState("")
@@ -55,6 +67,7 @@ export function CategoryFormDialog({
     useState<string>(TOP_LEVEL_VALUE)
   const [initialParentSelection, setInitialParentSelection] =
     useState<string>(TOP_LEVEL_VALUE)
+  const [color, setColor] = useState<CategoryColor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,28 +81,32 @@ export function CategoryFormDialog({
       const initial = mode.category.parentId ?? TOP_LEVEL_VALUE
       setParentSelection(initial)
       setInitialParentSelection(initial)
+      setColor(asKnownToken(mode.category.color))
     } else if (mode.kind === "create-parent") {
       setName("")
       setIcon(null)
       setType(mode.type)
       setParentSelection(TOP_LEVEL_VALUE)
       setInitialParentSelection(TOP_LEVEL_VALUE)
+      setColor(pickRandomUnusedColor(existingTopLevelColors))
     } else {
       setName("")
       setIcon(null)
       setType(mode.parent.type)
       setParentSelection(TOP_LEVEL_VALUE)
       setInitialParentSelection(TOP_LEVEL_VALUE)
+      setColor(null)
     }
-  }, [mode])
+  }, [mode, existingTopLevelColors])
 
   if (!mode) return null
 
   const isEdit = mode.kind === "edit"
-  const showTypeTabs =
-    isEdit && mode.isParent && parentSelection === TOP_LEVEL_VALUE
-  const showMoveField =
-    mode.kind === "edit" && (!mode.isParent || !hasChildren)
+  const willBeTopLevel =
+    mode.kind !== "create-child" && parentSelection === TOP_LEVEL_VALUE
+  const showTypeTabs = isEdit && mode.isParent && willBeTopLevel
+  const showColorPicker = willBeTopLevel
+  const showMoveField = mode.kind === "edit" && (!mode.isParent || !hasChildren)
   const showHasChildrenNote =
     mode.kind === "edit" && mode.isParent && hasChildren
   const eligibleParentOptions =
@@ -111,6 +128,7 @@ export function CategoryFormDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!trimmed || loading) return
+    if (showColorPicker && !color) return
     setLoading(true)
     setError(null)
     try {
@@ -122,6 +140,7 @@ export function CategoryFormDialog({
         ...(icon ? { icon } : {}),
         ...(showTypeTabs ? { type } : {}),
         ...(parentChanged ? { parentId } : {}),
+        ...(showColorPicker && color ? { color } : {}),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
@@ -133,6 +152,18 @@ export function CategoryFormDialog({
   function handleOpenChange(next: boolean) {
     if (!next && loading) return
     onOpenChange(next)
+  }
+
+  function handleParentSelectionChange(next: string) {
+    setParentSelection(next)
+    if (
+      next === TOP_LEVEL_VALUE &&
+      mode &&
+      mode.kind !== "create-child" &&
+      color === null
+    ) {
+      setColor(pickRandomUnusedColor(existingTopLevelColors))
+    }
   }
 
   return (
@@ -184,12 +215,23 @@ export function CategoryFormDialog({
               </div>
             </Field>
 
+            {showColorPicker && (
+              <Field>
+                <FieldLabel>Color</FieldLabel>
+                <ColorPicker
+                  value={color}
+                  onChange={setColor}
+                  disabled={loading}
+                />
+              </Field>
+            )}
+
             {showMoveField && (
               <Field>
                 <FieldLabel>Group under</FieldLabel>
                 <Select
                   value={parentSelection}
-                  onValueChange={setParentSelection}
+                  onValueChange={handleParentSelectionChange}
                   disabled={loading}
                 >
                   <SelectTrigger>
@@ -224,7 +266,10 @@ export function CategoryFormDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={!trimmed || loading}>
+              <Button
+                type="submit"
+                disabled={!trimmed || loading || (showColorPicker && !color)}
+              >
                 {loading ? "Saving…" : isEdit ? "Save" : "Create"}
               </Button>
             </div>

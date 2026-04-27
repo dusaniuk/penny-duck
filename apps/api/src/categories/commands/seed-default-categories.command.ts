@@ -11,6 +11,7 @@ export class SeedDefaultCategoriesCommand extends Command<void> {
 interface DefaultCategory {
   icon: string | null
   type: CategoryType
+  color: string
   children: Array<{ name: string; icon: string | null }>
 }
 
@@ -18,6 +19,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   "Food & Drinks": {
     icon: "pizza",
     type: "expense",
+    color: "red",
     children: [
       { name: "Groceries", icon: "shopping-cart" },
       { name: "Restaurants", icon: "meat" },
@@ -27,6 +29,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Transport: {
     icon: "car",
     type: "expense",
+    color: "blue",
     children: [
       { name: "Public Transit", icon: "bus" },
       { name: "Taxi", icon: "car" },
@@ -36,6 +39,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Housing: {
     icon: "home",
     type: "expense",
+    color: "orange",
     children: [
       { name: "Rent", icon: "home" },
       { name: "Utilities", icon: "bolt" },
@@ -45,6 +49,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Shopping: {
     icon: "shopping-bag",
     type: "expense",
+    color: "purple",
     children: [
       { name: "Clothes", icon: "shirt" },
       { name: "Electronics", icon: "credit-card" },
@@ -54,6 +59,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Entertainment: {
     icon: "ticket",
     type: "expense",
+    color: "magenta",
     children: [
       { name: "Subscriptions", icon: "movie" },
       { name: "Hobbies", icon: "device-gamepad" },
@@ -63,6 +69,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Health: {
     icon: "heartbeat",
     type: "expense",
+    color: "green",
     children: [
       { name: "Pharmacy", icon: "pill" },
       { name: "Doctor", icon: "heartbeat" },
@@ -72,6 +79,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   Income: {
     icon: "cash",
     type: "income",
+    color: "emerald",
     children: [
       { name: "Salary", icon: "building-bank" },
       { name: "Freelance", icon: "briefcase" },
@@ -92,6 +100,7 @@ export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefault
         name: parentName,
         type: category.type,
         icon: category.icon,
+        color: category.color,
       })
 
       await this.categoryRepo.insertMany(

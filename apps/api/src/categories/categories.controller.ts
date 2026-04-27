@@ -36,7 +36,8 @@ export class CategoriesController {
           body.name,
           body.parentId ?? null,
           body.icon ?? null,
-          body.type ?? "expense"
+          body.type ?? "expense",
+          body.color ?? null
         )
       )
       return { status: 201 as const, body: category }
@@ -53,7 +54,8 @@ export class CategoriesController {
           body.name,
           body.icon,
           body.type,
-          body.parentId
+          body.parentId,
+          body.color
         )
       )
       return { status: 200 as const, body: category }
