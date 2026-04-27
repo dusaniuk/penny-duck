@@ -35,6 +35,7 @@ function useDebouncedValue<T>(value: T, delay = 250): T {
 export function InstrumentAutocomplete({ value, onChange, disabled }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const debounced = useDebouncedValue(query, 250)
 
   const { data, isFetching } = tsr.investments.searchInstruments.useQuery({
@@ -45,59 +46,61 @@ export function InstrumentAutocomplete({ value, onChange, disabled }: Props) {
   const results = data?.body ?? []
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          className="w-full justify-between"
-          disabled={disabled}
-        >
-          {value || "Select symbol"}
-          <IconChevronDown className="size-4 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search AAPL, MSFT…"
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isFetching
-                ? "Searching…"
-                : query.length === 0
-                  ? "Type to search"
-                  : "No results"}
-            </CommandEmpty>
-            <CommandGroup>
-              {results.map((instrument) => (
-                <CommandItem
-                  key={instrument.symbol}
-                  value={instrument.symbol}
-                  onSelect={() => {
-                    onChange(instrument.symbol, instrument)
-                    setOpen(false)
-                  }}
-                >
-                  <span className="font-medium">{instrument.symbol}</span>
-                  <span className="ml-2 truncate text-muted-foreground">
-                    {instrument.name}
-                  </span>
-                  {instrument.exchange && (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {instrument.exchange}
+    <div ref={setContainer}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            className="w-full justify-between"
+            disabled={disabled}
+          >
+            {value || "Select symbol"}
+            <IconChevronDown className="size-4 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[320px] p-0" container={container}>
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search AAPL, MSFT…"
+              value={query}
+              onValueChange={setQuery}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {isFetching
+                  ? "Searching…"
+                  : query.length === 0
+                    ? "Type to search"
+                    : "No results"}
+              </CommandEmpty>
+              <CommandGroup>
+                {results.map((instrument) => (
+                  <CommandItem
+                    key={instrument.symbol}
+                    value={instrument.symbol}
+                    onSelect={() => {
+                      onChange(instrument.symbol, instrument)
+                      setOpen(false)
+                    }}
+                  >
+                    <span className="font-medium">{instrument.symbol}</span>
+                    <span className="ml-2 truncate text-muted-foreground">
+                      {instrument.name}
                     </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    {instrument.exchange && (
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {instrument.exchange}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
