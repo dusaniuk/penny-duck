@@ -1,4 +1,5 @@
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import { type CategoryType } from "@workspace/api-contract"
 import { CategoryRepository } from "../category.repository"
 
 export class SeedDefaultCategoriesCommand extends Command<void> {
@@ -9,12 +10,14 @@ export class SeedDefaultCategoriesCommand extends Command<void> {
 
 interface DefaultCategory {
   icon: string | null
+  type: CategoryType
   children: Array<{ name: string; icon: string | null }>
 }
 
 const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   "Food & Drinks": {
     icon: "pizza",
+    type: "expense",
     children: [
       { name: "Groceries", icon: "shopping-cart" },
       { name: "Restaurants", icon: "meat" },
@@ -23,6 +26,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Transport: {
     icon: "car",
+    type: "expense",
     children: [
       { name: "Public Transit", icon: "bus" },
       { name: "Taxi", icon: "car" },
@@ -31,6 +35,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Housing: {
     icon: "home",
+    type: "expense",
     children: [
       { name: "Rent", icon: "home" },
       { name: "Utilities", icon: "bolt" },
@@ -39,6 +44,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Shopping: {
     icon: "shopping-bag",
+    type: "expense",
     children: [
       { name: "Clothes", icon: "shirt" },
       { name: "Electronics", icon: "credit-card" },
@@ -47,6 +53,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Entertainment: {
     icon: "ticket",
+    type: "expense",
     children: [
       { name: "Subscriptions", icon: "movie" },
       { name: "Hobbies", icon: "device-gamepad" },
@@ -55,6 +62,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Health: {
     icon: "heartbeat",
+    type: "expense",
     children: [
       { name: "Pharmacy", icon: "pill" },
       { name: "Doctor", icon: "heartbeat" },
@@ -63,6 +71,7 @@ const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
   },
   Income: {
     icon: "cash",
+    type: "income",
     children: [
       { name: "Salary", icon: "building-bank" },
       { name: "Freelance", icon: "briefcase" },
@@ -81,6 +90,7 @@ export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefault
         organizationId: cmd.organizationId,
         parentId: null,
         name: parentName,
+        type: category.type,
         icon: category.icon,
       })
 
@@ -89,6 +99,7 @@ export class SeedDefaultCategoriesHandler implements ICommandHandler<SeedDefault
           organizationId: cmd.organizationId,
           parentId: savedParent.id,
           name: child.name,
+          type: category.type,
           icon: child.icon,
         }))
       )

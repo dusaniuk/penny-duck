@@ -1,0 +1,1 @@
+ALTER TABLE "app"."categories" ADD COLUMN "type" varchar(20) DEFAULT 'expense' NOT NULL;

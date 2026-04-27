@@ -35,7 +35,8 @@ export class CategoriesController {
           organizationId,
           body.name,
           body.parentId ?? null,
-          body.icon ?? null
+          body.icon ?? null,
+          body.type ?? "expense"
         )
       )
       return { status: 201 as const, body: category }
@@ -46,7 +47,14 @@ export class CategoriesController {
   handleUpdate(@CurrentOrg() organizationId: string) {
     return tsRestHandler(categoryContract.update, async ({ params, body }) => {
       const category = await this.commandBus.execute(
-        new UpdateCategoryCommand(params.id, organizationId, body.name, body.icon)
+        new UpdateCategoryCommand(
+          params.id,
+          organizationId,
+          body.name,
+          body.icon,
+          body.type,
+          body.parentId
+        )
       )
       return { status: 200 as const, body: category }
     })

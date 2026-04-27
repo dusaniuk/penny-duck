@@ -30,11 +30,12 @@ export type { Account } from "./schemas/accounts"
 
 export {
   CategorySchema,
+  CategoryTypeSchema,
   CreateCategorySchema,
   UpdateCategorySchema,
   categoryContract,
 } from "./schemas/categories"
-export type { Category } from "./schemas/categories"
+export type { Category, CategoryType } from "./schemas/categories"
 
 export {
   TransactionSchema,

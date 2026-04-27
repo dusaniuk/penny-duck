@@ -9,12 +9,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog"
-import type { CategoryData } from "@/components/categories/category-row"
+import type { Category } from "@workspace/api-contract"
 
 interface CategoryDeleteDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  category: CategoryData | null
+  category: Category | null
   isParent: boolean
   onConfirm: () => Promise<void>
 }

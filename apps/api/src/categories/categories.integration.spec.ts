@@ -87,6 +87,138 @@ describe("Categories", () => {
     expect(afterDelete.length).toBe(countBefore - 1)
   })
 
+  it("promotes a subcategory to top-level", async () => {
+    const parent = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "Parent", null, null)
+    )
+    const child = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "Child", parent.id, null)
+    )
+
+    const promoted = await commandBus.execute(
+      new UpdateCategoryCommand(
+        child.id,
+        organizationId,
+        undefined,
+        undefined,
+        undefined,
+        null
+      )
+    )
+
+    expect(promoted.parentId).toBeNull()
+
+    const all = await queryBus.execute(new GetCategoriesQuery(organizationId))
+    const refetched = all.find((c: { id: string }) => c.id === child.id)
+    expect(refetched?.parentId).toBeNull()
+  })
+
+  it("rejects promoting a category that is already top-level", async () => {
+    const parent = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "AlreadyTop", null, null)
+    )
+
+    await expect(
+      commandBus.execute(
+        new UpdateCategoryCommand(
+          parent.id,
+          organizationId,
+          undefined,
+          undefined,
+          undefined,
+          null
+        )
+      )
+    ).rejects.toThrow(/already top-level/i)
+  })
+
+  it("reparents a subcategory between two same-type parents", async () => {
+    const parentA = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "ParentA", null, null)
+    )
+    const parentB = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "ParentB", null, null)
+    )
+    const child = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "Child", parentA.id, null)
+    )
+
+    const moved = await commandBus.execute(
+      new UpdateCategoryCommand(
+        child.id,
+        organizationId,
+        undefined,
+        undefined,
+        undefined,
+        parentB.id
+      )
+    )
+
+    expect(moved.parentId).toBe(parentB.id)
+  })
+
+  it("rejects cross-type reparent", async () => {
+    const expenseParent = await commandBus.execute(
+      new CreateCategoryCommand(
+        organizationId,
+        "ExpenseParent",
+        null,
+        null,
+        "expense"
+      )
+    )
+    const incomeParent = await commandBus.execute(
+      new CreateCategoryCommand(
+        organizationId,
+        "IncomeParent",
+        null,
+        null,
+        "income"
+      )
+    )
+    const child = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "Child", expenseParent.id, null)
+    )
+
+    await expect(
+      commandBus.execute(
+        new UpdateCategoryCommand(
+          child.id,
+          organizationId,
+          undefined,
+          undefined,
+          undefined,
+          incomeParent.id
+        )
+      )
+    ).rejects.toThrow(/match category type/i)
+  })
+
+  it("rejects demoting a parent that has subcategories", async () => {
+    const parentA = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "ParentA", null, null)
+    )
+    const parentB = await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "ParentB", null, null)
+    )
+    await commandBus.execute(
+      new CreateCategoryCommand(organizationId, "ChildOfA", parentA.id, null)
+    )
+
+    await expect(
+      commandBus.execute(
+        new UpdateCategoryCommand(
+          parentA.id,
+          organizationId,
+          undefined,
+          undefined,
+          undefined,
+          parentB.id
+        )
+      )
+    ).rejects.toThrow(/has subcategories/i)
+  })
+
   it("isolates categories between users", async () => {
     const other = await signupUser()
     await flushEvents()

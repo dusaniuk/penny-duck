@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import type { CategoryData } from "@/components/categories/category-row"
+import type { Category, CategoryType } from "@workspace/api-contract"
+import type { CategoryDialogMode } from "@/components/categories/category-form-dialog"
+import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
 import { CategoryList } from "@/components/categories/category-list"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
 import { queryClient, tsr } from "@/lib/api"
@@ -11,51 +13,102 @@ export const Route = createFileRoute("/_app/categories")({
 })
 
 function CategoriesPage() {
-  const { data, isLoading: loading } =
-    tsr.categories.list.useQuery({ queryKey: ["categories"] })
+  const { data, isLoading: loading } = tsr.categories.list.useQuery({
+    queryKey: ["categories"],
+  })
   const categories = data?.body ?? []
 
-  const [deleteCategory, setDeleteCategory] = useState<CategoryData | null>(
-    null
-  )
+  const { expenseCategories, incomeCategories } = useMemo(() => {
+    const expense: Array<Category> = []
+    const income: Array<Category> = []
+    for (const c of categories) {
+      if (c.type === "income") income.push(c)
+      else expense.push(c)
+    }
+    return { expenseCategories: expense, incomeCategories: income }
+  }, [categories])
 
-  const updateMutation = tsr.categories.update.useMutation({
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["categories"] }),
-  })
+  const parentOptionsByType = useMemo(() => {
+    const expense = categories.filter(
+      (c) => c.parentId === null && c.type === "expense"
+    )
+    const income = categories.filter(
+      (c) => c.parentId === null && c.type === "income"
+    )
+    return { expense, income }
+  }, [categories])
 
-  const createMutation = tsr.categories.create.useMutation({
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["categories"] }),
-  })
-
-  const deleteMutation = tsr.categories.delete.useMutation({
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["categories"] }),
-  })
-
-  async function handleEdit(
-    id: string,
-    formData: { name: string; icon?: string }
-  ) {
-    await updateMutation.mutateAsync({
-      params: { id },
-      body: formData,
-    })
+  function getHasChildren(category: Category): boolean {
+    return categories.some((c) => c.parentId === category.id)
   }
 
-  async function handleCreate(formData: {
+  const [dialogMode, setDialogMode] = useState<CategoryDialogMode | null>(null)
+  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["categories"] })
+
+  const createMutation = tsr.categories.create.useMutation({
+    onSuccess: invalidate,
+  })
+  const updateMutation = tsr.categories.update.useMutation({
+    onSuccess: invalidate,
+  })
+  const deleteMutation = tsr.categories.delete.useMutation({
+    onSuccess: invalidate,
+  })
+
+  function openCreateParent(type: CategoryType) {
+    setDialogMode({ kind: "create-parent", type })
+  }
+
+  function openCreateChild(parent: Category) {
+    setDialogMode({ kind: "create-child", parent })
+  }
+
+  function openEdit(category: Category, isParent: boolean) {
+    setDialogMode({ kind: "edit", category, isParent })
+  }
+
+  async function handleDialogSubmit(form: {
     name: string
     icon?: string
-    parentId: string | null
+    type?: CategoryType
+    parentId?: string | null
   }) {
-    await createMutation.mutateAsync({
-      body: {
-        name: formData.name,
-        icon: formData.icon,
-        parentId: formData.parentId ?? undefined,
-      },
-    })
+    if (!dialogMode) return
+    switch (dialogMode.kind) {
+      case "create-parent":
+        await createMutation.mutateAsync({
+          body: {
+            name: form.name,
+            icon: form.icon,
+            type: dialogMode.type,
+          },
+        })
+        break
+      case "create-child":
+        await createMutation.mutateAsync({
+          body: {
+            name: form.name,
+            icon: form.icon,
+            parentId: dialogMode.parent.id,
+          },
+        })
+        break
+      case "edit":
+        await updateMutation.mutateAsync({
+          params: { id: dialogMode.category.id },
+          body: {
+            name: form.name,
+            icon: form.icon,
+            ...(form.type !== undefined ? { type: form.type } : {}),
+            ...(form.parentId !== undefined ? { parentId: form.parentId } : {}),
+          },
+        })
+        break
+    }
+    setDialogMode(null)
   }
 
   async function handleDelete() {
@@ -63,8 +116,16 @@ function CategoriesPage() {
     await deleteMutation.mutateAsync({ params: { id: deleteCategory.id } })
   }
 
+  const dialogParentOptions =
+    dialogMode?.kind === "edit"
+      ? parentOptionsByType[dialogMode.category.type]
+      : []
+
+  const dialogHasChildren =
+    dialogMode?.kind === "edit" ? getHasChildren(dialogMode.category) : false
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-semibold">Categories</h1>
       </div>
@@ -79,13 +140,43 @@ function CategoriesPage() {
           ))}
         </div>
       ) : (
-        <CategoryList
-          categories={categories}
-          onEdit={handleEdit}
-          onCreate={handleCreate}
-          onDelete={setDeleteCategory}
-        />
+        <>
+          <section className="space-y-3">
+            <h2 className="font-heading text-lg font-semibold">Expenses</h2>
+            <CategoryList
+              type="expense"
+              categories={expenseCategories}
+              onAddParent={() => openCreateParent("expense")}
+              onAddChild={openCreateChild}
+              onEdit={openEdit}
+              onDelete={setDeleteCategory}
+            />
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-heading text-lg font-semibold">Income</h2>
+            <CategoryList
+              type="income"
+              categories={incomeCategories}
+              onAddParent={() => openCreateParent("income")}
+              onAddChild={openCreateChild}
+              onEdit={openEdit}
+              onDelete={setDeleteCategory}
+            />
+          </section>
+        </>
       )}
+
+      <CategoryFormDialog
+        open={dialogMode !== null}
+        onOpenChange={(open) => {
+          if (!open) setDialogMode(null)
+        }}
+        mode={dialogMode}
+        parentOptions={dialogParentOptions}
+        hasChildren={dialogHasChildren}
+        onSubmit={handleDialogSubmit}
+      />
 
       <CategoryDeleteDialog
         open={!!deleteCategory}

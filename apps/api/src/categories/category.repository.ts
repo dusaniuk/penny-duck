@@ -25,10 +25,25 @@ export class CategoryRepository {
     return rows[0] ?? null
   }
 
+  async hasChildren(parentId: string, organizationId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.parentId, parentId),
+          eq(categories.organizationId, organizationId)
+        )
+      )
+      .limit(1)
+    return rows.length > 0
+  }
+
   async insert(data: {
     organizationId: string
     parentId: string | null
     name: string
+    type: string
     icon: string | null
   }): Promise<CategoryRow> {
     const [row] = await this.db
@@ -41,7 +56,12 @@ export class CategoryRepository {
   async update(
     id: string,
     organizationId: string,
-    data: { name?: string; icon?: string | null }
+    data: {
+      name?: string
+      type?: string
+      icon?: string | null
+      parentId?: string | null
+    }
   ): Promise<CategoryRow> {
     const [row] = await this.db
       .update(categories)
@@ -51,11 +71,23 @@ export class CategoryRepository {
     return row
   }
 
+  async updateChildrenType(
+    parentId: string,
+    organizationId: string,
+    type: string
+  ): Promise<void> {
+    await this.db
+      .update(categories)
+      .set({ type, updatedAt: new Date() })
+      .where(and(eq(categories.parentId, parentId), eq(categories.organizationId, organizationId)))
+  }
+
   async insertMany(
     items: Array<{
       organizationId: string
       parentId: string | null
       name: string
+      type: string
       icon: string | null
     }>
   ): Promise<CategoryRow[]> {
