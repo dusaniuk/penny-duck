@@ -47,31 +47,36 @@ function formatDateLabel(dateStr: string): string {
 }
 
 function deduplicateTransfers(
-  transactions: Array<Transaction>,
+  transactions: Array<Transaction>
 ): Array<Transaction> {
   // First pass: pick the preferred side per transferId (outgoing = has exchangeRate)
   const preferred = new Map<string, Transaction>()
   for (const t of transactions) {
     if (!t.transferId) continue
     const existing = preferred.get(t.transferId)
-    if (!existing || (t.exchangeRate != null && existing.exchangeRate == null)) {
+    if (
+      !existing ||
+      (t.exchangeRate != null && existing.exchangeRate == null)
+    ) {
       preferred.set(t.transferId, t)
     }
   }
 
   // Second pass: filter, keeping order, replacing with preferred side
   const seen = new Set<string>()
-  return transactions.filter((t) => {
-    if (!t.transferId) return true
-    if (seen.has(t.transferId)) return false
-    seen.add(t.transferId)
-    return true
-  }).map((t) => {
-    if (t.transferId && preferred.has(t.transferId)) {
-      return preferred.get(t.transferId)!
-    }
-    return t
-  })
+  return transactions
+    .filter((t) => {
+      if (!t.transferId) return true
+      if (seen.has(t.transferId)) return false
+      seen.add(t.transferId)
+      return true
+    })
+    .map((t) => {
+      if (t.transferId && preferred.has(t.transferId)) {
+        return preferred.get(t.transferId)!
+      }
+      return t
+    })
 }
 
 function groupByDate(transactions: Array<Transaction>): Array<DateGroup> {
@@ -119,10 +124,7 @@ export function TransactionList({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[52px] animate-pulse rounded-md bg-muted"
-          />
+          <div key={i} className="h-[52px] animate-pulse rounded-md bg-muted" />
         ))}
       </div>
     )
@@ -168,7 +170,7 @@ export function TransactionList({
       {groups.map((group) => (
         <div key={group.label}>
           <div className="flex items-center justify-between px-0 py-1.5 sm:px-3">
-            <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
               {group.label}
             </span>
             <span

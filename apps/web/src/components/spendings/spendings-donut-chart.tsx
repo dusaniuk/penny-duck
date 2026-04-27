@@ -1,12 +1,11 @@
 import { useState } from "react"
 import { Label, Pie, PieChart } from "recharts"
 import {
-  
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent
+  ChartTooltipContent,
 } from "@workspace/ui/components/chart"
-import type {ChartConfig} from "@workspace/ui/components/chart";
+import type { ChartConfig } from "@workspace/ui/components/chart"
 import type { CategorySpending } from "./aggregate-by-category"
 
 interface SpendingsDonutChartProps {
@@ -54,11 +53,7 @@ export function SpendingsDonutChart({
   }))
 
   return (
-    <ChartContainer
-      config={chartConfig}
-      className="mx-auto"
-      style={dimensions}
-    >
+    <ChartContainer config={chartConfig} className="mx-auto" style={dimensions}>
       <PieChart>
         <ChartTooltip content={<ChartTooltipContent hideLabel />} />
         <Pie
@@ -80,7 +75,9 @@ export function SpendingsDonutChart({
         >
           <Label
             content={(props) => {
-              const viewBox = (props as { viewBox?: { cx?: number; cy?: number } }).viewBox
+              const viewBox = (
+                props as { viewBox?: { cx?: number; cy?: number } }
+              ).viewBox
               if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                 return (
                   <text

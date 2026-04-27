@@ -27,7 +27,9 @@ function AccountInvestmentsPage() {
     <div className="space-y-6">
       {account && (
         <div>
-          <h1 className="font-heading text-2xl font-semibold">{account.name}</h1>
+          <h1 className="font-heading text-2xl font-semibold">
+            {account.name}
+          </h1>
           <p className="text-muted-foreground">
             Cash: {account.balance.toFixed(2)} {account.currency}
           </p>

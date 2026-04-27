@@ -97,7 +97,9 @@ export function AccountFormDialog({
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>{isEdit ? "Edit Account" : "New Account"}</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>
+            {isEdit ? "Edit Account" : "New Account"}
+          </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         <form onSubmit={handleSubmit}>
           <FieldGroup className="gap-3">

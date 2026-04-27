@@ -1,9 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { tsr } from "@/lib/api"
 
-export const Route = createFileRoute(
-  "/_app/investments/$accountId_/$symbol"
-)({
+export const Route = createFileRoute("/_app/investments/$accountId_/$symbol")({
   staticData: { breadcrumb: "Position" },
   component: PositionPage,
 })
@@ -13,13 +11,11 @@ function PositionPage() {
     from: "/_app/investments/$accountId_/$symbol",
   })
 
-  const { data: positionData } =
-    tsr.investments.getPositionBySymbol.useQuery({
-      queryKey: ["positions", accountId, symbol],
-      queryData: { params: { accountId, symbol } },
-    })
-  const position =
-    positionData?.status === 200 ? positionData.body : undefined
+  const { data: positionData } = tsr.investments.getPositionBySymbol.useQuery({
+    queryKey: ["positions", accountId, symbol],
+    queryData: { params: { accountId, symbol } },
+  })
+  const position = positionData?.status === 200 ? positionData.body : undefined
 
   const { data: tradesData } = tsr.investments.listTrades.useQuery({
     queryKey: ["trades", accountId, symbol],

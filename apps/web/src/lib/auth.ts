@@ -48,8 +48,7 @@ async function refreshTokens(apiUrl: string): Promise<string | undefined> {
 
 export const getAuthUser = createServerFn().handler(
   async (): Promise<AuthUser | null> => {
-    const SSR_API_URL =
-      process.env.API_URL ?? "http://localhost:3030"
+    const SSR_API_URL = process.env.API_URL ?? "http://localhost:3030"
 
     try {
       let accessToken = getCookie("access_token")

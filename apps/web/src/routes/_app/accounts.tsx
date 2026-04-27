@@ -12,8 +12,9 @@ export const Route = createFileRoute("/_app/accounts")({
 })
 
 function AccountsPage() {
-  const { data, isLoading: loading } =
-    tsr.accounts.list.useQuery({ queryKey: ["accounts"] })
+  const { data, isLoading: loading } = tsr.accounts.list.useQuery({
+    queryKey: ["accounts"],
+  })
   const accounts = data?.body ?? []
 
   const hasBrokerage = accounts.some((a) => a.type === "brokerage")

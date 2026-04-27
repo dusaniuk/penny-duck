@@ -207,9 +207,7 @@ export function ReimbursementDialog({
                       step="0.000001"
                       min="0.000001"
                       value={exchangeRate}
-                      onChange={(e) =>
-                        handleExchangeRateChange(e.target.value)
-                      }
+                      onChange={(e) => handleExchangeRateChange(e.target.value)}
                       placeholder="12.00"
                       required
                       className="flex-1"

@@ -67,9 +67,7 @@ export function PositionsTable({ positions, onRowClick }: PositionsTableProps) {
             {visible.map((p) => (
               <TableRow
                 key={`${p.accountId}:${p.symbol}`}
-                className={
-                  onRowClick ? "cursor-pointer hover:bg-muted/50" : ""
-                }
+                className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
                 onClick={onRowClick ? () => onRowClick(p) : undefined}
               >
                 <TableCell className="font-medium">{p.symbol}</TableCell>
@@ -104,9 +102,7 @@ export function PositionsTable({ positions, onRowClick }: PositionsTableProps) {
                 <TableCell
                   className={
                     "text-right tabular-nums " +
-                    (p.realizedGain >= 0
-                      ? "text-emerald-600"
-                      : "text-rose-600")
+                    (p.realizedGain >= 0 ? "text-emerald-600" : "text-rose-600")
                   }
                 >
                   {fmt(p.realizedGain, p.currency)}

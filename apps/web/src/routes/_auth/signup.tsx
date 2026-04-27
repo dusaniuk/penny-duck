@@ -110,9 +110,7 @@ function SignupPage() {
               </Field>
               <Field>
                 <Button type="submit" disabled={signupMutation.isPending}>
-                  {signupMutation.isPending
-                    ? "Creating account..."
-                    : "Sign up"}
+                  {signupMutation.isPending ? "Creating account..." : "Sign up"}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   By creating an account, you agree to our{" "}

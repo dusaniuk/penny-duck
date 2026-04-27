@@ -55,8 +55,8 @@ export function DeleteAccountDialog({
           <DialogTitle>Delete your account</DialogTitle>
           <DialogDescription>
             This will permanently delete your account and all organizations you
-            own, including all their accounts, categories, and transactions. This
-            action cannot be undone.
+            own, including all their accounts, categories, and transactions.
+            This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <Field>

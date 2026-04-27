@@ -120,10 +120,7 @@ export function TransactionFilterSheet({
 
             <Field>
               <FieldLabel>Type</FieldLabel>
-              <Select
-                name="type"
-                defaultValue={filters.type ?? "__all__"}
-              >
+              <Select name="type" defaultValue={filters.type ?? "__all__"}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

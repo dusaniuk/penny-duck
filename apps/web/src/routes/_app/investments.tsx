@@ -39,7 +39,7 @@ function InvestmentsPage() {
     queryKey: ["accounts"],
   })
   const brokerages: Array<Account> = (accountsData?.body ?? []).filter(
-    (a) => a.type === "brokerage",
+    (a) => a.type === "brokerage"
   )
 
   // Imports bump initial_balance by the deposit total without dedup, so a
@@ -49,10 +49,10 @@ function InvestmentsPage() {
     queryKey: ["trades", "all"],
   })
   const accountIdsWithTrades = new Set(
-    (tradesData?.body ?? []).map((t) => t.accountId),
+    (tradesData?.body ?? []).map((t) => t.accountId)
   )
   const importableAccounts = brokerages.filter(
-    (a) => !accountIdsWithTrades.has(a.id),
+    (a) => !accountIdsWithTrades.has(a.id)
   )
 
   const createMutation = useTradeCreate()

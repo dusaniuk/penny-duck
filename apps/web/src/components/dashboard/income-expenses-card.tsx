@@ -72,11 +72,7 @@ export function IncomeExpensesCard() {
                   cursor={false}
                   content={<ChartTooltipContent indicator="dashed" />}
                 />
-                <Bar
-                  dataKey="income"
-                  fill="var(--color-income)"
-                  radius={4}
-                />
+                <Bar dataKey="income" fill="var(--color-income)" radius={4} />
                 <Bar
                   dataKey="expenses"
                   fill="var(--color-expenses)"

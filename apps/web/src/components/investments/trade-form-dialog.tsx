@@ -128,10 +128,7 @@ export function TradeFormDialog({
         <form onSubmit={handleSubmit}>
           <FieldGroup className="gap-3 pt-2">
             {!isEdit && (
-              <Tabs
-                value={type}
-                onValueChange={(v) => setType(v as TradeType)}
-              >
+              <Tabs value={type} onValueChange={(v) => setType(v as TradeType)}>
                 <TabsList className="w-full">
                   <TabsTrigger
                     value="buy"

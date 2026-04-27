@@ -30,7 +30,7 @@ export function SpendingsCard({
 }: SpendingsCardProps) {
   const { data: transactions, isLoading } = useMonthTransactions(
     CURRENT_YEAR,
-    CURRENT_MONTH,
+    CURRENT_MONTH
   )
   const chartData = transactions
     ? aggregateByCategory(transactions, categories)
@@ -41,9 +41,7 @@ export function SpendingsCard({
       <Card className="h-full transition-colors hover:bg-muted/50">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Spendings</CardTitle>
-          <span className="text-xs text-muted-foreground">
-            {MONTH_LABEL} →
-          </span>
+          <span className="text-xs text-muted-foreground">{MONTH_LABEL} →</span>
         </CardHeader>
         <CardContent>
           {isLoading ? (

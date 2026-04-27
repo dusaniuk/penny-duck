@@ -15,7 +15,7 @@ function getMonthRange(year: number, month: number) {
 
 async function fetchAllTransactions(
   year: number,
-  month: number,
+  month: number
 ): Promise<Array<Transaction>> {
   const { dateFrom, dateTo } = getMonthRange(year, month)
   const all: Array<Transaction> = []

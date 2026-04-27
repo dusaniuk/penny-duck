@@ -19,11 +19,7 @@ function isCurrentMonth(year: number, month: number): boolean {
   return year === now.getFullYear() && month === now.getMonth()
 }
 
-export function MonthNavigator({
-  year,
-  month,
-  onChange,
-}: MonthNavigatorProps) {
+export function MonthNavigator({ year, month, onChange }: MonthNavigatorProps) {
   function goBack() {
     if (month === 0) {
       onChange(year - 1, 11)
@@ -45,12 +41,7 @@ export function MonthNavigator({
 
   return (
     <div className="flex items-center justify-center gap-3">
-      <Button
-        variant="outline"
-        size="icon"
-        className="size-8"
-        onClick={goBack}
-      >
+      <Button variant="outline" size="icon" className="size-8" onClick={goBack}>
         <IconChevronLeft className="size-4" />
       </Button>
       <span className="min-w-32 text-center text-sm font-medium">

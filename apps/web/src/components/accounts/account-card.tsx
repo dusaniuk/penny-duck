@@ -1,4 +1,9 @@
-import { IconDotsVertical, IconEdit, IconStar, IconTrash } from "@tabler/icons-react"
+import {
+  IconDotsVertical,
+  IconEdit,
+  IconStar,
+  IconTrash,
+} from "@tabler/icons-react"
 import { Link } from "@tanstack/react-router"
 import { Badge } from "@workspace/ui/components/badge"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
@@ -55,7 +60,7 @@ export function AccountCard({
               {account.isDefault && (
                 <Badge
                   variant="secondary"
-                  className="text-[10px] uppercase tracking-wide"
+                  className="text-[10px] tracking-wide uppercase"
                 >
                   Default
                 </Badge>

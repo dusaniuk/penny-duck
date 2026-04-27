@@ -48,9 +48,7 @@ export function IbkrImportUploadStep({
             type="file"
             accept=".csv,text/csv"
             multiple
-            onChange={(e) =>
-              setFiles(Array.from(e.currentTarget.files ?? []))
-            }
+            onChange={(e) => setFiles(Array.from(e.currentTarget.files ?? []))}
             required
           />
           {files.length > 0 && (

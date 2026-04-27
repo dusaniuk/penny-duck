@@ -21,7 +21,7 @@ export function BalanceCard({
 }: BalanceCardProps) {
   const totalBalance = accounts.reduce(
     (sum, account) => sum + account.homeBalance,
-    0,
+    0
   )
 
   return (

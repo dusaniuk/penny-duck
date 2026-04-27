@@ -16,7 +16,7 @@ function PublicLayout() {
         </Link>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-        <article className="prose prose-neutral dark:prose-invert max-w-none">
+        <article className="prose max-w-none prose-neutral dark:prose-invert">
           <Outlet />
         </article>
       </main>

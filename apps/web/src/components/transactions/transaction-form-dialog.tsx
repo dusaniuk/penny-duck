@@ -154,7 +154,14 @@ export function TransactionFormDialog({
       setTransferExchangeRate(transaction?.exchangeRate?.toString() ?? "")
       setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
     }
-  }, [open, transaction, defaultType, currentUserId, pairedAccountId, defaultAccountId])
+  }, [
+    open,
+    transaction,
+    defaultType,
+    currentUserId,
+    pairedAccountId,
+    defaultAccountId,
+  ])
 
   useEffect(() => {
     if (

@@ -62,10 +62,10 @@ export function IbkrImportPreviewStep({
 
   const canCommit =
     result.summary.rowErrors === 0 &&
-    (result.summary.tradesToCreate +
+    result.summary.tradesToCreate +
       result.summary.dividendsToCreate +
       result.summary.depositsFound >
-      0)
+      0
 
   return (
     <div className="space-y-4">
@@ -80,8 +80,8 @@ export function IbkrImportPreviewStep({
         <div className="rounded-md border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
           {result.summary.depositsTotalAmount > 0 ? "+" : ""}
           {result.summary.depositsTotalAmount.toFixed(2)} from{" "}
-          {result.summary.depositsFound} deposit/withdrawal row(s) will be
-          added to this account&apos;s starting balance.
+          {result.summary.depositsFound} deposit/withdrawal row(s) will be added
+          to this account&apos;s starting balance.
         </div>
       )}
       {result.parseErrors.length > 0 && (

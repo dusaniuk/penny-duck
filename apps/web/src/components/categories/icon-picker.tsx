@@ -6,12 +6,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover"
-import type {CategoryIcon} from "@/lib/category-icons";
-import {
-  CATEGORY_ICONS,
-  
-  getCategoryIcon
-} from "@/lib/category-icons"
+import type { CategoryIcon } from "@/lib/category-icons"
+import { CATEGORY_ICONS, getCategoryIcon } from "@/lib/category-icons"
 
 interface IconPickerProps {
   value: string | null
@@ -64,7 +60,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
       <PopoverContent className="w-72 p-0" align="start">
         <div className="border-b p-2">
           <div className="relative">
-            <IconSearch className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <IconSearch className="absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -76,7 +72,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         <div className="max-h-64 overflow-y-auto p-2">
           {Object.entries(groups).map(([group, icons]) => (
             <div key={group} className="mb-2 last:mb-0">
-              <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <p className="mb-1 px-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                 {group}
               </p>
               <div className="grid grid-cols-7 gap-0.5">

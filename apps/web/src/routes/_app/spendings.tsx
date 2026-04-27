@@ -2,7 +2,12 @@ import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconX } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
-import type { Account, Category, Member, Transaction } from "@workspace/api-contract"
+import type {
+  Account,
+  Category,
+  Member,
+  Transaction,
+} from "@workspace/api-contract"
 import { queryClient, tsr } from "@/lib/api"
 import { MonthNavigator } from "@/components/spendings/month-navigator"
 import { SpendingsDonutChart } from "@/components/spendings/spendings-donut-chart"
@@ -26,7 +31,7 @@ function SpendingsPage() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(
-    null,
+    null
   )
   const [deleteTransaction, setDeleteTransaction] =
     useState<Transaction | null>(null)
@@ -66,14 +71,12 @@ function SpendingsPage() {
 
   // Filter transactions for the list
   const expenseTransactions = (transactions ?? []).filter(
-    (t) => t.type === "expense" && !t.transferId && !t.reimbursementId,
+    (t) => t.type === "expense" && !t.transferId && !t.reimbursementId
   )
 
   // Category IDs shown as their own slice (not grouped into "Other")
   const mainCategoryIds = new Set(
-    chartData
-      .filter((d) => d.categoryId !== "other")
-      .map((d) => d.categoryId),
+    chartData.filter((d) => d.categoryId !== "other").map((d) => d.categoryId)
   )
 
   const filteredTransactions = activeCategoryId
@@ -82,14 +85,13 @@ function SpendingsPage() {
           // Show transactions from all small categories grouped into "Other"
           return !mainCategoryIds.has(t.categoryId ?? "uncategorized")
         }
-        if (activeCategoryId === "uncategorized")
-          return t.categoryId === null
+        if (activeCategoryId === "uncategorized") return t.categoryId === null
         return t.categoryId === activeCategoryId
       })
     : expenseTransactions
 
   const activeCategoryName = chartData.find(
-    (d) => d.categoryId === activeCategoryId,
+    (d) => d.categoryId === activeCategoryId
   )?.categoryName
 
   function handleMonthChange(newYear: number, newMonth: number) {
@@ -124,11 +126,7 @@ function SpendingsPage() {
 
   return (
     <div className="space-y-6">
-      <MonthNavigator
-        year={year}
-        month={month}
-        onChange={handleMonthChange}
-      />
+      <MonthNavigator year={year} month={month} onChange={handleMonthChange} />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -186,7 +184,7 @@ function SpendingsPage() {
               className="size-2 rounded-full"
               style={{
                 backgroundColor: chartData.find(
-                  (d) => d.categoryId === activeCategoryId,
+                  (d) => d.categoryId === activeCategoryId
                 )?.fill,
               }}
             />

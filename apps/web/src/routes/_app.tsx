@@ -58,7 +58,7 @@ function AppLayout() {
   const crumbs = matches.filter(
     (m) =>
       m.staticData.breadcrumb ||
-      (m.loaderData as Record<string, unknown> | undefined)?.crumb,
+      (m.loaderData as Record<string, unknown> | undefined)?.crumb
   )
 
   return (
