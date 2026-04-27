@@ -104,17 +104,20 @@ export function TransactionFormDialog({
       : transaction.type
     : type
 
-  // Category hierarchy (expense/income only)
-  const parents = categories.filter((c) => c.parentId === null)
-  const childrenByParent = categories.reduce<Record<string, Array<Category>>>(
-    (acc, c) => {
-      if (c.parentId !== null) {
-        acc[c.parentId] = [...(acc[c.parentId] ?? []), c]
-      }
-      return acc
-    },
-    {}
-  )
+  // Category hierarchy (expense/income only, filtered to active type)
+  const typedCategories =
+    activeType === "transfer"
+      ? []
+      : categories.filter((c) => c.type === activeType)
+  const parents = typedCategories.filter((c) => c.parentId === null)
+  const childrenByParent = typedCategories.reduce<
+    Record<string, Array<Category>>
+  >((acc, c) => {
+    if (c.parentId !== null) {
+      acc[c.parentId] = [...(acc[c.parentId] ?? []), c]
+    }
+    return acc
+  }, {})
 
   // Transfer exchange rate logic
   const fromAccount = accounts.find((a) => a.id === fromAccountId)
@@ -245,7 +248,10 @@ export function TransactionFormDialog({
             {!isEdit && (
               <Tabs
                 value={type}
-                onValueChange={(v) => setType(v as TransactionType)}
+                onValueChange={(v) => {
+                  setType(v as TransactionType)
+                  setCategoryId("")
+                }}
               >
                 <TabsList className="w-full">
                   <TabsTrigger
