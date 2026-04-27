@@ -15,6 +15,7 @@ export interface ListTransactionsFilters {
   type?: string
   categoryId?: string
   settled?: boolean
+  uncategorized?: boolean
   transfer?: boolean
   dateFrom?: Date
   dateTo?: Date
@@ -205,6 +206,10 @@ export class TransactionRepository {
       conditions.push(eq(transactions.categoryId, filters.categoryId))
     if (filters.settled !== undefined)
       conditions.push(eq(transactions.settled, filters.settled))
+    if (filters.uncategorized === true) {
+      conditions.push(isNull(transactions.categoryId))
+      conditions.push(isNull(transactions.transferId))
+    }
     if (filters.accountId) {
       // Reimbursement transfers come as a sign-opposite pair: a negative
       // bookkeeping entry on the original expense account and a positive

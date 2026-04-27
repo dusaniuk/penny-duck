@@ -67,6 +67,9 @@ export const ListTransactionsQuerySchema = z.object({
   settled: z
     .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())
     .optional(),
+  uncategorized: z
+    .preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean())
+    .optional(),
   dateFrom: z.string().datetime({ offset: true }).optional(),
   dateTo: z.string().datetime({ offset: true }).optional(),
   page: z.coerce.number().int().min(1).optional(),

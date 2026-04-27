@@ -23,6 +23,7 @@ interface TransactionFilters {
   type?: string
   categoryId?: string
   settled?: boolean
+  uncategorized?: boolean
   dateFrom?: string
   dateTo?: string
   madeById?: string
@@ -66,6 +67,7 @@ function TransactionsPage() {
         type: filters.type as "expense" | "income" | undefined,
         categoryId: filters.categoryId,
         settled: filters.settled,
+        uncategorized: filters.uncategorized,
         dateFrom: filters.dateFrom
           ? new Date(filters.dateFrom).toISOString()
           : undefined,
@@ -85,6 +87,12 @@ function TransactionsPage() {
     queryData: { query: { settled: false, limit: 1 } },
   })
   const unsettledCount = unsettledData?.body.total ?? 0
+
+  const { data: uncategorizedData } = tsr.transactions.list.useQuery({
+    queryKey: ["transactions", "uncategorized-count"],
+    queryData: { query: { uncategorized: true, limit: 1 } },
+  })
+  const uncategorizedCount = uncategorizedData?.body.total ?? 0
 
   const { data: accountsData } = tsr.accounts.list.useQuery({
     queryKey: ["accounts"],
@@ -250,6 +258,19 @@ function TransactionsPage() {
     setPage(1)
   }
 
+  function handleToggleUncategorized() {
+    if (filters.uncategorized === true) {
+      setFilters((prev) => {
+        const { uncategorized: _, ...rest } = prev
+        return rest
+      })
+    } else {
+      setFilters((prev) => ({ ...prev, uncategorized: true }))
+    }
+    setExtraTransactions([])
+    setPage(1)
+  }
+
   const activeFilterBadges: Array<{ key: string; label: string }> = []
   if (filters.accountId) {
     const acc = accounts.find((a) => a.id === filters.accountId)
@@ -319,6 +340,19 @@ function TransactionsPage() {
               }`}
             >
               ⚠ Unsettled ({unsettledCount})
+            </button>
+          )}
+          {uncategorizedCount > 0 && (
+            <button
+              type="button"
+              onClick={handleToggleUncategorized}
+              className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
+                filters.uncategorized === true
+                  ? "border-rose-400 bg-rose-400/20 text-rose-400"
+                  : "border-rose-400/50 text-rose-400 hover:bg-rose-400/10"
+              }`}
+            >
+              ⚠ Uncategorized ({uncategorizedCount})
             </button>
           )}
           <Button
