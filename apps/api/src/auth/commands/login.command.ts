@@ -1,7 +1,6 @@
-import { randomBytes } from "node:crypto"
 import { UnauthorizedException } from "@nestjs/common"
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
-import * as bcrypt from "bcrypt"
+import { InvalidCredentialsError, login, type LoginResult } from "../core/auth"
 import { UserRepository } from "../user.repository"
 import { RefreshTokenRepository } from "../refresh-token.repository"
 import { OrganizationRepository } from "../../organizations/organization.repository"
@@ -13,11 +12,7 @@ export class LoginCommand {
   ) {}
 }
 
-export interface LoginResult {
-  user: { id: string; email: string; name: string }
-  accessToken: { sub: string; email: string; organizationId: string }
-  refreshToken: string
-}
+export type { LoginResult }
 
 @CommandHandler(LoginCommand)
 export class LoginHandler implements ICommandHandler<LoginCommand> {
@@ -28,27 +23,19 @@ export class LoginHandler implements ICommandHandler<LoginCommand> {
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
-    const user = await this.userRepo.findByEmail(
-      command.email.toLowerCase().trim()
-    )
-    if (!user) throw new UnauthorizedException("Invalid email or password")
-
-    const valid = await bcrypt.compare(command.password, user.passwordHash)
-    if (!valid) throw new UnauthorizedException("Invalid email or password")
-
-    const org = await this.orgRepo.findByUserId(user.id)
-    if (!org) throw new UnauthorizedException("Invalid email or password")
-
-    const token = randomBytes(48).toString("base64url")
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
-
-    await this.tokenRepo.insert({ userId: user.id, token, expiresAt })
-
-    return {
-      user: { id: user.id, email: user.email, name: user.name },
-      accessToken: { sub: user.id, email: user.email, organizationId: org.id },
-      refreshToken: token,
+    try {
+      return await login(command.email, command.password, {
+        findUserByEmail: (email) => this.userRepo.findByEmail(email),
+        findOrgByUserId: (userId) => this.orgRepo.findByUserId(userId),
+        insertRefreshToken: async (data) => {
+          await this.tokenRepo.insert(data)
+        },
+      })
+    } catch (err) {
+      if (err instanceof InvalidCredentialsError) {
+        throw new UnauthorizedException(err.message)
+      }
+      throw err
     }
   }
 }

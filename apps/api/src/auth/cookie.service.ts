@@ -1,31 +1,30 @@
 import { Injectable } from "@nestjs/common"
 import { Response } from "express"
-import { isProduction } from "@workspace/env/api"
+import {
+  ACCESS_TOKEN_COOKIE,
+  COOKIE_PATH,
+  REFRESH_TOKEN_COOKIE,
+  accessTokenCookie,
+  refreshTokenCookie,
+  type CookieSpec,
+} from "./core/cookies"
+
+function applySpec(res: Response, spec: CookieSpec): void {
+  res.cookie(spec.name, spec.value, spec.options)
+}
 
 @Injectable()
 export class CookieService {
   setAccessToken(res: Response, token: string): void {
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 15 * 60 * 1000,
-    })
+    applySpec(res, accessTokenCookie(token))
   }
 
   setRefreshToken(res: Response, token: string): void {
-    res.cookie("refresh_token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
+    applySpec(res, refreshTokenCookie(token))
   }
 
   clearTokens(res: Response): void {
-    res.clearCookie("access_token", { path: "/" })
-    res.clearCookie("refresh_token", { path: "/" })
+    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: COOKIE_PATH })
+    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: COOKIE_PATH })
   }
 }

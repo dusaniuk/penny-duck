@@ -5,25 +5,27 @@ import {
   UnauthorizedException,
 } from "@nestjs/common"
 import { Request } from "express"
-import { JwtService } from "./jwt.service"
+import { env } from "@workspace/env/api"
+import {
+  verifyAccessToken,
+  type AccessTokenPayload,
+} from "./core/jwt"
+import { ACCESS_TOKEN_COOKIE } from "./core/cookies"
+
+type AuthenticatedRequest = Request & { user?: AccessTokenPayload }
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
-
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>()
-    const token = request.cookies?.access_token
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
+    const token = request.cookies?.[ACCESS_TOKEN_COOKIE]
 
     if (!token) throw new UnauthorizedException()
 
-    try {
-      const payload = this.jwtService.verify(token)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(request as any)["user"] = payload
-      return true
-    } catch {
-      throw new UnauthorizedException()
-    }
+    const payload = verifyAccessToken(token, env.JWT_SECRET)
+    if (!payload) throw new UnauthorizedException()
+
+    request.user = payload
+    return true
   }
 }

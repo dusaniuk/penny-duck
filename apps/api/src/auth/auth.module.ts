@@ -1,7 +1,5 @@
 import { Module } from "@nestjs/common"
 import { CqrsModule } from "@nestjs/cqrs"
-import { JwtModule } from "@nestjs/jwt"
-import { env } from "@workspace/env/api"
 import { DatabaseModule } from "@/database/database.module"
 import { OrganizationsModule } from "../organizations/organizations.module"
 
@@ -14,7 +12,6 @@ import { GetInviteHandler } from "./queries/get-invite.query"
 
 import { UserRepository } from "./user.repository"
 import { RefreshTokenRepository } from "./refresh-token.repository"
-import { JwtService } from "./jwt.service"
 import { CookieService } from "./cookie.service"
 import { TokenCleanupService } from "./token-cleanup.service"
 
@@ -31,28 +28,17 @@ const commandHandlers = [
 const queryHandlers = [GetInviteHandler]
 
 @Module({
-  imports: [
-    DatabaseModule,
-    CqrsModule,
-    OrganizationsModule,
-    JwtModule.register({
-      secret: env.JWT_SECRET,
-      signOptions: {
-        expiresIn: env.JWT_EXPIRATION as import("ms").StringValue,
-      },
-    }),
-  ],
+  imports: [DatabaseModule, CqrsModule, OrganizationsModule],
   controllers: [AuthController],
   providers: [
     ...commandHandlers,
     ...queryHandlers,
     UserRepository,
     RefreshTokenRepository,
-    JwtService,
     CookieService,
     TokenCleanupService,
     AuthGuard,
   ],
-  exports: [AuthGuard, JwtService, CookieService],
+  exports: [AuthGuard, CookieService],
 })
 export class AuthModule {}

@@ -1,6 +1,10 @@
-import { randomBytes } from "node:crypto"
 import { UnauthorizedException } from "@nestjs/common"
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import {
+  InvalidRefreshTokenError,
+  rotateRefreshToken,
+  type RotateRefreshTokenResult,
+} from "../core/auth"
 import { RefreshTokenRepository } from "../refresh-token.repository"
 import { UserRepository } from "../user.repository"
 import { OrganizationRepository } from "../../organizations/organization.repository"
@@ -9,10 +13,7 @@ export class RefreshTokensCommand {
   constructor(public readonly rawRefreshToken: string) {}
 }
 
-export interface RefreshTokensResult {
-  accessToken: { sub: string; email: string; organizationId: string }
-  refreshToken: string
-}
+export type RefreshTokensResult = RotateRefreshTokenResult
 
 @CommandHandler(RefreshTokensCommand)
 export class RefreshTokensHandler
@@ -27,40 +28,21 @@ export class RefreshTokensHandler
   async execute(
     command: RefreshTokensCommand
   ): Promise<RefreshTokensResult> {
-    const existing = await this.tokenRepo.findByToken(
-      command.rawRefreshToken
-    )
-
-    if (!existing || existing.expiresAt < new Date()) {
-      throw new UnauthorizedException("Invalid token")
-    }
-
-    // Delete old token and issue new one
-    await this.tokenRepo.deleteByToken(command.rawRefreshToken)
-
-    const newToken = randomBytes(48).toString("base64url")
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
-
-    await this.tokenRepo.insert({
-      userId: existing.userId,
-      token: newToken,
-      expiresAt,
-    })
-
-    const user = await this.userRepo.findById(existing.userId)
-    if (!user) throw new UnauthorizedException("Invalid token")
-
-    const org = await this.orgRepo.findByUserId(existing.userId)
-    if (!org) throw new UnauthorizedException("Invalid token")
-
-    return {
-      accessToken: {
-        sub: existing.userId,
-        email: user.email,
-        organizationId: org.id,
-      },
-      refreshToken: newToken,
+    try {
+      return await rotateRefreshToken(command.rawRefreshToken, {
+        findRefreshToken: (token) => this.tokenRepo.findByToken(token),
+        deleteRefreshToken: (token) => this.tokenRepo.deleteByToken(token),
+        insertRefreshToken: async (data) => {
+          await this.tokenRepo.insert(data)
+        },
+        findUserById: (id) => this.userRepo.findById(id),
+        findOrgByUserId: (userId) => this.orgRepo.findByUserId(userId),
+      })
+    } catch (err) {
+      if (err instanceof InvalidRefreshTokenError) {
+        throw new UnauthorizedException(err.message)
+      }
+      throw err
     }
   }
 }

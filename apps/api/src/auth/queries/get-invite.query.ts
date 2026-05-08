@@ -1,4 +1,5 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs"
+import { getInvite } from "../core/auth"
 import { OrganizationRepository } from "../../organizations/organization.repository"
 
 export class GetInviteQuery {
@@ -13,9 +14,9 @@ export interface GetInviteResult {
 export class GetInviteHandler implements IQueryHandler<GetInviteQuery> {
   constructor(private readonly orgRepo: OrganizationRepository) {}
 
-  async execute(query: GetInviteQuery): Promise<GetInviteResult | null> {
-    const org = await this.orgRepo.findByInviteCode(query.code)
-    if (!org) return null
-    return { organizationName: org.name }
+  execute(query: GetInviteQuery): Promise<GetInviteResult | null> {
+    return getInvite(query.code, {
+      findOrgByInviteCode: (code) => this.orgRepo.findByInviteCode(code),
+    })
   }
 }

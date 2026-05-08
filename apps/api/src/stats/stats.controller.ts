@@ -4,7 +4,7 @@ import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { statsContract } from "@workspace/api-contract"
 import { AuthGuard } from "@/auth/auth.guard"
 import { CurrentOrg, CurrentUser } from "@/auth/auth.decorator"
-import type { AccessTokenPayload } from "@/auth/jwt.service"
+import type { AccessTokenPayload } from "@/auth/core/jwt"
 import { UserRepository } from "@/users/user.repository"
 import { GetMonthlySummaryQuery } from "./queries/get-monthly-summary.query"
 

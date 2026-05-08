@@ -1,6 +1,6 @@
 import { BadRequestException } from "@nestjs/common"
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
-import * as bcrypt from "bcrypt"
+import { WeakPasswordError, signup } from "../core/auth"
 import { UserRepository } from "../user.repository"
 import { OrganizationRepository } from "../../organizations/organization.repository"
 import { UserRegisteredEvent } from "../events/user-registered.event"
@@ -18,6 +18,8 @@ export interface SignupResult {
   message: string
 }
 
+const GENERIC_SUCCESS: SignupResult = { message: "Account created successfully" }
+
 @CommandHandler(SignupCommand)
 export class SignupHandler implements ICommandHandler<SignupCommand> {
   constructor(
@@ -27,48 +29,38 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
   ) {}
 
   async execute(command: SignupCommand): Promise<SignupResult> {
-    const existing = await this.userRepo.findByEmail(
-      command.email.toLowerCase().trim()
-    )
-    if (existing) return { message: "Account created successfully" }
-
-    let targetOrg: { id: string } | null = null
-    if (command.inviteCode) {
-      targetOrg = await this.orgRepo.findByInviteCode(command.inviteCode)
-      if (!targetOrg) return { message: "Account created successfully" }
-    }
-
-    if (command.password.length < 8) {
-      throw new BadRequestException("Password must be at least 8 characters")
-    }
-    if (command.password.length > 128) {
-      throw new BadRequestException("Password must be at most 128 characters")
-    }
-
-    const passwordHash = await bcrypt.hash(command.password, 12)
-    const user = await this.userRepo.insert({
-      email: command.email.trim().toLowerCase(),
-      name: command.name,
-      passwordHash,
-      agreedToTermsAt: new Date(),
-    })
-
-    let orgId: string
-    if (targetOrg) {
-      await this.orgRepo.addMember(targetOrg.id, user.id)
-      orgId = targetOrg.id
-    } else {
-      const org = await this.orgRepo.createWithOwner(
-        `${user.name}'s Space`,
-        user.id
+    let result
+    try {
+      result = await signup(
+        {
+          name: command.name,
+          email: command.email,
+          password: command.password,
+          inviteCode: command.inviteCode,
+        },
+        {
+          findUserByEmail: (email) => this.userRepo.findByEmail(email),
+          findOrgByInviteCode: (code) => this.orgRepo.findByInviteCode(code),
+          insertUser: (data) => this.userRepo.insert(data),
+          addOrgMember: (orgId, userId) =>
+            this.orgRepo.addMember(orgId, userId),
+          createOrgWithOwner: (name, userId) =>
+            this.orgRepo.createWithOwner(name, userId),
+        }
       )
-      orgId = org.id
+    } catch (err) {
+      if (err instanceof WeakPasswordError) {
+        throw new BadRequestException(err.message)
+      }
+      throw err
     }
 
-    this.eventBus.publish(
-      new UserRegisteredEvent(user.id, user.email, orgId)
-    )
+    if (result) {
+      this.eventBus.publish(
+        new UserRegisteredEvent(result.userId, result.email, result.organizationId)
+      )
+    }
 
-    return { message: "Account created successfully" }
+    return GENERIC_SUCCESS
   }
 }

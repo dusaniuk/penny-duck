@@ -4,7 +4,7 @@ import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { exchangeRateContract } from "@workspace/api-contract"
 import { AuthGuard } from "../auth/auth.guard"
 import { CurrentOrg, CurrentUser } from "../auth/auth.decorator"
-import type { AccessTokenPayload } from "../auth/jwt.service"
+import type { AccessTokenPayload } from "../auth/core/jwt"
 import { GetLatestRatesQuery } from "./queries/get-latest-rates.query"
 
 @Controller()

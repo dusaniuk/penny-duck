@@ -8,7 +8,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { Throttle } from "@nestjs/throttler"
 import { TsRestHandler, tsRestHandler } from "@ts-rest/nest"
 import { Response } from "express"
-import { isProduction } from "@workspace/env/api"
+import { env, isProduction } from "@workspace/env/api"
 import { authContract } from "@workspace/api-contract"
 import { LoginCommand } from "./commands/login.command"
 import { LogoutCommand } from "./commands/logout.command"
@@ -17,8 +17,8 @@ import { SignupCommand } from "./commands/signup.command"
 import { GenerateInviteCodeCommand } from "./commands/generate-invite-code.command"
 import { GetInviteQuery } from "./queries/get-invite.query"
 import { CookieService } from "./cookie.service"
-import { JwtService } from "./jwt.service"
-import type { AccessTokenPayload } from "./jwt.service"
+import { signAccessToken, type AccessTokenPayload } from "./core/jwt"
+import { REFRESH_TOKEN_COOKIE } from "./core/cookies"
 import { AuthGuard } from "./auth.guard"
 import { CurrentUser, CurrentOrg } from "./auth.decorator"
 
@@ -27,7 +27,6 @@ export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly jwtService: JwtService,
     private readonly cookieService: CookieService
   ) {}
 
@@ -54,7 +53,11 @@ export class AuthController {
         new LoginCommand(body.email, body.password)
       )
 
-      const accessJwt = this.jwtService.sign(result.accessToken)
+      const accessJwt = signAccessToken(
+        result.accessToken,
+        env.JWT_SECRET,
+        env.JWT_EXPIRATION
+      )
       this.cookieService.setAccessToken(res, accessJwt)
       this.cookieService.setRefreshToken(res, result.refreshToken)
 
@@ -66,7 +69,7 @@ export class AuthController {
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   handleRefresh(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.refresh, async () => {
-      const rawToken = res.req.cookies?.refresh_token
+      const rawToken = res.req.cookies?.[REFRESH_TOKEN_COOKIE]
       if (!rawToken) {
         this.cookieService.clearTokens(res)
         throw new UnauthorizedException("No refresh token")
@@ -76,7 +79,11 @@ export class AuthController {
         new RefreshTokensCommand(rawToken)
       )
 
-      const accessJwt = this.jwtService.sign(result.accessToken)
+      const accessJwt = signAccessToken(
+        result.accessToken,
+        env.JWT_SECRET,
+        env.JWT_EXPIRATION
+      )
       this.cookieService.setAccessToken(res, accessJwt)
       this.cookieService.setRefreshToken(res, result.refreshToken)
 
@@ -87,7 +94,7 @@ export class AuthController {
   @TsRestHandler(authContract.logout)
   handleLogout(@Res({ passthrough: true }) res: Response) {
     return tsRestHandler(authContract.logout, async () => {
-      const rawToken = res.req.cookies?.refresh_token
+      const rawToken = res.req.cookies?.[REFRESH_TOKEN_COOKIE]
       this.cookieService.clearTokens(res)
 
       if (rawToken) {
