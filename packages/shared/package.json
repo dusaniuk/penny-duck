@@ -7,15 +7,22 @@
     "build": "tsup"
   },
   "tsup": {
-    "entry": ["src/currencies.ts"],
+    "entry": ["src/currencies.ts", "src/errors.ts"],
     "format": ["esm"],
     "dts": false,
     "sourcemap": true
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
   },
   "exports": {
     "./currencies": {
       "node": "./dist/currencies.js",
       "default": "./src/currencies.ts"
+    },
+    "./errors": {
+      "node": "./dist/errors.js",
+      "default": "./src/errors.ts"
     }
   }
 }
