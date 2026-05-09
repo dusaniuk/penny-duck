@@ -1,18 +1,19 @@
-import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { CommandBus } from "@nestjs/cqrs"
 import {
-  createTestApp,
   closeTestApp,
-  truncateAll,
-  signupUser,
+  createTestApp,
   flushEvents,
-} from "../test/setup"
-import { CreateAccountCommand } from "../accounts/commands/create-account.command"
-import { CreateTransactionCommand } from "../transactions/commands/create-transaction.command"
-import { CreateTransferCommand } from "../transactions/commands/create-transfer.command"
-import { GetMonthlySummaryQuery } from "./queries/get-monthly-summary.query"
+  signupUser,
+  truncateAll,
+} from "@/test/setup"
+import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
+import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
+import { CreateTransferCommand } from "@/transactions/commands/create-transfer.command"
+import { GetCategoriesQuery } from "@/categories/queries/get-categories.query"
+import { getMonthlySummary } from "./service"
 
 let commandBus: CommandBus
-let queryBus: QueryBus
+let queryBus: import("@nestjs/cqrs").QueryBus
 let organizationId: string
 let userId: string
 
@@ -32,11 +33,9 @@ beforeEach(async () => {
   await flushEvents()
 })
 
-describe("Stats - Monthly Summary", () => {
-  it("returns zero-filled months when no transactions exist", async () => {
-    const result = await queryBus.execute(
-      new GetMonthlySummaryQuery(organizationId, "UAH", 6),
-    )
+describe("getMonthlySummary", () => {
+  it("zero-fills months when no transactions exist", async () => {
+    const result = await getMonthlySummary(organizationId, "UAH", 6)
 
     expect(result).toHaveLength(6)
     for (const item of result) {
@@ -46,15 +45,12 @@ describe("Stats - Monthly Summary", () => {
     }
   })
 
-  it("aggregates income and expenses for current month", async () => {
+  it("aggregates income and expenses for the current month", async () => {
     const account = await commandBus.execute(
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
     )
-
     const categories = await queryBus.execute(
-      new (
-        await import("../categories/queries/get-categories.query")
-      ).GetCategoriesQuery(organizationId),
+      new GetCategoriesQuery(organizationId),
     )
     const categoryId = categories[0].id
 
@@ -69,7 +65,6 @@ describe("Stats - Monthly Summary", () => {
         madeById: userId,
       }),
     )
-
     await commandBus.execute(
       new CreateTransactionCommand({
         organizationId,
@@ -82,16 +77,13 @@ describe("Stats - Monthly Summary", () => {
       }),
     )
 
-    const result = await queryBus.execute(
-      new GetMonthlySummaryQuery(organizationId, "UAH", 6),
-    )
-
+    const result = await getMonthlySummary(organizationId, "UAH", 6)
     const currentMonth = result[result.length - 1]
     expect(currentMonth.income).toBe(500)
     expect(currentMonth.expenses).toBe(150)
   })
 
-  it("excludes transfers from summary", async () => {
+  it("excludes transfers from the summary", async () => {
     const account1 = await commandBus.execute(
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
     )
@@ -110,20 +102,14 @@ describe("Stats - Monthly Summary", () => {
       }),
     )
 
-    const result = await queryBus.execute(
-      new GetMonthlySummaryQuery(organizationId, "UAH", 6),
-    )
-
+    const result = await getMonthlySummary(organizationId, "UAH", 6)
     const currentMonth = result[result.length - 1]
     expect(currentMonth.income).toBe(0)
     expect(currentMonth.expenses).toBe(0)
   })
 
-  it("returns correct number of months", async () => {
-    const result = await queryBus.execute(
-      new GetMonthlySummaryQuery(organizationId, "UAH", 12),
-    )
-
+  it("returns the requested number of months", async () => {
+    const result = await getMonthlySummary(organizationId, "UAH", 12)
     expect(result).toHaveLength(12)
   })
 })

@@ -1,1 +1,1 @@
-export const MIGRATED_PREFIXES: readonly string[] = ["/exchange-rates"]
+export const MIGRATED_PREFIXES: readonly string[] = ["/exchange-rates", "/stats"]

@@ -10,7 +10,6 @@ import { CategoriesModule } from "./categories/categories.module"
 import { TransactionsModule } from "./transactions/transactions.module"
 import { ExchangeRatesModule } from "./exchange-rates/exchange-rates.module"
 import { InvestmentsModule } from "./investments/investments.module"
-import { StatsModule } from "./stats/stats.module"
 import { UsersModule } from "./users/users.module"
 import { AppController } from "./app.controller"
 import { AppService } from "./app.service"
@@ -29,7 +28,6 @@ const throttleLimit = isProduction ? 100 : 10_000
     TransactionsModule,
     ExchangeRatesModule,
     InvestmentsModule,
-    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

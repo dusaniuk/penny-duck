@@ -8,6 +8,7 @@ import {
   type ApiError,
 } from "@workspace/shared/errors"
 import { exchangeRatesRoutes } from "@/hono/modules/exchange-rates/routes"
+import { statsRoutes } from "@/hono/modules/stats/routes"
 
 type StatusForJson = Parameters<Context["json"]>[1]
 
@@ -52,3 +53,4 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 export const honoApp = attachErrorHandlers(new Hono())
 
 honoApp.route("/exchange-rates", exchangeRatesRoutes)
+honoApp.route("/stats", statsRoutes)
