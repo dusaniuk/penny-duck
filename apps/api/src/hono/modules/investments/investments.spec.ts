@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { CommandBus, QueryBus } from "@nestjs/cqrs"
+import { CommandBus } from "@nestjs/cqrs"
 import { eq } from "drizzle-orm"
 import {
   vi,
@@ -17,8 +17,10 @@ import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
-import { DeleteAccountCommand } from "@/accounts/commands/delete-account.command"
-import { GetAccountsQuery } from "@/accounts/queries/get-accounts.query"
+import {
+  deleteAccount,
+  listAccounts,
+} from "@/hono/modules/accounts/service"
 import {
   closeTestApp,
   createTestApp,
@@ -43,7 +45,6 @@ vi.mock("yahoo-finance2", () => ({
 }))
 
 let commandBus: CommandBus
-let queryBus: QueryBus
 let db: DbClient
 let cookie: string
 let organizationId: string
@@ -56,7 +57,6 @@ function cookieHeader(jwt: string): string {
 beforeAll(async () => {
   const ctx = await createTestApp()
   commandBus = ctx.commandBus
-  queryBus = ctx.queryBus
   db = ctx.db
 })
 
@@ -272,9 +272,7 @@ describe("POST /trades", () => {
       amount: 4.25,
       date: "2026-02-01T00:00:00Z",
     })
-    const accountsList = await queryBus.execute(
-      new GetAccountsQuery(organizationId, userId)
-    )
+    const accountsList = await listAccounts(organizationId, userId)
     const broker = accountsList.find(
       (a: { id: string }) => a.id === account.id
     )
@@ -607,9 +605,7 @@ describe("Cross-module: DeleteAccount uses inlined trade query", () => {
       date: "2026-04-01T00:00:00Z",
     })
     await expect(
-      commandBus.execute(
-        new DeleteAccountCommand(account.id, organizationId, userId)
-      )
+      deleteAccount(account.id, organizationId, userId),
     ).rejects.toThrow(/position/i)
   })
 })
