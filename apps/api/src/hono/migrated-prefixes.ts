@@ -7,4 +7,5 @@ export const MIGRATED_PREFIXES: readonly string[] = [
   "/trades",
   "/investments",
   "/categories",
+  "/transactions",
 ]

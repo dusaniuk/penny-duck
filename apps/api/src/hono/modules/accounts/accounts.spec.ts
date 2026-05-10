@@ -13,7 +13,7 @@ import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
 import { listCategories } from "@/hono/modules/categories/service"
-import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
+import { createTransaction } from "@/hono/modules/transactions/service"
 import { GenerateInviteCodeCommand } from "@/auth/commands/generate-invite-code.command"
 import {
   closeTestApp,
@@ -257,17 +257,15 @@ describe("Accounts", () => {
 
     const categories = await listCategories(organizationId)
 
-    await commandBus.execute(
-      new CreateTransactionCommand({
-        organizationId,
-        accountId: account.id,
-        type: "expense",
-        amount: 50,
-        categoryId: categories[0].id,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "expense",
+      amount: 50,
+      categoryId: categories[0].id,
+      date: new Date(),
+      madeById: userId,
+    })
 
     const res = await honoApp.request(`/accounts/${account.id}`, {
       method: "DELETE",

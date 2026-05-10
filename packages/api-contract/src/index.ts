@@ -44,6 +44,7 @@ export {
   ListTransactionsQuerySchema,
   CreateTransferSchema,
   UpdateTransferSchema,
+  CreateReimbursementSchema,
   TransferResponseSchema,
   transactionContract,
 } from "./schemas/transactions"

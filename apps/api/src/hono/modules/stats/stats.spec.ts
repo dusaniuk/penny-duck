@@ -4,7 +4,7 @@ import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
-import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
+import { createTransaction } from "@/hono/modules/transactions/service"
 import { listCategories } from "@/hono/modules/categories/service"
 import {
   closeTestApp,
@@ -94,28 +94,24 @@ describe("GET /stats/monthly-summary", () => {
     const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
-    await commandBus.execute(
-      new CreateTransactionCommand({
-        organizationId,
-        accountId: account.id,
-        type: "income",
-        amount: 500,
-        categoryId,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
-    await commandBus.execute(
-      new CreateTransactionCommand({
-        organizationId,
-        accountId: account.id,
-        type: "expense",
-        amount: 150,
-        categoryId,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "income",
+      amount: 500,
+      categoryId,
+      date: new Date(),
+      madeById: userId,
+    })
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "expense",
+      amount: 150,
+      categoryId,
+      date: new Date(),
+      madeById: userId,
+    })
 
     const res = await honoApp.request("/stats/monthly-summary?months=3", {
       headers: { cookie },

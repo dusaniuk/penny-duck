@@ -6,7 +6,6 @@ import { isProduction } from "@workspace/env/api"
 import { DatabaseModule } from "./database/database.module"
 import { AuthModule } from "./auth/auth.module"
 import { AccountsModule } from "./accounts/accounts.module"
-import { TransactionsModule } from "./transactions/transactions.module"
 import { ExchangeRatesModule } from "./exchange-rates/exchange-rates.module"
 import { UsersModule } from "./users/users.module"
 import { AppController } from "./app.controller"
@@ -22,7 +21,6 @@ const throttleLimit = isProduction ? 100 : 10_000
     AuthModule,
     UsersModule,
     AccountsModule,
-    TransactionsModule,
     ExchangeRatesModule,
   ],
   controllers: [AppController],

@@ -7,8 +7,10 @@ import {
   truncateAll,
 } from "@/test/setup"
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
-import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
-import { CreateTransferCommand } from "@/transactions/commands/create-transfer.command"
+import {
+  createTransaction,
+  createTransfer,
+} from "@/hono/modules/transactions/service"
 import { listCategories } from "@/hono/modules/categories/service"
 import { getMonthlySummary } from "./service"
 
@@ -50,28 +52,24 @@ describe("getMonthlySummary", () => {
     const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
-    await commandBus.execute(
-      new CreateTransactionCommand({
-        organizationId,
-        accountId: account.id,
-        type: "expense",
-        amount: 150,
-        categoryId,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
-    await commandBus.execute(
-      new CreateTransactionCommand({
-        organizationId,
-        accountId: account.id,
-        type: "income",
-        amount: 500,
-        categoryId,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "expense",
+      amount: 150,
+      categoryId,
+      date: new Date(),
+      madeById: userId,
+    })
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "income",
+      amount: 500,
+      categoryId,
+      date: new Date(),
+      madeById: userId,
+    })
 
     const result = await getMonthlySummary(organizationId, "UAH", 6)
     const currentMonth = result[result.length - 1]
@@ -87,16 +85,14 @@ describe("getMonthlySummary", () => {
       new CreateAccountCommand(organizationId, userId, "Cash", "cash", "UAH", 0),
     )
 
-    await commandBus.execute(
-      new CreateTransferCommand({
-        organizationId,
-        fromAccountId: account1.id,
-        toAccountId: account2.id,
-        amount: 200,
-        date: new Date(),
-        madeById: userId,
-      }),
-    )
+    await createTransfer({
+      organizationId,
+      fromAccountId: account1.id,
+      toAccountId: account2.id,
+      amount: 200,
+      date: new Date(),
+      madeById: userId,
+    })
 
     const result = await getMonthlySummary(organizationId, "UAH", 6)
     const currentMonth = result[result.length - 1]
