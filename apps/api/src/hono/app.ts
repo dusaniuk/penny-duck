@@ -7,6 +7,7 @@ import {
   buildValidationError,
   type ApiError,
 } from "@workspace/shared/errors"
+import { categoriesRoutes } from "@/hono/modules/categories/routes"
 import { exchangeRatesRoutes } from "@/hono/modules/exchange-rates/routes"
 import {
   instrumentsRoutes,
@@ -58,6 +59,7 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 
 export const honoApp = attachErrorHandlers(new Hono())
 
+honoApp.route("/categories", categoriesRoutes)
 honoApp.route("/exchange-rates", exchangeRatesRoutes)
 honoApp.route("/stats", statsRoutes)
 honoApp.route("/instruments", instrumentsRoutes)

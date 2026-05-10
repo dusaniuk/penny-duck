@@ -5,7 +5,7 @@ import { signAccessToken } from "@/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
 import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
-import { GetCategoriesQuery } from "@/categories/queries/get-categories.query"
+import { listCategories } from "@/hono/modules/categories/service"
 import {
   closeTestApp,
   createTestApp,
@@ -15,12 +15,10 @@ import {
 } from "@/test/setup"
 
 let commandBus: CommandBus
-let queryBus: import("@nestjs/cqrs").QueryBus
 
 beforeAll(async () => {
   const ctx = await createTestApp()
   commandBus = ctx.commandBus
-  queryBus = ctx.queryBus
 })
 
 afterAll(() => closeTestApp())
@@ -93,9 +91,7 @@ describe("GET /stats/monthly-summary", () => {
     const account = await commandBus.execute(
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
     )
-    const categories = await queryBus.execute(
-      new GetCategoriesQuery(organizationId),
-    )
+    const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
     await commandBus.execute(

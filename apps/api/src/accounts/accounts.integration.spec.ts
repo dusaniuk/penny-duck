@@ -14,6 +14,7 @@ import { GenerateInviteCodeCommand } from "../auth/commands/generate-invite-code
 import { GetAccountsQuery } from "./queries/get-accounts.query"
 import { GetAccountQuery } from "./queries/get-account.query"
 import { CreateTransactionCommand } from "../transactions/commands/create-transaction.command"
+import { listCategories } from "@/hono/modules/categories/service"
 
 let commandBus: CommandBus
 let queryBus: QueryBus
@@ -112,11 +113,7 @@ describe("Accounts", () => {
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 1000)
     )
 
-    const categories = await queryBus.execute(
-      new (
-        await import("../categories/queries/get-categories.query")
-      ).GetCategoriesQuery(organizationId)
-    )
+    const categories = await listCategories(organizationId)
 
     await commandBus.execute(
       new CreateTransactionCommand({

@@ -14,7 +14,7 @@ import { LoginCommand } from "./commands/login.command"
 import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
 import { GenerateInviteCodeCommand } from "./commands/generate-invite-code.command"
-import { GetCategoriesQuery } from "../categories/queries/get-categories.query"
+import { listCategories } from "@/hono/modules/categories/service"
 import { GetInviteQuery } from "./queries/get-invite.query"
 import { GetMembersQuery } from "../users/queries/get-members.query"
 import { OrganizationRepository } from "../organizations/organization.repository"
@@ -59,13 +59,10 @@ describe("Auth", () => {
     expect(result.message).toBe("Account created successfully")
   })
 
-  it("signup seeds default categories via event", async () => {
+  it("signup seeds default categories", async () => {
     const result = await signupUser()
-    await flushEvents()
 
-    const categories = await queryBus.execute(
-      new GetCategoriesQuery(result.accessToken.organizationId)
-    )
+    const categories = await listCategories(result.accessToken.organizationId)
 
     expect(categories.length).toBeGreaterThan(0)
   })

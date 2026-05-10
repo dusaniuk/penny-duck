@@ -9,18 +9,16 @@ import {
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
 import { CreateTransactionCommand } from "@/transactions/commands/create-transaction.command"
 import { CreateTransferCommand } from "@/transactions/commands/create-transfer.command"
-import { GetCategoriesQuery } from "@/categories/queries/get-categories.query"
+import { listCategories } from "@/hono/modules/categories/service"
 import { getMonthlySummary } from "./service"
 
 let commandBus: CommandBus
-let queryBus: import("@nestjs/cqrs").QueryBus
 let organizationId: string
 let userId: string
 
 beforeAll(async () => {
   const ctx = await createTestApp()
   commandBus = ctx.commandBus
-  queryBus = ctx.queryBus
 })
 
 afterAll(() => closeTestApp())
@@ -49,9 +47,7 @@ describe("getMonthlySummary", () => {
     const account = await commandBus.execute(
       new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
     )
-    const categories = await queryBus.execute(
-      new GetCategoriesQuery(organizationId),
-    )
+    const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
     await commandBus.execute(

@@ -49,7 +49,7 @@ test.describe("Categories CRUD", () => {
 
   test("creates a top-level category", async ({ request }) => {
     const res = await request.post("/categories", {
-      data: { name: "Custom Category" },
+      data: { name: "Custom Category", color: "red" },
     })
 
     expect(res.status()).toBe(201)
@@ -130,7 +130,7 @@ test.describe("Categories CRUD", () => {
 
   test("deletes a category", async ({ request }) => {
     const createRes = await request.post("/categories", {
-      data: { name: "To Delete" },
+      data: { name: "To Delete", color: "red" },
     })
     const { id } = await createRes.json()
 
@@ -144,7 +144,7 @@ test.describe("Categories CRUD", () => {
 
     // Create parent
     const parentRes = await request.post("/categories", {
-      data: { name: "Parent To Delete" },
+      data: { name: "Parent To Delete", color: "red" },
     })
     const parent = await parentRes.json()
 

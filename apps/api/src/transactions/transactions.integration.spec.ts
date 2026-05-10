@@ -9,7 +9,7 @@ import {
 } from "../test/setup"
 import { CreateAccountCommand } from "../accounts/commands/create-account.command"
 import { GetAccountQuery } from "../accounts/queries/get-account.query"
-import { GetCategoriesQuery } from "../categories/queries/get-categories.query"
+import { listCategories } from "@/hono/modules/categories/service"
 import { CreateTransactionCommand } from "./commands/create-transaction.command"
 import { UpdateTransactionCommand } from "./commands/update-transaction.command"
 import { DeleteTransactionCommand } from "./commands/delete-transaction.command"
@@ -46,7 +46,7 @@ beforeEach(async () => {
   )
   accountId = account.id
 
-  const categories = await queryBus.execute(new GetCategoriesQuery(organizationId))
+  const categories = await listCategories(organizationId)
   categoryId = categories[0].id
 })
 

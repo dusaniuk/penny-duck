@@ -1,9 +1,9 @@
 import { BadRequestException } from "@nestjs/common"
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs"
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs"
 import { WeakPasswordError, signup } from "../core/auth"
 import { UserRepository } from "../user.repository"
 import { OrganizationRepository } from "../../organizations/organization.repository"
-import { UserRegisteredEvent } from "../events/user-registered.event"
+import { seedDefaultCategories } from "@/hono/modules/categories/service"
 
 export class SignupCommand {
   constructor(
@@ -24,8 +24,7 @@ const GENERIC_SUCCESS: SignupResult = { message: "Account created successfully" 
 export class SignupHandler implements ICommandHandler<SignupCommand> {
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly orgRepo: OrganizationRepository,
-    private readonly eventBus: EventBus
+    private readonly orgRepo: OrganizationRepository
   ) {}
 
   async execute(command: SignupCommand): Promise<SignupResult> {
@@ -56,9 +55,7 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
     }
 
     if (result) {
-      this.eventBus.publish(
-        new UserRegisteredEvent(result.userId, result.email, result.organizationId)
-      )
+      await seedDefaultCategories(result.organizationId)
     }
 
     return GENERIC_SUCCESS
