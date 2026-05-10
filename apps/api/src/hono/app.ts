@@ -18,6 +18,7 @@ import {
 } from "@/hono/modules/investments/routes"
 import { statsRoutes } from "@/hono/modules/stats/routes"
 import { transactionsRoutes } from "@/hono/modules/transactions/routes"
+import { usersRoutes } from "@/hono/modules/users/routes"
 
 type StatusForJson = Parameters<Context["json"]>[1]
 
@@ -70,3 +71,4 @@ honoApp.route("/positions", positionsRoutes)
 honoApp.route("/trades", tradesRoutes)
 honoApp.route("/investments", investmentsRoutes)
 honoApp.route("/transactions", transactionsRoutes)
+honoApp.route("/users", usersRoutes)

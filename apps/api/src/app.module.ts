@@ -7,7 +7,6 @@ import { DatabaseModule } from "./database/database.module"
 import { AuthModule } from "./auth/auth.module"
 import { AccountsModule } from "./accounts/accounts.module"
 import { ExchangeRatesModule } from "./exchange-rates/exchange-rates.module"
-import { UsersModule } from "./users/users.module"
 import { AppController } from "./app.controller"
 import { AppService } from "./app.service"
 
@@ -19,7 +18,6 @@ const throttleLimit = isProduction ? 100 : 10_000
     ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
-    UsersModule,
     AccountsModule,
     ExchangeRatesModule,
   ],

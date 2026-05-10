@@ -15,6 +15,7 @@ export {
 export {
   UserSchema,
   UpdateProfileSchema,
+  DeleteAccountSchema,
   MemberSchema,
   userContract,
 } from "./schemas/users"

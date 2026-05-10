@@ -15,8 +15,8 @@ import { RefreshTokensCommand } from "./commands/refresh-tokens.command"
 import { LogoutCommand } from "./commands/logout.command"
 import { GenerateInviteCodeCommand } from "./commands/generate-invite-code.command"
 import { listCategories } from "@/hono/modules/categories/service"
+import { listMembersForOrganization } from "@/hono/modules/organizations/service"
 import { GetInviteQuery } from "./queries/get-invite.query"
-import { GetMembersQuery } from "../users/queries/get-members.query"
 import { OrganizationRepository } from "../organizations/organization.repository"
 
 let commandBus: CommandBus
@@ -174,12 +174,12 @@ describe("Auth", () => {
 
       await orgRepo.addMember(org!.id, newUserLogin.accessToken.sub)
 
-      const members = await queryBus.execute(new GetMembersQuery(org!.id))
+      const members = await listMembersForOrganization(org!.id)
       const newMember = members.find(
-        (m: { id: string }) => m.id === newUserLogin.accessToken.sub
+        (m) => m.id === newUserLogin.accessToken.sub
       )
       expect(newMember).toBeDefined()
-      expect(newMember.role).toBe("member")
+      expect(newMember!.role).toBe("member")
     })
 
     it("GetInviteQuery returns org name for valid code", async () => {
