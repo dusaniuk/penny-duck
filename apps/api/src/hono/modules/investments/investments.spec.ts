@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { CommandBus } from "@nestjs/cqrs"
 import { eq } from "drizzle-orm"
 import {
   vi,
@@ -16,8 +15,8 @@ import { env } from "@workspace/env/api"
 import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/hono/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
-import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
 import {
+  createAccount,
   deleteAccount,
   listAccounts,
 } from "@/hono/modules/accounts/service"
@@ -44,7 +43,6 @@ vi.mock("yahoo-finance2", () => ({
   },
 }))
 
-let commandBus: CommandBus
 let db: DbClient
 let cookie: string
 let organizationId: string
@@ -56,7 +54,6 @@ function cookieHeader(jwt: string): string {
 
 beforeAll(async () => {
   const ctx = await createTestApp()
-  commandBus = ctx.commandBus
   db = ctx.db
 })
 
@@ -87,16 +84,14 @@ beforeEach(async () => {
 })
 
 async function makeBrokerage(currency = "USD", initial = 10_000) {
-  return commandBus.execute(
-    new CreateAccountCommand(
-      organizationId,
-      userId,
-      `IBKR ${currency}`,
-      "brokerage",
-      currency,
-      initial
-    )
-  )
+  return createAccount({
+    organizationId,
+    userId,
+    name: `IBKR ${currency}`,
+    type: "brokerage",
+    currency,
+    balance: initial,
+  })
 }
 
 async function postTrade(body: Record<string, unknown>) {
@@ -174,9 +169,14 @@ describe("POST /trades", () => {
   })
 
   it("rejects trade on non-brokerage account with 400", async () => {
-    const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "USD", 1000)
-    )
+    const account = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "USD",
+      balance: 1000,
+    })
     const res = await postTrade({
       accountId: account.id,
       symbol: "AAPL",

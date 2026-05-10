@@ -1,7 +1,9 @@
 import { Hono } from "hono"
 import type { Context } from "hono"
+import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import { ZodError } from "zod"
+import { env } from "@workspace/env/api"
 import {
   buildApiError,
   buildValidationError,
@@ -62,6 +64,18 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 }
 
 export const honoApp = attachErrorHandlers(new Hono())
+
+honoApp.use(
+  "*",
+  cors({
+    origin: env.WEB_URL,
+    credentials: true,
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+    allowHeaders: ["Content-Type"],
+  }),
+)
+
+honoApp.get("/healthz", (c) => c.json({ status: "ok" }))
 
 honoApp.route("/accounts", accountsRoutes)
 honoApp.route("/auth", authRoutes)

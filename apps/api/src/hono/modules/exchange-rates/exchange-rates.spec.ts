@@ -1,9 +1,8 @@
-import { CommandBus } from "@nestjs/cqrs"
 import { env } from "@workspace/env/api"
 import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/hono/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
-import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
+import { createAccount } from "@/hono/modules/accounts/service"
 import {
   closeTestApp,
   createTestApp,
@@ -11,11 +10,8 @@ import {
   truncateAll,
 } from "@/test/setup"
 
-let commandBus: CommandBus
-
 beforeAll(async () => {
-  const ctx = await createTestApp()
-  commandBus = ctx.commandBus
+  await createTestApp()
 })
 
 afterAll(() => closeTestApp())
@@ -60,9 +56,13 @@ describe("GET /exchange-rates/latest", () => {
 
   it("returns empty rates when user has one currency", async () => {
     const { cookie, organizationId, userId } = await authedCookie()
-    await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH"),
-    )
+    await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
 
     const res = await honoApp.request("/exchange-rates/latest", {
       headers: { cookie },
@@ -75,12 +75,20 @@ describe("GET /exchange-rates/latest", () => {
 
   it("returns cross-pairs for multiple currencies", async () => {
     const { cookie, organizationId, userId } = await authedCookie()
-    await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "UAH Bank", "bank", "UAH"),
-    )
-    await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "USD Cash", "cash", "USD"),
-    )
+    await createAccount({
+      organizationId,
+      userId,
+      name: "UAH Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    await createAccount({
+      organizationId,
+      userId,
+      name: "USD Cash",
+      type: "cash",
+      currency: "USD",
+    })
 
     const res = await honoApp.request("/exchange-rates/latest", {
       headers: { cookie },

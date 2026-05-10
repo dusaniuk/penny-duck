@@ -6,10 +6,8 @@
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "declaration": true,
-    "types": ["vitest/globals", "multer"],
+    "types": ["vitest/globals"],
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {

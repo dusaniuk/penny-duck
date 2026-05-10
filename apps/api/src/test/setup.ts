@@ -1,44 +1,18 @@
-import { Test } from "@nestjs/testing"
-import { type INestApplication } from "@nestjs/common"
-import { CommandBus, QueryBus } from "@nestjs/cqrs"
 import { sql } from "drizzle-orm"
-import { type DbClient } from "@workspace/db"
 import { faker } from "@faker-js/faker"
-import { AppModule } from "../app.module"
-import { DB_CLIENT } from "../database/database.module"
+import { type DbClient } from "@workspace/db"
+import { db } from "@/hono/db"
 import {
   loginService,
   signupService,
 } from "@/hono/modules/auth/service"
 
-let app: INestApplication
-let commandBus: CommandBus
-let queryBus: QueryBus
-let db: DbClient
-
-export async function createTestApp(): Promise<{
-  app: INestApplication
-  commandBus: CommandBus
-  queryBus: QueryBus
-  db: DbClient
-}> {
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile()
-
-  app = moduleRef.createNestApplication()
-  await app.init()
-
-  commandBus = app.get(CommandBus)
-  queryBus = app.get(QueryBus)
-  db = moduleRef.get(DB_CLIENT)
-
-  return { app, commandBus, queryBus, db }
+export async function createTestApp(): Promise<{ db: DbClient }> {
+  return { db }
 }
 
 export async function closeTestApp() {
-  if (app) await app.close()
-  if (db) await db.$client.end()
+  await db.$client.end()
 }
 
 export async function truncateAll() {

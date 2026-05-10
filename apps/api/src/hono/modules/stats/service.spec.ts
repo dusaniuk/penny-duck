@@ -1,4 +1,3 @@
-import { CommandBus } from "@nestjs/cqrs"
 import {
   closeTestApp,
   createTestApp,
@@ -6,7 +5,7 @@ import {
   signupUser,
   truncateAll,
 } from "@/test/setup"
-import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
+import { createAccount } from "@/hono/modules/accounts/service"
 import {
   createTransaction,
   createTransfer,
@@ -14,13 +13,11 @@ import {
 import { listCategories } from "@/hono/modules/categories/service"
 import { getMonthlySummary } from "./service"
 
-let commandBus: CommandBus
 let organizationId: string
 let userId: string
 
 beforeAll(async () => {
-  const ctx = await createTestApp()
-  commandBus = ctx.commandBus
+  await createTestApp()
 })
 
 afterAll(() => closeTestApp())
@@ -46,9 +43,14 @@ describe("getMonthlySummary", () => {
   })
 
   it("aggregates income and expenses for the current month", async () => {
-    const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
-    )
+    const account = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 10000,
+    })
     const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
@@ -78,12 +80,22 @@ describe("getMonthlySummary", () => {
   })
 
   it("excludes transfers from the summary", async () => {
-    const account1 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
-    )
-    const account2 = await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Cash", "cash", "UAH", 0),
-    )
+    const account1 = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 10000,
+    })
+    const account2 = await createAccount({
+      organizationId,
+      userId,
+      name: "Cash",
+      type: "cash",
+      currency: "UAH",
+      balance: 0,
+    })
 
     await createTransfer({
       organizationId,

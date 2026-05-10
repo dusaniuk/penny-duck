@@ -1,9 +1,8 @@
-import { CommandBus } from "@nestjs/cqrs"
 import { env } from "@workspace/env/api"
 import { honoApp } from "@/hono/app"
 import { signAccessToken } from "@/hono/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
-import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
+import { createAccount } from "@/hono/modules/accounts/service"
 import { createTransaction } from "@/hono/modules/transactions/service"
 import { listCategories } from "@/hono/modules/categories/service"
 import {
@@ -14,11 +13,8 @@ import {
   truncateAll,
 } from "@/test/setup"
 
-let commandBus: CommandBus
-
 beforeAll(async () => {
-  const ctx = await createTestApp()
-  commandBus = ctx.commandBus
+  await createTestApp()
 })
 
 afterAll(() => closeTestApp())
@@ -88,9 +84,14 @@ describe("GET /stats/monthly-summary", () => {
     const { cookie, organizationId, userId } = await authedCookie()
     await flushEvents()
 
-    const account = await commandBus.execute(
-      new CreateAccountCommand(organizationId, userId, "Bank", "bank", "UAH", 10000),
-    )
+    const account = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 10000,
+    })
     const categories = await listCategories(organizationId)
     const categoryId = categories[0].id
 
