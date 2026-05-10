@@ -1,8 +1,11 @@
 import type { MiddlewareHandler } from "hono"
 import { HTTPException } from "hono/http-exception"
 import { env } from "@workspace/env/api"
-import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
-import { verifyAccessToken, type AccessTokenPayload } from "@/auth/core/jwt"
+import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
+import {
+  verifyAccessToken,
+  type AccessTokenPayload,
+} from "@/hono/modules/auth/core/jwt"
 
 export type AuthedEnv = { Variables: { user: AccessTokenPayload } }
 

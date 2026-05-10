@@ -14,8 +14,8 @@ import {
 import { type DbClient, accounts as accountsTable } from "@workspace/db"
 import { env } from "@workspace/env/api"
 import { honoApp } from "@/hono/app"
-import { signAccessToken } from "@/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
+import { signAccessToken } from "@/hono/modules/auth/core/jwt"
+import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
 import { CreateAccountCommand } from "@/accounts/commands/create-account.command"
 import {
   deleteAccount,

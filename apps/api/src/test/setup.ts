@@ -6,8 +6,10 @@ import { type DbClient } from "@workspace/db"
 import { faker } from "@faker-js/faker"
 import { AppModule } from "../app.module"
 import { DB_CLIENT } from "../database/database.module"
-import { SignupCommand } from "../auth/commands/signup.command"
-import { LoginCommand } from "../auth/commands/login.command"
+import {
+  loginService,
+  signupService,
+} from "@/hono/modules/auth/service"
 
 let app: INestApplication
 let commandBus: CommandBus
@@ -55,19 +57,23 @@ export async function flushEvents(ms = 100) {
 }
 
 export async function signupUser(
-  overrides?: Partial<{ name: string; email: string; password: string; inviteCode: string }>
+  overrides?: Partial<{
+    name: string
+    email: string
+    password: string
+    inviteCode: string
+  }>,
 ) {
   const email = overrides?.email ?? faker.internet.email()
-  const password = overrides?.password ?? faker.internet.password({ length: 16 })
+  const password =
+    overrides?.password ?? faker.internet.password({ length: 16 })
 
-  await commandBus.execute(
-    new SignupCommand(
-      overrides?.name ?? faker.person.fullName(),
-      email,
-      password,
-      overrides?.inviteCode
-    )
-  )
+  await signupService({
+    name: overrides?.name ?? faker.person.fullName(),
+    email,
+    password,
+    inviteCode: overrides?.inviteCode,
+  })
 
-  return commandBus.execute(new LoginCommand(email, password))
+  return loginService(email, password)
 }

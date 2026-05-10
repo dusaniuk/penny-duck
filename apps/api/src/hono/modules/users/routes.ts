@@ -9,7 +9,7 @@ import {
   ACCESS_TOKEN_COOKIE,
   COOKIE_PATH,
   REFRESH_TOKEN_COOKIE,
-} from "@/auth/core/cookies"
+} from "@/hono/modules/auth/core/cookies"
 import { honoAuthMiddleware, type AuthedEnv } from "@/hono/middleware/auth"
 import { listMembersForOrganization } from "@/hono/modules/organizations/service"
 import {

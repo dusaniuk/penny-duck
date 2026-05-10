@@ -8,6 +8,7 @@ import {
   type ApiError,
 } from "@workspace/shared/errors"
 import { accountsRoutes } from "@/hono/modules/accounts/routes"
+import { authRoutes } from "@/hono/modules/auth/routes"
 import { categoriesRoutes } from "@/hono/modules/categories/routes"
 import { exchangeRatesRoutes } from "@/hono/modules/exchange-rates/routes"
 import {
@@ -63,6 +64,7 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 export const honoApp = attachErrorHandlers(new Hono())
 
 honoApp.route("/accounts", accountsRoutes)
+honoApp.route("/auth", authRoutes)
 honoApp.route("/categories", categoriesRoutes)
 honoApp.route("/exchange-rates", exchangeRatesRoutes)
 honoApp.route("/stats", statsRoutes)

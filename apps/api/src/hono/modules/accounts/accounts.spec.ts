@@ -6,15 +6,14 @@ import {
   it,
   expect,
 } from "vitest"
-import { CommandBus } from "@nestjs/cqrs"
 import { env } from "@workspace/env/api"
 import type { Account } from "@workspace/api-contract"
 import { honoApp } from "@/hono/app"
-import { signAccessToken } from "@/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
+import { signAccessToken } from "@/hono/modules/auth/core/jwt"
+import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
+import { generateInviteCodeService } from "@/hono/modules/auth/service"
 import { listCategories } from "@/hono/modules/categories/service"
 import { createTransaction } from "@/hono/modules/transactions/service"
-import { GenerateInviteCodeCommand } from "@/auth/commands/generate-invite-code.command"
 import {
   closeTestApp,
   createTestApp,
@@ -22,7 +21,6 @@ import {
   truncateAll,
 } from "@/test/setup"
 
-let commandBus: CommandBus
 let cookie: string
 let organizationId: string
 let userId: string
@@ -41,8 +39,7 @@ function buildCookie(payload: {
 }
 
 beforeAll(async () => {
-  const ctx = await createTestApp()
-  commandBus = ctx.commandBus
+  await createTestApp()
 })
 
 afterAll(() => closeTestApp())
@@ -402,8 +399,9 @@ describe("Accounts", () => {
     })
 
     it("two users in the same org each see their own default", async () => {
-      const { inviteCode } = await commandBus.execute(
-        new GenerateInviteCodeCommand(userId, organizationId),
+      const { inviteCode } = await generateInviteCodeService(
+        userId,
+        organizationId,
       )
       const second = await signupUser({ inviteCode })
       const secondCookie = buildCookie(second.accessToken)

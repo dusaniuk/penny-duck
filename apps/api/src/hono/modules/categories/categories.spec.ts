@@ -9,8 +9,8 @@ import {
 import { env } from "@workspace/env/api"
 import type { Category } from "@workspace/api-contract"
 import { honoApp } from "@/hono/app"
-import { signAccessToken } from "@/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/auth/core/cookies"
+import { signAccessToken } from "@/hono/modules/auth/core/jwt"
+import { ACCESS_TOKEN_COOKIE } from "@/hono/modules/auth/core/cookies"
 import {
   closeTestApp,
   createTestApp,
