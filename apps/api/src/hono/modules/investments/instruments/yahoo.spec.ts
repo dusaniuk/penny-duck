@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { YahooFinanceClient, RateLimitedError } from "./yahoo-finance.client"
+import { fetchQuotes, searchYahoo, RateLimitedError } from "./yahoo"
 
 const quoteMock = vi.fn()
 const searchMock = vi.fn()
@@ -20,7 +20,7 @@ beforeEach(() => {
   searchMock.mockReset()
 })
 
-describe("YahooFinanceClient.fetchQuotes", () => {
+describe("fetchQuotes", () => {
   it("maps quote responses to normalized shape", async () => {
     quoteMock.mockResolvedValue([
       {
@@ -31,8 +31,7 @@ describe("YahooFinanceClient.fetchQuotes", () => {
         regularMarketPrice: 192.34,
       },
     ])
-    const client = new YahooFinanceClient()
-    const result = await client.fetchQuotes(["AAPL"])
+    const result = await fetchQuotes(["AAPL"])
     expect(result).toEqual([
       {
         symbol: "AAPL",
@@ -46,34 +45,40 @@ describe("YahooFinanceClient.fetchQuotes", () => {
 
   it("omits symbols with no price", async () => {
     quoteMock.mockResolvedValue([
-      { symbol: "AAPL", regularMarketPrice: undefined, currency: "USD", longName: "Apple" },
+      {
+        symbol: "AAPL",
+        regularMarketPrice: undefined,
+        currency: "USD",
+        longName: "Apple",
+      },
     ])
-    const client = new YahooFinanceClient()
-    const result = await client.fetchQuotes(["AAPL"])
+    const result = await fetchQuotes(["AAPL"])
     expect(result).toEqual([])
   })
 
   it("translates 429 into RateLimitedError", async () => {
-    quoteMock.mockRejectedValue(Object.assign(new Error("Too many"), { name: "HTTPError", response: { status: 429 } }))
-    const client = new YahooFinanceClient()
-    await expect(client.fetchQuotes(["AAPL"])).rejects.toBeInstanceOf(RateLimitedError)
+    quoteMock.mockRejectedValue(
+      Object.assign(new Error("Too many"), {
+        name: "HTTPError",
+        response: { status: 429 },
+      })
+    )
+    await expect(fetchQuotes(["AAPL"])).rejects.toBeInstanceOf(RateLimitedError)
   })
 
   it("rethrows other errors", async () => {
     quoteMock.mockRejectedValue(new Error("network"))
-    const client = new YahooFinanceClient()
-    await expect(client.fetchQuotes(["AAPL"])).rejects.toThrow("network")
+    await expect(fetchQuotes(["AAPL"])).rejects.toThrow("network")
   })
 
   it("returns empty array when called with no symbols", async () => {
-    const client = new YahooFinanceClient()
-    const result = await client.fetchQuotes([])
+    const result = await fetchQuotes([])
     expect(result).toEqual([])
     expect(quoteMock).not.toHaveBeenCalled()
   })
 })
 
-describe("YahooFinanceClient.search", () => {
+describe("searchYahoo", () => {
   it("maps search quote entries and filters to equity/etf", async () => {
     searchMock.mockResolvedValue({
       quotes: [
@@ -82,8 +87,7 @@ describe("YahooFinanceClient.search", () => {
         { symbol: "SOMETHING", quoteType: "NEWS" },
       ],
     })
-    const client = new YahooFinanceClient()
-    const result = await client.search("apple")
+    const result = await searchYahoo("apple")
     expect(result).toEqual([
       { symbol: "AAPL", name: "Apple Inc.", exchange: "NAS" },
       { symbol: "MSFT", name: "Microsoft", exchange: "NAS" },
@@ -92,14 +96,14 @@ describe("YahooFinanceClient.search", () => {
 
   it("returns empty list when yahoo returns no quotes field", async () => {
     searchMock.mockResolvedValue({})
-    const client = new YahooFinanceClient()
-    const result = await client.search("xyz")
+    const result = await searchYahoo("xyz")
     expect(result).toEqual([])
   })
 
   it("translates 429 on search into RateLimitedError", async () => {
-    searchMock.mockRejectedValue(Object.assign(new Error("Too many"), { response: { status: 429 } }))
-    const client = new YahooFinanceClient()
-    await expect(client.search("xyz")).rejects.toBeInstanceOf(RateLimitedError)
+    searchMock.mockRejectedValue(
+      Object.assign(new Error("Too many"), { response: { status: 429 } })
+    )
+    await expect(searchYahoo("xyz")).rejects.toBeInstanceOf(RateLimitedError)
   })
 })

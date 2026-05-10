@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
-import { countOpenPositionsFromTrades } from "../count-open-positions"
-import type { ReplayTrade } from "../replay-position"
+import { countOpenPositionsFromTrades } from "./count-open-positions"
+import type { ReplayTrade } from "./replay-position"
 
 type T = ReplayTrade & { instrumentId: string }
 const trade = (

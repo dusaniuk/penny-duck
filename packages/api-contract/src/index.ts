@@ -63,6 +63,7 @@ export type { MonthlySummaryItem } from "./schemas/stats"
 
 export {
   InstrumentSchema,
+  InstrumentSearchQuerySchema,
   PositionSchema,
   TradeSchema,
   TradeTypeSchema,

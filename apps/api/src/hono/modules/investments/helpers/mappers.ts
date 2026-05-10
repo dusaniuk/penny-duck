@@ -1,7 +1,10 @@
 import { type Trade, type Position } from "@workspace/api-contract"
-import { type TradeRow, type TradeWithSymbol } from "../trade.repository"
+import { type instruments, type trades } from "@workspace/db"
 import { type PositionState } from "./replay-position"
-import { type InstrumentRow } from "../instrument.repository"
+
+export type TradeRow = typeof trades.$inferSelect
+export type TradeWithSymbol = TradeRow & { symbol: string }
+export type InstrumentRow = typeof instruments.$inferSelect
 
 export function toTradeResponse(
   row: TradeRow | TradeWithSymbol,

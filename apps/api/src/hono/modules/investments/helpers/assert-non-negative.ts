@@ -1,8 +1,8 @@
-import { ConflictException } from "@nestjs/common"
+import { HTTPException } from "hono/http-exception"
 import type { ReplayTrade } from "./replay-position"
 
 /**
- * Throws ConflictException if replaying the trades would ever drive the
+ * Throws HTTPException(409) if replaying the trades would ever drive the
  * running quantity below zero. Uses the same date+createdAt ordering as
  * `replayPosition` so the two stay consistent.
  */
@@ -18,9 +18,9 @@ export function assertNonNegative(trades: ReplayTrade[]): void {
     if (t.type === "buy" && t.quantity != null) qty += t.quantity
     else if (t.type === "sell" && t.quantity != null) qty -= t.quantity
     if (qty < 0) {
-      throw new ConflictException(
-        "Operation would leave a negative position quantity"
-      )
+      throw new HTTPException(409, {
+        message: "Operation would leave a negative position quantity",
+      })
     }
   }
 }

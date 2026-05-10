@@ -1,9 +1,11 @@
-import { ConflictException, NotFoundException } from "@nestjs/common"
+import { ConflictException, Inject, NotFoundException } from "@nestjs/common"
 import { Command, CommandHandler, ICommandHandler } from "@nestjs/cqrs"
+import { asc, eq } from "drizzle-orm"
+import { type DbClient, trades } from "@workspace/db"
+import { DB_CLIENT } from "@/database/database.module"
+import { countOpenPositionsFromTrades } from "@/hono/modules/investments/helpers/count-open-positions"
 import { AccountRepository } from "../account.repository"
 import { TransactionRepository } from "../../transactions/transaction.repository"
-import { TradeRepository } from "@/investments/trade.repository"
-import { countOpenPositionsFromTrades } from "@/investments/helpers/count-open-positions"
 
 export class DeleteAccountCommand extends Command<void> {
   constructor(
@@ -20,18 +22,22 @@ export class DeleteAccountHandler
   implements ICommandHandler<DeleteAccountCommand>
 {
   constructor(
+    @Inject(DB_CLIENT) private readonly db: DbClient,
     private readonly accountRepo: AccountRepository,
-    private readonly transactionRepo: TransactionRepository,
-    private readonly tradeRepo: TradeRepository
+    private readonly transactionRepo: TransactionRepository
   ) {}
 
   async execute(cmd: DeleteAccountCommand): Promise<void> {
     const account = await this.accountRepo.findById(cmd.id, cmd.organizationId, cmd.userId)
     if (!account) throw new NotFoundException("Account not found")
 
-    const trades = await this.tradeRepo.findAllByAccount(cmd.id)
+    const tradeRows = await this.db
+      .select()
+      .from(trades)
+      .where(eq(trades.accountId, cmd.id))
+      .orderBy(asc(trades.date), asc(trades.createdAt))
     const openCount = countOpenPositionsFromTrades(
-      trades.map((t) => ({
+      tradeRows.map((t) => ({
         instrumentId: t.instrumentId,
         type: t.type as "buy" | "sell" | "dividend",
         quantity: t.quantity,
