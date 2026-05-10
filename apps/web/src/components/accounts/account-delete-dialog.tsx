@@ -13,6 +13,7 @@ interface AccountDeleteDialogProps {
   onOpenChange: (open: boolean) => void
   account: AccountData | null
   transactionCount: number
+  openPositionCount: number
   onConfirm: () => Promise<void>
 }
 
@@ -21,6 +22,7 @@ export function AccountDeleteDialog({
   onOpenChange,
   account,
   transactionCount,
+  openPositionCount,
   onConfirm,
 }: AccountDeleteDialogProps) {
   const [loading, setLoading] = useState(false)
@@ -33,6 +35,33 @@ export function AccountDeleteDialog({
     } finally {
       setLoading(false)
     }
+  }
+
+  if (openPositionCount > 0) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Cannot delete &ldquo;{account?.name}&rdquo;
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This account has{" "}
+            <span className="font-medium text-foreground">
+              {openPositionCount} open position
+              {openPositionCount !== 1 ? "s" : ""}
+            </span>{" "}
+            and cannot be deleted. Sell or remove all positions first.
+          </p>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   if (transactionCount > 0) {

@@ -29,6 +29,14 @@ function AccountsPage() {
     }
     return map
   }, [positionsData])
+  const openPositionsByAccount = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of positionsData?.body.positions ?? []) {
+      if (p.quantity === 0) continue
+      map.set(p.accountId, (map.get(p.accountId) ?? 0) + 1)
+    }
+    return map
+  }, [positionsData])
   const holdingsLoaded = positionsData !== undefined
 
   const [formOpen, setFormOpen] = useState(false)
@@ -162,6 +170,9 @@ function AccountsPage() {
         }}
         account={deleteAccount}
         transactionCount={deleteTransactionCount}
+        openPositionCount={
+          deleteAccount ? (openPositionsByAccount.get(deleteAccount.id) ?? 0) : 0
+        }
         onConfirm={handleDelete}
       />
     </div>

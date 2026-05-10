@@ -27,10 +27,11 @@ import { Route as AppIncomeExpensesRouteImport } from './routes/_app/income-expe
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
+import { Route as AppInvestmentsIndexRouteImport } from './routes/_app/investments/index'
 import { Route as PublicLegalTermsRouteImport } from './routes/_public/legal/terms'
 import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
-import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments.$accountId'
-import { Route as AppInvestmentsAccountIdSymbolRouteImport } from './routes/_app/investments.$accountId_.$symbol'
+import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments/$accountId'
+import { Route as AppInvestmentsAccountIdSymbolRouteImport } from './routes/_app/investments/$accountId_.$symbol'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -119,6 +120,11 @@ const AppAccountsRoute = AppAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInvestmentsIndexRoute = AppInvestmentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppInvestmentsRoute,
+} as any)
 const PublicLegalTermsRoute = PublicLegalTermsRouteImport.update({
   id: '/legal/terms',
   path: '/legal/terms',
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
   '/legal/terms': typeof PublicLegalTermsRoute
+  '/investments/': typeof AppInvestmentsIndexRoute
   '/investments/$accountId/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRoutesByTo {
@@ -169,7 +176,6 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
   '/income-expenses': typeof AppIncomeExpensesRoute
-  '/investments': typeof AppInvestmentsRouteWithChildren
   '/spendings': typeof AppSpendingsRoute
   '/transactions': typeof AppTransactionsRoute
   '/login': typeof AuthLoginRoute
@@ -180,6 +186,7 @@ export interface FileRoutesByTo {
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
   '/legal/terms': typeof PublicLegalTermsRoute
+  '/investments': typeof AppInvestmentsIndexRoute
   '/investments/$accountId/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRoutesById {
@@ -205,6 +212,7 @@ export interface FileRoutesById {
   '/_app/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/_public/legal/privacy': typeof PublicLegalPrivacyRoute
   '/_public/legal/terms': typeof PublicLegalTermsRoute
+  '/_app/investments/': typeof AppInvestmentsIndexRoute
   '/_app/investments/$accountId_/$symbol': typeof AppInvestmentsAccountIdSymbolRoute
 }
 export interface FileRouteTypes {
@@ -228,6 +236,7 @@ export interface FileRouteTypes {
     | '/investments/$accountId'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/investments/'
     | '/investments/$accountId/$symbol'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -237,7 +246,6 @@ export interface FileRouteTypes {
     | '/categories'
     | '/dashboard'
     | '/income-expenses'
-    | '/investments'
     | '/spendings'
     | '/transactions'
     | '/login'
@@ -248,6 +256,7 @@ export interface FileRouteTypes {
     | '/investments/$accountId'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/investments'
     | '/investments/$accountId/$symbol'
   id:
     | '__root__'
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/_app/investments/$accountId'
     | '/_public/legal/privacy'
     | '/_public/legal/terms'
+    | '/_app/investments/'
     | '/_app/investments/$accountId_/$symbol'
   fileRoutesById: FileRoutesById
 }
@@ -412,6 +422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/investments/': {
+      id: '/_app/investments/'
+      path: '/'
+      fullPath: '/investments/'
+      preLoaderRoute: typeof AppInvestmentsIndexRouteImport
+      parentRoute: typeof AppInvestmentsRoute
+    }
     '/_public/legal/terms': {
       id: '/_public/legal/terms'
       path: '/legal/terms'
@@ -445,11 +462,13 @@ declare module '@tanstack/react-router' {
 
 interface AppInvestmentsRouteChildren {
   AppInvestmentsAccountIdRoute: typeof AppInvestmentsAccountIdRoute
+  AppInvestmentsIndexRoute: typeof AppInvestmentsIndexRoute
   AppInvestmentsAccountIdSymbolRoute: typeof AppInvestmentsAccountIdSymbolRoute
 }
 
 const AppInvestmentsRouteChildren: AppInvestmentsRouteChildren = {
   AppInvestmentsAccountIdRoute: AppInvestmentsAccountIdRoute,
+  AppInvestmentsIndexRoute: AppInvestmentsIndexRoute,
   AppInvestmentsAccountIdSymbolRoute: AppInvestmentsAccountIdSymbolRoute,
 }
 
