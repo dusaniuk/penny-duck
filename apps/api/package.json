@@ -14,7 +14,7 @@
     "start": "node dist/main.js"
   },
   "exports": {
-    "./hono/app": "./src/hono/app.ts"
+    "./app": "./src/app.ts"
   },
   "tsup": {
     "entry": [

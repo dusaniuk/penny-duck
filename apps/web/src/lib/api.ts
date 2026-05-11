@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query"
 import { hc } from "hono/client"
-import type { AppType } from "api/hono/app"
+import type { AppType } from "api/app"
 
 let refreshPromise: Promise<Response> | null = null
 

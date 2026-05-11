@@ -1,11 +1,11 @@
 import { sql } from "drizzle-orm"
 import { faker } from "@faker-js/faker"
 import { type DbClient } from "@workspace/db"
-import { db } from "@/hono/db"
+import { db } from "@/db"
 import {
   loginService,
   signupService,
-} from "@/hono/modules/auth/service"
+} from "@/modules/auth/service"
 
 export async function createTestApp(): Promise<{ db: DbClient }> {
   return { db }
