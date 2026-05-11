@@ -120,7 +120,7 @@ function AccountsPage() {
     setDeleteAccount(account)
     try {
       const res = await api.transactions.$get({
-        query: { accountId: account.id, limit: 1 },
+        query: { accountId: account.id, limit: "1" },
       })
       const body = res.ok ? await res.json() : null
       setDeleteTransactionCount(body?.total ?? 0)

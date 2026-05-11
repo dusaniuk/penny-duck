@@ -24,11 +24,11 @@ import {
   updateTransfer,
 } from "./service"
 
-const IdParamSchema = z.object({ id: z.string().uuid() })
-const TransferIdParamSchema = z.object({ transferId: z.string().uuid() })
+const IdParamSchema = z.object({ id: z.uuid() })
+const TransferIdParamSchema = z.object({ transferId: z.uuid() })
 const ReimbursementParamSchema = z.object({
-  id: z.string().uuid(),
-  reimbursementTransactionId: z.string().uuid(),
+  id: z.uuid(),
+  reimbursementTransactionId: z.uuid(),
 })
 
 export const transactionsRoutes = new Hono<AuthedEnv>()

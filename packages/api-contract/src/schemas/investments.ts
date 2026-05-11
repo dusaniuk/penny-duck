@@ -21,7 +21,7 @@ export const InstrumentSearchQuerySchema = z.object({
 // ----- Positions -----
 
 export const PositionSchema = z.object({
-  accountId: z.string().uuid(),
+  accountId: z.uuid(),
   symbol: z.string(),
   name: z.string(),
   currency: z.string(),
@@ -61,9 +61,9 @@ export type InvestmentsSummary = z.infer<typeof InvestmentsSummarySchema>
 export const TradeTypeSchema = z.enum(["buy", "sell", "dividend"])
 
 export const TradeSchema = z.object({
-  id: z.string().uuid(),
-  accountId: z.string().uuid(),
-  instrumentId: z.string().uuid(),
+  id: z.uuid(),
+  accountId: z.uuid(),
+  instrumentId: z.uuid(),
   symbol: z.string(),
   type: TradeTypeSchema,
   quantity: z.number().nullable(),
@@ -81,7 +81,7 @@ export const TradeSchema = z.object({
 export type Trade = z.infer<typeof TradeSchema>
 
 export const CreateTradeSchema = z.object({
-  accountId: z.string().uuid(),
+  accountId: z.uuid(),
   symbol: z.string().min(1).max(20),
   type: TradeTypeSchema,
   quantity: z.number().positive().optional(),
@@ -101,7 +101,7 @@ export const UpdateTradeSchema = z.object({
 })
 
 export const ListTradesQuerySchema = z.object({
-  accountId: z.string().uuid().optional(),
+  accountId: z.uuid().optional(),
   symbol: z.string().optional(),
   type: TradeTypeSchema.optional(),
   from: z.string().optional(),

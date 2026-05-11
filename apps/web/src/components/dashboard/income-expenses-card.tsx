@@ -31,7 +31,7 @@ export function IncomeExpensesCard() {
     queryKey: ["stats", "monthly-summary", 6],
     queryFn: async () => {
       const res = await api.stats["monthly-summary"].$get({
-        query: { months: 6 },
+        query: { months: "6" },
       })
       if (!res.ok) throw await res.json()
       return res.json()

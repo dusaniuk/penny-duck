@@ -63,8 +63,8 @@ function TransactionsPage() {
     queryFn: async () => {
       const res = await api.transactions.$get({
         query: {
-          page,
-          limit: PAGE_SIZE,
+          page: String(page),
+          limit: String(PAGE_SIZE),
           accountId: filters.accountId,
           type: filters.type as "expense" | "income" | undefined,
           categoryId: filters.categoryId,
@@ -95,7 +95,7 @@ function TransactionsPage() {
     queryKey: ["transactions", "unsettled-count"],
     queryFn: async () => {
       const res = await api.transactions.$get({
-        query: { settled: "false", limit: 1 },
+        query: { settled: "false", limit: "1" },
       })
       if (!res.ok) throw await res.json()
       return res.json()
@@ -107,7 +107,7 @@ function TransactionsPage() {
     queryKey: ["transactions", "uncategorized-count"],
     queryFn: async () => {
       const res = await api.transactions.$get({
-        query: { uncategorized: "true", limit: 1 },
+        query: { uncategorized: "true", limit: "1" },
       })
       if (!res.ok) throw await res.json()
       return res.json()
@@ -281,8 +281,8 @@ function TransactionsPage() {
       const nextPage = page + 1
       const res = await api.transactions.$get({
         query: {
-          page: nextPage,
-          limit: PAGE_SIZE,
+          page: String(nextPage),
+          limit: String(PAGE_SIZE),
           accountId: filters.accountId,
           type: filters.type as "expense" | "income" | undefined,
           categoryId: filters.categoryId,

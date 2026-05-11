@@ -32,7 +32,7 @@ function IncomeExpensesPage() {
     queryKey: ["stats", "monthly-summary", 12],
     queryFn: async () => {
       const res = await api.stats["monthly-summary"].$get({
-        query: { months: 12 },
+        query: { months: "12" },
       })
       if (!res.ok) throw await res.json()
       return res.json()

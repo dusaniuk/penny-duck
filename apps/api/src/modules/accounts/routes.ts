@@ -16,7 +16,7 @@ import {
   updateAccount,
 } from "./service"
 
-const IdParamSchema = z.object({ id: z.string().uuid() })
+const IdParamSchema = z.object({ id: z.uuid() })
 
 export const accountsRoutes = new Hono<AuthedEnv>()
   .use("*", honoAuthMiddleware)

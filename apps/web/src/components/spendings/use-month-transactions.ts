@@ -27,8 +27,8 @@ async function fetchAllTransactions(
         dateFrom,
         dateTo,
         type: "expense",
-        limit: PAGE_SIZE,
-        page,
+        limit: String(PAGE_SIZE),
+        page: String(page),
       },
     })
     if (!res.ok) throw await res.json()
