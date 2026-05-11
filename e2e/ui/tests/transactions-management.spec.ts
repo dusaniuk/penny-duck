@@ -16,15 +16,20 @@ async function createAccountViaPage(
   return res.json()
 }
 
-async function getFirstCategory(page: any) {
+async function getFirstCategory(
+  page: any,
+  type: "expense" | "income" = "expense",
+) {
   for (let i = 0; i < 10; i++) {
     const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
     const categories = await res.json()
-    if (categories.length > 0) return categories[0]
+    const match = categories.find((c: { type: string }) => c.type === type)
+    if (match) return match
     await new Promise((r) => setTimeout(r, 300))
   }
   const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
-  return (await res.json())[0]
+  const all = await res.json()
+  return all.find((c: { type: string }) => c.type === type) ?? all[0]
 }
 
 test.describe("Transactions management", () => {
@@ -59,7 +64,7 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Open FAB menu
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("42.50")
@@ -86,12 +91,12 @@ test.describe("Transactions management", () => {
       balance: 0,
       currency: "UAH",
     })
-    const category = await getFirstCategory(page)
+    const category = await getFirstCategory(page, "income")
 
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Income" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("1000")
@@ -119,7 +124,7 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create unsettled expense
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")
@@ -152,7 +157,7 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create a transaction first
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("50")
@@ -192,7 +197,7 @@ test.describe("Transactions management", () => {
     await page.waitForLoadState("networkidle")
 
     // Create a transaction
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("99.99")
@@ -243,7 +248,7 @@ test.describe("Transfers", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("500")
@@ -280,7 +285,7 @@ test.describe("Transfers", () => {
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
 
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")

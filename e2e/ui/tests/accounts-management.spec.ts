@@ -1,5 +1,15 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type Page } from "@playwright/test"
 import { signupAndLoginViaPage } from "../../shared/factories"
+
+// The currency combobox lives inside a Dialog and the popover's pointer-event
+// region overlaps the next field's label, so direct clicks on options get
+// intercepted. Selecting via keyboard avoids the hit-test conflict entirely.
+async function selectCurrencyByKeyboard(page: Page, query: string) {
+  const dialog = page.getByRole("dialog")
+  await dialog.getByPlaceholder("Search currency...").fill(query)
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("Enter")
+}
 
 test.describe("Accounts management", () => {
   test.beforeEach(async ({ page }) => {
@@ -20,16 +30,12 @@ test.describe("Accounts management", () => {
 
     const dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("Monobank UAH")
-    // Currency combobox — click to open, search, select
-    await dialog.getByPlaceholder("Search currency...").fill("UAH")
-    await page.waitForTimeout(300)
-    await page.getByRole("option", { name: /UAH/ }).click()
+    await selectCurrencyByKeyboard(page, "UAH")
     await dialog.getByPlaceholder("0.00").fill("25000")
 
     await dialog.getByRole("button", { name: "Create" }).click()
 
     await expect(page.getByText("Monobank UAH")).toBeVisible()
-    // Balance may or may not have comma formatting depending on locale
     await expect(page.getByText(/25[,.]?000\.00/)).toBeVisible()
   })
 
@@ -37,13 +43,10 @@ test.describe("Accounts management", () => {
     await page.goto("/accounts")
     await page.waitForLoadState("networkidle")
 
-    // Create an account first
     await page.getByRole("button", { name: "+ Add Account" }).click()
     let dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("Test Account")
-    await dialog.getByPlaceholder("Search currency...").fill("PLN")
-    await page.waitForTimeout(300)
-    await page.getByRole("option", { name: /PLN/ }).click()
+    await selectCurrencyByKeyboard(page, "PLN")
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("Test Account")).toBeVisible()
 
@@ -67,12 +70,10 @@ test.describe("Accounts management", () => {
     await page.goto("/accounts")
     await page.waitForLoadState("networkidle")
 
-    // Create an account first
     await page.getByRole("button", { name: "+ Add Account" }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByPlaceholder("e.g. Main Checking").fill("To Delete")
-    await dialog.getByPlaceholder("Search currency...").fill("USD")
-    await page.getByText("USD — United States Dollar").click({ force: true })
+    await selectCurrencyByKeyboard(page, "USD")
     await dialog.getByRole("button", { name: "Create" }).click()
     await expect(page.getByText("To Delete")).toBeVisible()
 
@@ -83,13 +84,11 @@ test.describe("Accounts management", () => {
     await card.getByRole("button").first().click()
     await page.getByRole("menuitem", { name: "Delete" }).click()
 
-    // Confirm delete in dialog (no transactions = simple delete)
     const deleteDialog = page.getByRole("dialog")
     await deleteDialog
       .getByRole("button", { name: /Delete|Deleting/ })
       .click()
 
-    // Wait for dialog to close and card to disappear
     await expect(deleteDialog).not.toBeVisible({
       timeout: 10_000,
     })

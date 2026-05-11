@@ -15,6 +15,7 @@ const FIXTURES_DIR = join(
   "apps",
   "api",
   "src",
+  "modules",
   "investments",
   "import",
   "fixtures",
@@ -60,11 +61,11 @@ test.describe("Investments · IBKR import", () => {
 
     await expect(page.getByText("Trades found")).toBeVisible()
     await expect(
-      page.getByRole("button", { name: /Import 1 trades and 1 dividends/ }),
+      page.getByRole("button", { name: /Import 1 trades, 1 dividends/ }),
     ).toBeEnabled()
 
     await page
-      .getByRole("button", { name: /Import 1 trades and 1 dividends/ })
+      .getByRole("button", { name: /Import 1 trades, 1 dividends/ })
       .click()
 
     await expect(page.getByRole("row").filter({ hasText: "VOO" })).toBeVisible()
