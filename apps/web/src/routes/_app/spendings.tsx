@@ -2,13 +2,14 @@ import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconX } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
   Account,
   Category,
   Member,
   Transaction,
 } from "@workspace/api-contract"
-import { queryClient, tsr } from "@/lib/api"
+import { api, queryClient } from "@/lib/api"
 import { MonthNavigator } from "@/components/spendings/month-navigator"
 import { SpendingsDonutChart } from "@/components/spendings/spendings-donut-chart"
 import { aggregateByCategory } from "@/components/spendings/aggregate-by-category"
@@ -39,31 +40,56 @@ function SpendingsPage() {
     useState<Transaction | null>(null)
 
   const { data: transactions, isLoading } = useMonthTransactions(year, month)
-  const { data: categoriesData } = tsr.categories.list.useQuery({
+  const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await api.categories.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const categories: Array<Category> = categoriesData?.body ?? []
+  const categories: Array<Category> = categoriesData ?? []
 
-  const { data: accountsData } = tsr.accounts.list.useQuery({
+  const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const accounts: Array<Account> = accountsData?.body ?? []
+  const accounts: Array<Account> = accountsData ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["users", "me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const homeCurrency = meData?.body.homeCurrency ?? "UAH"
-  const currentUserId = meData?.body.id ?? ""
+  const homeCurrency = meData?.homeCurrency ?? "UAH"
+  const currentUserId = meData?.id ?? ""
 
-  const { data: membersData } = tsr.users.getMembers.useQuery({
+  const { data: membersData } = useQuery({
     queryKey: ["users", "members"],
+    queryFn: async () => {
+      const res = await api.users.members.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const members: Array<Member> = membersData?.body ?? []
+  const members: Array<Member> = membersData ?? []
 
-  const { data: ratesData } = tsr.exchangeRates.latest.useQuery({
+  const { data: ratesData } = useQuery({
     queryKey: ["exchange-rates", "latest"],
+    queryFn: async () => {
+      const res = await api["exchange-rates"].latest.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const latestRates = ratesData?.body.rates ?? {}
+  const latestRates = ratesData?.rates ?? {}
 
   const chartData = transactions
     ? aggregateByCategory(transactions, categories)
@@ -110,19 +136,69 @@ function SpendingsPage() {
     queryClient.invalidateQueries({ queryKey: ["accounts"] })
   }
 
-  const updateMutation = tsr.transactions.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        accountId?: string
+        amount?: number
+        categoryId?: string
+        note?: string
+        date?: string
+        originalAmount?: number
+        originalCurrency?: string
+        exchangeRate?: number
+        madeById?: string
+        settled?: boolean
+      }
+    }) => {
+      const res = await api.transactions[":id"].$patch({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const deleteMutation = tsr.transactions.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.transactions[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const settleMutation = tsr.transactions.settle.useMutation({
+  const settleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.transactions[":id"].settle.$patch({
+        param: { id },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const createReimbursementMutation =
-    tsr.transactions.createReimbursement.useMutation({
-      onSuccess: invalidateAll,
-    })
+  const createReimbursementMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        accountId: string
+        amount: number
+        date: string
+        exchangeRate?: number
+        madeById?: string
+      }
+    }) => {
+      const res = await api.transactions[":id"].reimburse.$post({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateAll,
+  })
 
   return (
     <div className="space-y-6">
@@ -210,7 +286,7 @@ function SpendingsPage() {
           setFormOpen(true)
         }}
         onReimburse={(t) => setReimburseTransaction(t)}
-        onSettle={(t) => settleMutation.mutate({ params: { id: t.id } })}
+        onSettle={(t) => settleMutation.mutate(t.id)}
         onDelete={(t) => setDeleteTransaction(t)}
       />
 
@@ -231,7 +307,7 @@ function SpendingsPage() {
           if (editTransaction) {
             const { type: _, ...updateFields } = data
             await updateMutation.mutateAsync({
-              params: { id: editTransaction.id },
+              id: editTransaction.id,
               body: updateFields,
             })
           }
@@ -260,7 +336,7 @@ function SpendingsPage() {
         currentUserId={currentUserId}
         onSubmit={async (data) => {
           await createReimbursementMutation.mutateAsync({
-            params: { id: data.transactionId },
+            id: data.transactionId,
             body: {
               accountId: data.accountId,
               amount: data.amount,
@@ -280,9 +356,7 @@ function SpendingsPage() {
         isTransfer={false}
         onConfirm={async () => {
           if (!deleteTransaction) return
-          await deleteMutation.mutateAsync({
-            params: { id: deleteTransaction.id },
-          })
+          await deleteMutation.mutateAsync(deleteTransaction.id)
         }}
       />
     </div>

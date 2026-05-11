@@ -10,7 +10,7 @@ import { ThemeProvider } from "@workspace/ui/components/theme-provider"
 import appCss from "@workspace/ui/globals.css?url"
 import { themeScript } from "@workspace/ui/lib/theme-script"
 import { Toaster } from "sonner"
-import { queryClient, tsr } from "@/lib/api"
+import { queryClient } from "@/lib/api"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -56,12 +56,10 @@ function RootLayout() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <tsr.ReactQueryProvider>
-          <TooltipProvider>
-            <Outlet />
-            <Toaster richColors />
-          </TooltipProvider>
-        </tsr.ReactQueryProvider>
+        <TooltipProvider>
+          <Outlet />
+          <Toaster richColors />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )

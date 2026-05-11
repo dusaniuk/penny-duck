@@ -23,7 +23,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*", "../api/src/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"]
     }
   }

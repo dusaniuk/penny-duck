@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { CategoryDialogMode } from "@/components/categories/category-form-dialog"
 import type { CategoryColor } from "@/lib/category-color"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
 import { CategoryList } from "@/components/categories/category-list"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
-import { queryClient, tsr } from "@/lib/api"
+import { api, queryClient } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/categories")({
   staticData: { breadcrumb: "Categories" },
@@ -14,10 +15,15 @@ export const Route = createFileRoute("/_app/categories")({
 })
 
 function CategoriesPage() {
-  const { data, isLoading: loading } = tsr.categories.list.useQuery({
+  const { data, isLoading: loading } = useQuery({
     queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await api.categories.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const categories = data?.body ?? []
+  const categories = data ?? []
 
   const { expenseCategories, incomeCategories } = useMemo(() => {
     const expense: Array<Category> = []
@@ -54,13 +60,46 @@ function CategoriesPage() {
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["categories"] })
 
-  const createMutation = tsr.categories.create.useMutation({
+  const createMutation = useMutation({
+    mutationFn: async (body: {
+      name: string
+      icon?: string
+      type?: CategoryType
+      parentId?: string
+      color?: CategoryColor
+    }) => {
+      const res = await api.categories.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidate,
   })
-  const updateMutation = tsr.categories.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        name?: string
+        icon?: string
+        type?: CategoryType
+        parentId?: string | null
+        color?: CategoryColor
+      }
+    }) => {
+      const res = await api.categories[":id"].$patch({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidate,
   })
-  const deleteMutation = tsr.categories.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.categories[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidate,
   })
 
@@ -87,26 +126,22 @@ function CategoriesPage() {
     switch (dialogMode.kind) {
       case "create-parent":
         await createMutation.mutateAsync({
-          body: {
-            name: form.name,
-            icon: form.icon,
-            type: dialogMode.type,
-            ...(form.color ? { color: form.color } : {}),
-          },
+          name: form.name,
+          icon: form.icon,
+          type: dialogMode.type,
+          ...(form.color ? { color: form.color } : {}),
         })
         break
       case "create-child":
         await createMutation.mutateAsync({
-          body: {
-            name: form.name,
-            icon: form.icon,
-            parentId: dialogMode.parent.id,
-          },
+          name: form.name,
+          icon: form.icon,
+          parentId: dialogMode.parent.id,
         })
         break
       case "edit":
         await updateMutation.mutateAsync({
-          params: { id: dialogMode.category.id },
+          id: dialogMode.category.id,
           body: {
             name: form.name,
             icon: form.icon,
@@ -122,7 +157,7 @@ function CategoriesPage() {
 
   async function handleDelete() {
     if (!deleteCategory) return
-    await deleteMutation.mutateAsync({ params: { id: deleteCategory.id } })
+    await deleteMutation.mutateAsync(deleteCategory.id)
   }
 
   const dialogParentOptions =

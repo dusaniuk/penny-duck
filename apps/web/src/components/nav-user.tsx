@@ -15,7 +15,8 @@ import {
   useSidebar,
 } from "@workspace/ui/components/sidebar"
 import { IconLogout, IconSelector, IconSettings } from "@tabler/icons-react"
-import { tsr } from "@/lib/api"
+import { useMutation } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 function getInitials(name: string): string {
   return name
@@ -36,10 +37,16 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
-  const logoutMutation = tsr.auth.logout.useMutation()
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.auth.logout.$post()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
 
   async function handleLogout() {
-    await logoutMutation.mutateAsync({})
+    await logoutMutation.mutateAsync()
     navigate({ to: "/login" })
   }
 

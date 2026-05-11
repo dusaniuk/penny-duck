@@ -7,8 +7,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
+import { useQuery } from "@tanstack/react-query"
 import type { ChartConfig } from "@workspace/ui/components/chart"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/income-expenses")({
   staticData: { breadcrumb: "Income vs Expenses" },
@@ -27,12 +28,18 @@ const chartConfig = {
 } satisfies ChartConfig
 
 function IncomeExpensesPage() {
-  const { data, isLoading } = tsr.stats.monthlySummary.useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["stats", "monthly-summary", 12],
-    queryData: { query: { months: 12 } },
+    queryFn: async () => {
+      const res = await api.stats["monthly-summary"].$get({
+        query: { months: 12 },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
 
-  const chartData = (data?.body ?? []).map((item) => ({
+  const chartData = (data ?? []).map((item) => ({
     ...item,
     monthLabel: new Date(item.month + "-01").toLocaleDateString("en-US", {
       month: "short",

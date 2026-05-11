@@ -1,7 +1,4 @@
-import { initContract } from "@ts-rest/core"
 import { z } from "zod"
-
-const c = initContract()
 
 export const MonthlySummaryItemSchema = z.object({
   month: z.string(),
@@ -14,14 +11,3 @@ export const MonthlySummaryQuerySchema = z.object({
 })
 
 export type MonthlySummaryItem = z.infer<typeof MonthlySummaryItemSchema>
-
-export const statsContract = c.router({
-  monthlySummary: {
-    method: "GET",
-    path: "/stats/monthly-summary",
-    query: MonthlySummaryQuerySchema,
-    responses: {
-      200: z.array(MonthlySummaryItemSchema),
-    },
-  },
-})

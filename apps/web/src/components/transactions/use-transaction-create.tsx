@@ -1,6 +1,7 @@
 import { useState } from "react"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type { Account, Category, Member } from "@workspace/api-contract"
-import { queryClient, tsr } from "@/lib/api"
+import { api, queryClient } from "@/lib/api"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 
 interface UseTransactionCreateOptions {
@@ -10,31 +11,56 @@ interface UseTransactionCreateOptions {
 export function useTransactionCreate(options?: UseTransactionCreateOptions) {
   const [open, setOpen] = useState(false)
 
-  const { data: accountsData } = tsr.accounts.list.useQuery({
+  const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const accounts: Array<Account> = accountsData?.body ?? []
+  const accounts: Array<Account> = accountsData ?? []
   const defaultAccountId = accounts.find((a) => a.isDefault)?.id
 
-  const { data: categoriesData } = tsr.categories.list.useQuery({
+  const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await api.categories.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const categories: Array<Category> = categoriesData?.body ?? []
+  const categories: Array<Category> = categoriesData ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["users", "me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const currentUserId = meData?.body.id ?? ""
+  const currentUserId = meData?.id ?? ""
 
-  const { data: membersData } = tsr.users.getMembers.useQuery({
+  const { data: membersData } = useQuery({
     queryKey: ["users", "members"],
+    queryFn: async () => {
+      const res = await api.users.members.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const members: Array<Member> = membersData?.body ?? []
+  const members: Array<Member> = membersData ?? []
 
-  const { data: ratesData } = tsr.exchangeRates.latest.useQuery({
+  const { data: ratesData } = useQuery({
     queryKey: ["exchange-rates", "latest"],
+    queryFn: async () => {
+      const res = await api["exchange-rates"].latest.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const latestRates = ratesData?.body.rates ?? {}
+  const latestRates = ratesData?.rates ?? {}
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["transactions"] })
@@ -42,10 +68,39 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     options?.onSuccess?.()
   }
 
-  const createMutation = tsr.transactions.create.useMutation({
+  const createMutation = useMutation({
+    mutationFn: async (body: {
+      accountId: string
+      type: "expense" | "income"
+      amount: number
+      categoryId: string
+      date: string
+      note?: string
+      settled?: boolean
+      madeById?: string
+    }) => {
+      const res = await api.transactions.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const createTransferMutation = tsr.transactions.createTransfer.useMutation({
+  const createTransferMutation = useMutation({
+    mutationFn: async (body: {
+      fromAccountId: string
+      toAccountId: string
+      amount: number
+      date: string
+      note?: string
+      originalAmount?: number
+      originalCurrency?: string
+      exchangeRate?: number
+      madeById?: string
+    }) => {
+      const res = await api.transactions.transfers.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
 
@@ -60,10 +115,8 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     madeById?: string
   }) {
     await createMutation.mutateAsync({
-      body: {
-        ...data,
-        type: data.type as "expense" | "income",
-      },
+      ...data,
+      type: data.type as "expense" | "income",
     })
   }
 
@@ -78,7 +131,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     exchangeRate?: number
     madeById?: string
   }) {
-    await createTransferMutation.mutateAsync({ body: data })
+    await createTransferMutation.mutateAsync(data)
   }
 
   const dialog = (

@@ -15,7 +15,8 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
-import { tsr } from "@/lib/api"
+import { useMutation } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/invite")({
   validateSearch: (search: Record<string, unknown>): { code: string } => ({
@@ -56,7 +57,18 @@ function InvitePage() {
       .finally(() => setInviteLoading(false))
   }, [code])
 
-  const signupMutation = tsr.auth.signup.useMutation()
+  const signupMutation = useMutation({
+    mutationFn: async (body: {
+      name: string
+      email: string
+      password: string
+      inviteCode?: string
+    }) => {
+      const res = await api.auth.signup.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -69,7 +81,10 @@ function InvitePage() {
 
     try {
       await signupMutation.mutateAsync({
-        body: { name, email, password, inviteCode: code },
+        name,
+        email,
+        password,
+        inviteCode: code,
       })
       setSuccess(true)
     } catch {

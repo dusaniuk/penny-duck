@@ -14,8 +14,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover"
+import { useQuery } from "@tanstack/react-query"
 import type { Instrument } from "@workspace/api-contract"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 
 interface Props {
   value: string
@@ -38,12 +39,18 @@ export function InstrumentAutocomplete({ value, onChange, disabled }: Props) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const debounced = useDebouncedValue(query, 250)
 
-  const { data, isFetching } = tsr.investments.searchInstruments.useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ["instruments", "search", debounced],
-    queryData: { query: { q: debounced } },
+    queryFn: async () => {
+      const res = await api.instruments.search.$get({
+        query: { q: debounced },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     enabled: debounced.length > 0,
   })
-  const results = data?.body ?? []
+  const results = data ?? []
 
   return (
     <div ref={setContainer}>

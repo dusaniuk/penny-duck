@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
-import { queryClient, tsr } from "@/lib/api"
+import { api, queryClient } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/accounts")({
   staticData: { breadcrumb: "Accounts" },
@@ -12,26 +13,36 @@ export const Route = createFileRoute("/_app/accounts")({
 })
 
 function AccountsPage() {
-  const { data, isLoading: loading } = tsr.accounts.list.useQuery({
+  const { data, isLoading: loading } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const accounts = data?.body ?? []
+  const accounts = data ?? []
 
   const hasBrokerage = accounts.some((a) => a.type === "brokerage")
-  const { data: positionsData } = tsr.investments.listPositions.useQuery({
+  const { data: positionsData } = useQuery({
     queryKey: ["positions"],
+    queryFn: async () => {
+      const res = await api.positions.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     enabled: hasBrokerage,
   })
   const holdingsByAccount = useMemo(() => {
     const map = new Map<string, number>()
-    for (const p of positionsData?.body.positions ?? []) {
+    for (const p of positionsData?.positions ?? []) {
       map.set(p.accountId, (map.get(p.accountId) ?? 0) + p.currentValue)
     }
     return map
   }, [positionsData])
   const openPositionsByAccount = useMemo(() => {
     const map = new Map<string, number>()
-    for (const p of positionsData?.body.positions ?? []) {
+    for (const p of positionsData?.positions ?? []) {
       if (p.quantity === 0) continue
       map.set(p.accountId, (map.get(p.accountId) ?? 0) + 1)
     }
@@ -44,19 +55,50 @@ function AccountsPage() {
   const [deleteAccount, setDeleteAccount] = useState<AccountData | null>(null)
   const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
 
-  const createMutation = tsr.accounts.create.useMutation({
+  const createMutation = useMutation({
+    mutationFn: async (body: {
+      name: string
+      type: string
+      currency: string
+      balance?: number
+    }) => {
+      const res = await api.accounts.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
-  const updateMutation = tsr.accounts.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: { name?: string; type?: string }
+    }) => {
+      const res = await api.accounts[":id"].$patch({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
-  const deleteMutation = tsr.accounts.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.accounts[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
-  const setDefaultMutation = tsr.accounts.setDefault.useMutation({
+  const setDefaultMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.accounts[":id"].default.$put({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
@@ -71,16 +113,16 @@ function AccountsPage() {
   }
 
   function handleSetDefault(account: AccountData) {
-    setDefaultMutation.mutate({ params: { id: account.id } })
+    setDefaultMutation.mutate(account.id)
   }
 
   async function handleOpenDelete(account: AccountData) {
     setDeleteAccount(account)
     try {
-      const result = await tsr.transactions.list.query({
+      const res = await api.transactions.$get({
         query: { accountId: account.id, limit: 1 },
       })
-      const body = result.status === 200 ? result.body : null
+      const body = res.ok ? await res.json() : null
       setDeleteTransactionCount(body?.total ?? 0)
     } catch {
       setDeleteTransactionCount(0)
@@ -95,26 +137,22 @@ function AccountsPage() {
   }) {
     if (editAccount) {
       await updateMutation.mutateAsync({
-        params: { id: editAccount.id },
+        id: editAccount.id,
         body: { name: formData.name, type: formData.type },
       })
     } else {
       await createMutation.mutateAsync({
-        body: {
-          name: formData.name,
-          type: formData.type,
-          currency: formData.currency!,
-          balance: formData.balance,
-        },
+        name: formData.name,
+        type: formData.type,
+        currency: formData.currency!,
+        balance: formData.balance,
       })
     }
   }
 
   async function handleDelete() {
     if (!deleteAccount) return
-    await deleteMutation.mutateAsync({
-      params: { id: deleteAccount.id },
-    })
+    await deleteMutation.mutateAsync(deleteAccount.id)
   }
 
   return (

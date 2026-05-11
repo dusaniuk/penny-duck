@@ -3,13 +3,14 @@ import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter, IconPlus } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
   Account,
   Category,
   Member,
   Transaction,
 } from "@workspace/api-contract"
-import { queryClient, tsr } from "@/lib/api"
+import { api, queryClient } from "@/lib/api"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
 import { TransactionFilterSheet } from "@/components/transactions/transaction-filters"
@@ -57,68 +58,113 @@ function TransactionsPage() {
     },
   })
 
-  const { data: txData, isLoading: loading } = tsr.transactions.list.useQuery({
+  const { data: txData, isLoading: loading } = useQuery({
     queryKey: ["transactions", filters, page],
-    queryData: {
-      query: {
-        page,
-        limit: PAGE_SIZE,
-        accountId: filters.accountId,
-        type: filters.type as "expense" | "income" | undefined,
-        categoryId: filters.categoryId,
-        settled: filters.settled,
-        uncategorized: filters.uncategorized,
-        dateFrom: filters.dateFrom
-          ? new Date(filters.dateFrom).toISOString()
-          : undefined,
-        dateTo: filters.dateTo
-          ? new Date(filters.dateTo).toISOString()
-          : undefined,
-        madeById: filters.madeById,
-      },
+    queryFn: async () => {
+      const res = await api.transactions.$get({
+        query: {
+          page,
+          limit: PAGE_SIZE,
+          accountId: filters.accountId,
+          type: filters.type as "expense" | "income" | undefined,
+          categoryId: filters.categoryId,
+          settled:
+            filters.settled !== undefined ? String(filters.settled) : undefined,
+          uncategorized:
+            filters.uncategorized !== undefined
+              ? String(filters.uncategorized)
+              : undefined,
+          dateFrom: filters.dateFrom
+            ? new Date(filters.dateFrom).toISOString()
+            : undefined,
+          dateTo: filters.dateTo
+            ? new Date(filters.dateTo).toISOString()
+            : undefined,
+          madeById: filters.madeById,
+        },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
     },
   })
 
-  const transactions = txData?.body.data ?? []
-  const total = txData?.body.total ?? 0
+  const transactions = txData?.data ?? []
+  const total = txData?.total ?? 0
 
-  const { data: unsettledData } = tsr.transactions.list.useQuery({
+  const { data: unsettledData } = useQuery({
     queryKey: ["transactions", "unsettled-count"],
-    queryData: { query: { settled: false, limit: 1 } },
+    queryFn: async () => {
+      const res = await api.transactions.$get({
+        query: { settled: "false", limit: 1 },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const unsettledCount = unsettledData?.body.total ?? 0
+  const unsettledCount = unsettledData?.total ?? 0
 
-  const { data: uncategorizedData } = tsr.transactions.list.useQuery({
+  const { data: uncategorizedData } = useQuery({
     queryKey: ["transactions", "uncategorized-count"],
-    queryData: { query: { uncategorized: true, limit: 1 } },
+    queryFn: async () => {
+      const res = await api.transactions.$get({
+        query: { uncategorized: "true", limit: 1 },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const uncategorizedCount = uncategorizedData?.body.total ?? 0
+  const uncategorizedCount = uncategorizedData?.total ?? 0
 
-  const { data: accountsData } = tsr.accounts.list.useQuery({
+  const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const accounts: Array<Account> = accountsData?.body ?? []
+  const accounts: Array<Account> = accountsData ?? []
 
-  const { data: categoriesData } = tsr.categories.list.useQuery({
+  const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await api.categories.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const categories: Array<Category> = categoriesData?.body ?? []
+  const categories: Array<Category> = categoriesData ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["users", "me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const homeCurrency = meData?.body.homeCurrency ?? "UAH"
-  const currentUserId = meData?.body.id ?? ""
+  const homeCurrency = meData?.homeCurrency ?? "UAH"
+  const currentUserId = meData?.id ?? ""
 
-  const { data: membersData } = tsr.users.getMembers.useQuery({
+  const { data: membersData } = useQuery({
     queryKey: ["users", "members"],
+    queryFn: async () => {
+      const res = await api.users.members.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const members: Array<Member> = membersData?.body ?? []
+  const members: Array<Member> = membersData ?? []
 
-  const { data: ratesData } = tsr.exchangeRates.latest.useQuery({
+  const { data: ratesData } = useQuery({
     queryKey: ["exchange-rates", "latest"],
+    queryFn: async () => {
+      const res = await api["exchange-rates"].latest.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const latestRates = ratesData?.body.rates ?? {}
+  const latestRates = ratesData?.rates ?? {}
 
   const [loadingMore, setLoadingMore] = useState(false)
   const [extraTransactions, setExtraTransactions] = useState<
@@ -133,38 +179,115 @@ function TransactionsPage() {
     queryClient.invalidateQueries({ queryKey: ["accounts"] })
   }
 
-  const updateMutation = tsr.transactions.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        accountId?: string
+        amount?: number
+        categoryId?: string
+        note?: string
+        date?: string
+        originalAmount?: number
+        originalCurrency?: string
+        exchangeRate?: number
+        madeById?: string
+        settled?: boolean
+      }
+    }) => {
+      const res = await api.transactions[":id"].$patch({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const deleteMutation = tsr.transactions.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.transactions[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const settleMutation = tsr.transactions.settle.useMutation({
+  const settleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.transactions[":id"].settle.$patch({
+        param: { id },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const updateTransferMutation = tsr.transactions.updateTransfer.useMutation({
+  const updateTransferMutation = useMutation({
+    mutationFn: async (vars: {
+      transferId: string
+      body: {
+        amount?: number
+        date?: string
+        note?: string
+        originalAmount?: number
+        originalCurrency?: string
+        exchangeRate?: number
+        madeById?: string
+      }
+    }) => {
+      const res = await api.transactions.transfers[":transferId"].$patch({
+        param: { transferId: vars.transferId },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const deleteTransferMutation = tsr.transactions.deleteTransfer.useMutation({
+  const deleteTransferMutation = useMutation({
+    mutationFn: async (transferId: string) => {
+      const res = await api.transactions.transfers[":transferId"].$delete({
+        param: { transferId },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: invalidateAll,
   })
-  const createReimbursementMutation =
-    tsr.transactions.createReimbursement.useMutation({
-      onSuccess: invalidateAll,
-    })
+  const createReimbursementMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        accountId: string
+        amount: number
+        date: string
+        exchangeRate?: number
+        madeById?: string
+      }
+    }) => {
+      const res = await api.transactions[":id"].reimburse.$post({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateAll,
+  })
 
   async function handleLoadMore() {
     setLoadingMore(true)
     try {
       const nextPage = page + 1
-      const result = await tsr.transactions.list.query({
+      const res = await api.transactions.$get({
         query: {
           page: nextPage,
           limit: PAGE_SIZE,
           accountId: filters.accountId,
           type: filters.type as "expense" | "income" | undefined,
           categoryId: filters.categoryId,
-          settled: filters.settled,
+          settled:
+            filters.settled !== undefined ? String(filters.settled) : undefined,
           dateFrom: filters.dateFrom
             ? new Date(filters.dateFrom).toISOString()
             : undefined,
@@ -174,10 +297,9 @@ function TransactionsPage() {
           madeById: filters.madeById,
         },
       })
-      setExtraTransactions((prev) => [
-        ...prev,
-        ...(result.body as { data: Array<Transaction> }).data,
-      ])
+      if (!res.ok) throw await res.json()
+      const body = await res.json()
+      setExtraTransactions((prev) => [...prev, ...body.data])
       setPage(nextPage)
     } finally {
       setLoadingMore(false)
@@ -202,7 +324,7 @@ function TransactionsPage() {
     if (!editTransaction) return
     const { type: _, ...updateFields } = data
     await updateMutation.mutateAsync({
-      params: { id: editTransaction.id },
+      id: editTransaction.id,
       body: updateFields,
     })
     setExtraTransactions([])
@@ -223,7 +345,7 @@ function TransactionsPage() {
     if (!editTransaction?.transferId) return
     const { fromAccountId: _, toAccountId: __, ...updateData } = data
     await updateTransferMutation.mutateAsync({
-      params: { transferId: editTransaction.transferId },
+      transferId: editTransaction.transferId,
       body: updateData,
     })
     setExtraTransactions([])
@@ -233,13 +355,9 @@ function TransactionsPage() {
   async function handleDelete() {
     if (!deleteTransaction) return
     if (deleteTransaction.transferId) {
-      await deleteTransferMutation.mutateAsync({
-        params: { transferId: deleteTransaction.transferId },
-      })
+      await deleteTransferMutation.mutateAsync(deleteTransaction.transferId)
     } else {
-      await deleteMutation.mutateAsync({
-        params: { id: deleteTransaction.id },
-      })
+      await deleteMutation.mutateAsync(deleteTransaction.id)
     }
     setExtraTransactions([])
     setPage(1)
@@ -395,7 +513,7 @@ function TransactionsPage() {
         onEdit={handleClickTransaction}
         onReimburse={(t) => setReimburseTransaction(t)}
         onSettle={(t) => {
-          settleMutation.mutate({ params: { id: t.id } })
+          settleMutation.mutate(t.id)
         }}
         onDelete={(t) => setDeleteTransaction(t)}
       />
@@ -448,7 +566,7 @@ function TransactionsPage() {
         currentUserId={currentUserId}
         onSubmit={async (data) => {
           await createReimbursementMutation.mutateAsync({
-            params: { id: data.transactionId },
+            id: data.transactionId,
             body: {
               accountId: data.accountId,
               amount: data.amount,

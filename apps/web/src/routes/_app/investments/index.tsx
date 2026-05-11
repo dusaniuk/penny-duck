@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Button } from "@workspace/ui/components/button"
+import { useQuery } from "@tanstack/react-query"
 import type { Account } from "@workspace/api-contract"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 import { PortfolioSummary } from "@/components/investments/portfolio-summary"
 import { PositionsTable } from "@/components/investments/positions-table"
 import { TradeFormDialog } from "@/components/investments/trade-form-dialog"
@@ -18,37 +19,61 @@ function InvestmentsIndexPage() {
   const [importOpen, setImportOpen] = useState(false)
   const navigate = useNavigate()
 
-  const { data: positionsData, isLoading } =
-    tsr.investments.listPositions.useQuery({
-      queryKey: ["positions"],
-    })
-  const positions = positionsData?.body.positions ?? []
-  const pricesStale = positionsData?.body.pricesStale ?? false
+  const { data: positionsData, isLoading } = useQuery({
+    queryKey: ["positions"],
+    queryFn: async () => {
+      const res = await api.positions.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+  const positions = positionsData?.positions ?? []
+  const pricesStale = positionsData?.pricesStale ?? false
 
-  const { data: summaryData } = tsr.investments.getSummary.useQuery({
+  const { data: summaryData } = useQuery({
     queryKey: ["investments-summary"],
+    queryFn: async () => {
+      const res = await api.investments.summary.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["users", "me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const homeCurrency = meData?.body.homeCurrency ?? "UAH"
+  const homeCurrency = meData?.homeCurrency ?? "UAH"
 
-  const { data: accountsData } = tsr.accounts.list.useQuery({
+  const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const brokerages: Array<Account> = (accountsData?.body ?? []).filter(
+  const brokerages: Array<Account> = (accountsData ?? []).filter(
     (a) => a.type === "brokerage"
   )
 
   // Imports bump initial_balance by the deposit total without dedup, so a
   // re-import would double-count. Only allow imports into brokerage accounts
   // that don't already have trades (i.e., fresh accounts).
-  const { data: tradesData } = tsr.investments.listTrades.useQuery({
+  const { data: tradesData } = useQuery({
     queryKey: ["trades", "all"],
+    queryFn: async () => {
+      const res = await api.trades.$get({ query: {} })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
   const accountIdsWithTrades = new Set(
-    (tradesData?.body ?? []).map((t) => t.accountId)
+    (tradesData ?? []).map((t) => t.accountId)
   )
   const importableAccounts = brokerages.filter(
     (a) => !accountIdsWithTrades.has(a.id)
@@ -83,7 +108,7 @@ function InvestmentsIndexPage() {
 
       {summaryData && (
         <PortfolioSummary
-          summary={summaryData.body}
+          summary={summaryData}
           homeCurrency={homeCurrency}
         />
       )}
@@ -107,7 +132,7 @@ function InvestmentsIndexPage() {
         onOpenChange={setTradeOpen}
         accounts={brokerages}
         onSubmit={async (data) => {
-          await createMutation.mutateAsync({ body: data })
+          await createMutation.mutateAsync(data)
         }}
       />
       <IbkrImportDialog

@@ -12,24 +12,35 @@ import {
   ResponsiveDialogTitle,
 } from "@workspace/ui/components/responsive-dialog"
 import { Input } from "@workspace/ui/components/input"
-import { tsr } from "@/lib/api"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/settings/members")({
   component: MembersPage,
 })
 
 function MembersPage() {
-  const { data, isLoading } = tsr.users.getMembers.useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["members"],
+    queryFn: async () => {
+      const res = await api.users.members.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
 
-  const members = data?.status === 200 ? data.body : []
+  const members = data ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
 
-  const currentUser = meData?.status === 200 ? meData.body : null
+  const currentUser = meData ?? null
   const currentMember = members.find((m) => m.id === currentUser?.id)
   const isOwner = currentMember?.role === "owner"
 
@@ -80,20 +91,23 @@ function InviteButton() {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const generateMutation = tsr.auth.generateInviteCode.useMutation()
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.auth["invite-code"].$post()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
 
   function handleOpen() {
     setOpen(true)
     setCopied(false)
     if (!generateMutation.data) {
-      generateMutation.mutate({})
+      generateMutation.mutate()
     }
   }
 
-  const inviteUrl =
-    generateMutation.data?.status === 200
-      ? generateMutation.data.body.inviteUrl
-      : null
+  const inviteUrl = generateMutation.data?.inviteUrl ?? null
 
   async function handleCopy() {
     if (!inviteUrl) return

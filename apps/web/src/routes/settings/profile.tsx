@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import { useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Input } from "@workspace/ui/components/input"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import {
@@ -15,7 +15,7 @@ import { Button } from "@workspace/ui/components/button"
 import { Separator } from "@workspace/ui/components/separator"
 import { CURRENCIES } from "@workspace/shared/currencies"
 import { toast } from "sonner"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog"
 
 const currencyItems = CURRENCIES.map((c) => ({
@@ -39,7 +39,12 @@ function ProfilePage() {
     currencyItems.find((c) => c.code === user.homeCurrency) ?? null
   )
 
-  const updateMutation = tsr.users.updateMe.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: async (body: { name?: string; homeCurrency?: string }) => {
+      const res = await api.users.me.$patch({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Profile updated")
@@ -52,14 +57,14 @@ function ProfilePage() {
   function handleNameBlur() {
     const trimmed = name.trim()
     if (trimmed && trimmed !== user.name) {
-      updateMutation.mutate({ body: { name: trimmed } })
+      updateMutation.mutate({ name: trimmed })
     }
   }
 
   function handleCurrencyChange(item: CurrencyItem | null) {
     setCurrency(item)
     if (item && item.code !== user.homeCurrency) {
-      updateMutation.mutate({ body: { homeCurrency: item.code } })
+      updateMutation.mutate({ homeCurrency: item.code })
     }
   }
 

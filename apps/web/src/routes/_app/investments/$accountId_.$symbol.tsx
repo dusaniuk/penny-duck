@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { tsr } from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/investments/$accountId_/$symbol")({
   staticData: { breadcrumb: "Position" },
@@ -11,18 +12,27 @@ function PositionPage() {
     from: "/_app/investments/$accountId_/$symbol",
   })
 
-  const { data: positionData } = tsr.investments.getPositionBySymbol.useQuery({
+  const { data: position } = useQuery({
     queryKey: ["positions", accountId, symbol],
-    queryData: { params: { accountId, symbol } },
+    queryFn: async () => {
+      const res = await api.positions[":accountId"][":symbol"].$get({
+        param: { accountId, symbol },
+      })
+      if (!res.ok) return undefined
+      return res.json()
+    },
   })
-  const position = positionData?.status === 200 ? positionData.body : undefined
 
-  const { data: tradesData } = tsr.investments.listTrades.useQuery({
+  const { data: tradesData } = useQuery({
     queryKey: ["trades", accountId, symbol],
-    queryData: { query: { accountId, symbol } },
+    queryFn: async () => {
+      const res = await api.trades.$get({ query: { accountId, symbol } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
     enabled: !!position,
   })
-  const trades = tradesData?.body ?? []
+  const trades = tradesData ?? []
 
   if (!position) return <div>Loading…</div>
 

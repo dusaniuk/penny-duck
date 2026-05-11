@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
+import { useMutation } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/button"
 import {
   Dialog,
@@ -11,7 +12,7 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Field, FieldLabel } from "@workspace/ui/components/field"
 import { toast } from "sonner"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 
 interface DeleteAccountDialogProps {
   open: boolean
@@ -28,12 +29,18 @@ export function DeleteAccountDialog({
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const deleteMutation = tsr.users.deleteMe.useMutation()
+  const deleteMutation = useMutation({
+    mutationFn: async (body: { email: string }) => {
+      const res = await api.users.me.$delete({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
 
   async function handleDelete() {
     setLoading(true)
     try {
-      await deleteMutation.mutateAsync({ body: { email } })
+      await deleteMutation.mutateAsync({ email })
       toast.success("Account deleted")
       navigate({ to: "/login" })
     } catch {

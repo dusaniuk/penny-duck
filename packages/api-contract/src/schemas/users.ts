@@ -1,7 +1,4 @@
-import { initContract } from "@ts-rest/core"
 import { z } from "zod"
-
-const c = initContract()
 
 export const UserSchema = z.object({
   id: z.string().uuid(),
@@ -76,42 +73,3 @@ export const ExportDataSchema = z.object({
   transactions: z.array(ExportTransactionSchema),
 })
 
-export const userContract = c.router({
-  getMe: {
-    method: "GET",
-    path: "/users/me",
-    responses: {
-      200: UserSchema,
-    },
-  },
-  updateMe: {
-    method: "PATCH",
-    path: "/users/me",
-    body: UpdateProfileSchema,
-    responses: {
-      200: UserSchema,
-    },
-  },
-  deleteMe: {
-    method: "DELETE",
-    path: "/users/me",
-    body: DeleteAccountSchema,
-    responses: {
-      200: MessageSchema,
-    },
-  },
-  exportData: {
-    method: "GET",
-    path: "/users/me/export",
-    responses: {
-      200: ExportDataSchema,
-    },
-  },
-  getMembers: {
-    method: "GET",
-    path: "/users/members",
-    responses: {
-      200: z.array(MemberSchema),
-    },
-  },
-})

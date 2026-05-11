@@ -15,7 +15,8 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
-import { tsr } from "@/lib/api"
+import { useMutation } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
@@ -25,7 +26,13 @@ function LoginPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 
-  const loginMutation = tsr.auth.login.useMutation()
+  const loginMutation = useMutation({
+    mutationFn: async (body: { email: string; password: string }) => {
+      const res = await api.auth.login.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,14 +43,11 @@ function LoginPage() {
     const password = formData.get("password") as string
 
     try {
-      await loginMutation.mutateAsync({
-        body: { email, password },
-      })
+      await loginMutation.mutateAsync({ email, password })
       navigate({ to: "/dashboard" })
     } catch (err) {
-      if (err && typeof err === "object" && "body" in err) {
-        const body = (err as { body: { message?: string } }).body
-        setError(body.message || "Login failed")
+      if (err && typeof err === "object" && "message" in err) {
+        setError((err as { message?: string }).message || "Login failed")
       } else {
         setError("Login failed")
       }

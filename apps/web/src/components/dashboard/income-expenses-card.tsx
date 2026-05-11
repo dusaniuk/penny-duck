@@ -11,8 +11,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
+import { useQuery } from "@tanstack/react-query"
 import type { ChartConfig } from "@workspace/ui/components/chart"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 
 const chartConfig = {
   income: {
@@ -26,12 +27,18 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function IncomeExpensesCard() {
-  const { data, isLoading } = tsr.stats.monthlySummary.useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["stats", "monthly-summary", 6],
-    queryData: { query: { months: 6 } },
+    queryFn: async () => {
+      const res = await api.stats["monthly-summary"].$get({
+        query: { months: 6 },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
 
-  const chartData = (data?.body ?? []).map((item) => ({
+  const chartData = (data ?? []).map((item) => ({
     ...item,
     monthLabel: new Date(item.month + "-01").toLocaleDateString("en-US", {
       month: "short",

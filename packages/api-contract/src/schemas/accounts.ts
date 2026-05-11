@@ -1,8 +1,4 @@
-import { initContract } from "@ts-rest/core"
 import { z } from "zod"
-import { MessageSchema } from "./common"
-
-const c = initContract()
 
 export const AccountSchema = z.object({
   id: z.string().uuid(),
@@ -27,60 +23,3 @@ export const UpdateAccountSchema = z.object({
 })
 
 export type Account = z.infer<typeof AccountSchema>
-
-export const accountContract = c.router({
-  list: {
-    method: "GET",
-    path: "/accounts",
-    responses: {
-      200: z.array(AccountSchema),
-    },
-  },
-  create: {
-    method: "POST",
-    path: "/accounts",
-    body: CreateAccountSchema,
-    responses: {
-      201: AccountSchema,
-    },
-  },
-  get: {
-    method: "GET",
-    path: "/accounts/:id",
-    responses: {
-      200: AccountSchema,
-    },
-  },
-  update: {
-    method: "PATCH",
-    path: "/accounts/:id",
-    body: UpdateAccountSchema,
-    responses: {
-      200: AccountSchema,
-    },
-  },
-  delete: {
-    method: "DELETE",
-    path: "/accounts/:id",
-    body: c.noBody(),
-    responses: {
-      200: MessageSchema,
-    },
-  },
-  setDefault: {
-    method: "PUT",
-    path: "/accounts/:id/default",
-    body: c.noBody(),
-    responses: {
-      200: AccountSchema,
-    },
-  },
-  clearDefault: {
-    method: "DELETE",
-    path: "/accounts/:id/default",
-    body: c.noBody(),
-    responses: {
-      200: MessageSchema,
-    },
-  },
-})

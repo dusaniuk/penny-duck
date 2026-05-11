@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
 import type { Account, Category } from "@workspace/api-contract"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 import { SpendingsCard } from "@/components/spendings/spendings-card"
 import { BalanceCard } from "@/components/dashboard/balance-card"
 import { IncomeExpensesCard } from "@/components/dashboard/income-expenses-card"
@@ -13,21 +14,35 @@ export const Route = createFileRoute("/_app/dashboard")({
 })
 
 function DashboardPage() {
-  const { data: categoriesData } = tsr.categories.list.useQuery({
+  const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await api.categories.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const categories: Array<Category> = categoriesData?.body ?? []
+  const categories: Array<Category> = categoriesData ?? []
 
-  const { data: accountsData, isLoading: accountsLoading } =
-    tsr.accounts.list.useQuery({
-      queryKey: ["accounts"],
-    })
-  const accounts: Array<Account> = accountsData?.body ?? []
+  const { data: accountsData, isLoading: accountsLoading } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+  const accounts: Array<Account> = accountsData ?? []
 
-  const { data: meData } = tsr.users.getMe.useQuery({
+  const { data: meData } = useQuery({
     queryKey: ["users", "me"],
+    queryFn: async () => {
+      const res = await api.users.me.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const homeCurrency = meData?.body.homeCurrency ?? "UAH"
+  const homeCurrency = meData?.homeCurrency ?? "UAH"
 
   const { openCreate, dialog: createDialog } = useTransactionCreate()
 

@@ -1,23 +1,16 @@
-export { contract } from "./contract"
-
 export {
   MessageSchema,
   ErrorResponseSchema,
   PaginatedResponseSchema,
 } from "./schemas/common"
 
-export {
-  SignupSchema,
-  LoginSchema,
-  authContract,
-} from "./schemas/auth"
+export { SignupSchema, LoginSchema } from "./schemas/auth"
 
 export {
   UserSchema,
   UpdateProfileSchema,
   DeleteAccountSchema,
   MemberSchema,
-  userContract,
 } from "./schemas/users"
 export type { Member } from "./schemas/users"
 
@@ -25,7 +18,6 @@ export {
   AccountSchema,
   CreateAccountSchema,
   UpdateAccountSchema,
-  accountContract,
 } from "./schemas/accounts"
 export type { Account } from "./schemas/accounts"
 
@@ -34,7 +26,6 @@ export {
   CategoryTypeSchema,
   CreateCategorySchema,
   UpdateCategorySchema,
-  categoryContract,
 } from "./schemas/categories"
 export type { Category, CategoryType } from "./schemas/categories"
 
@@ -47,19 +38,14 @@ export {
   UpdateTransferSchema,
   CreateReimbursementSchema,
   TransferResponseSchema,
-  transactionContract,
 } from "./schemas/transactions"
 export type { Transaction } from "./schemas/transactions"
 
-export {
-  ExchangeRatesResponseSchema,
-  exchangeRateContract,
-} from "./schemas/exchange-rates"
+export { ExchangeRatesResponseSchema } from "./schemas/exchange-rates"
 
 export {
   MonthlySummaryItemSchema,
   MonthlySummaryQuerySchema,
-  statsContract,
 } from "./schemas/stats"
 export type { MonthlySummaryItem } from "./schemas/stats"
 
@@ -78,7 +64,6 @@ export {
   ImportTradesSummarySchema,
   ImportTradesResponseSchema,
   ImportTradesParseErrorSchema,
-  investmentsContract,
 } from "./schemas/investments"
 export type {
   Instrument,

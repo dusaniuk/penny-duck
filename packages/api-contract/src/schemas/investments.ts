@@ -1,8 +1,4 @@
-import { initContract } from "@ts-rest/core"
 import { z } from "zod"
-import { MessageSchema } from "./common"
-
-const c = initContract()
 
 // ----- Instruments -----
 
@@ -110,69 +106,6 @@ export const ListTradesQuerySchema = z.object({
   type: TradeTypeSchema.optional(),
   from: z.string().optional(),
   to: z.string().optional(),
-})
-
-// ----- Contract -----
-
-export const investmentsContract = c.router({
-  searchInstruments: {
-    method: "GET",
-    path: "/instruments/search",
-    query: InstrumentSearchQuerySchema,
-    responses: { 200: z.array(InstrumentSchema) },
-  },
-  getInstrument: {
-    method: "GET",
-    path: "/instruments/:symbol",
-    responses: { 200: InstrumentSchema, 404: MessageSchema },
-  },
-  refreshPrices: {
-    method: "POST",
-    path: "/instruments/refresh-prices",
-    body: c.noBody(),
-    responses: { 200: z.object({ refreshed: z.number() }) },
-  },
-  listPositions: {
-    method: "GET",
-    path: "/positions",
-    responses: { 200: PositionsResponseSchema },
-  },
-  getPositionBySymbol: {
-    method: "GET",
-    path: "/positions/:accountId/:symbol",
-    responses: { 200: PositionSchema, 404: MessageSchema },
-  },
-  getSummary: {
-    method: "GET",
-    path: "/investments/summary",
-    responses: {
-      200: InvestmentsSummarySchema,
-    },
-  },
-  listTrades: {
-    method: "GET",
-    path: "/trades",
-    query: ListTradesQuerySchema,
-    responses: { 200: z.array(TradeSchema) },
-  },
-  createTrade: {
-    method: "POST",
-    path: "/trades",
-    body: CreateTradeSchema,
-    responses: { 201: TradeSchema },
-  },
-  updateTrade: {
-    method: "PATCH",
-    path: "/trades/:id",
-    body: UpdateTradeSchema,
-    responses: { 200: TradeSchema },
-  },
-  deleteTrade: {
-    method: "DELETE",
-    path: "/trades/:id",
-    body: c.noBody(),
-    responses: { 200: MessageSchema },
-  },
 })
 
 // ----- IBKR Import -----

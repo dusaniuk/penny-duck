@@ -1,4 +1,5 @@
-import { queryClient, tsr } from "@/lib/api"
+import { useMutation } from "@tanstack/react-query"
+import { api, queryClient } from "@/lib/api"
 
 function invalidateAll() {
   queryClient.invalidateQueries({ queryKey: ["positions"] })
@@ -9,13 +10,56 @@ function invalidateAll() {
 }
 
 export function useTradeCreate() {
-  return tsr.investments.createTrade.useMutation({ onSuccess: invalidateAll })
+  return useMutation({
+    mutationFn: async (body: {
+      accountId: string
+      symbol: string
+      type: "buy" | "sell" | "dividend"
+      quantity?: number
+      price?: number
+      amount?: number
+      fees?: number
+      date: string
+    }) => {
+      const res = await api.trades.$post({ json: body })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateAll,
+  })
 }
 
 export function useTradeUpdate() {
-  return tsr.investments.updateTrade.useMutation({ onSuccess: invalidateAll })
+  return useMutation({
+    mutationFn: async (vars: {
+      id: string
+      body: {
+        symbol?: string
+        quantity?: number
+        price?: number
+        amount?: number
+        fees?: number
+        date?: string
+      }
+    }) => {
+      const res = await api.trades[":id"].$patch({
+        param: { id: vars.id },
+        json: vars.body,
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateAll,
+  })
 }
 
 export function useTradeDelete() {
-  return tsr.investments.deleteTrade.useMutation({ onSuccess: invalidateAll })
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.trades[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateAll,
+  })
 }

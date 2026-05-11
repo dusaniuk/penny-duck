@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
-import { tsr } from "@/lib/api"
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 import { PositionsTable } from "@/components/investments/positions-table"
 
 export const Route = createFileRoute("/_app/investments/$accountId")({
@@ -11,17 +12,27 @@ function AccountInvestmentsPage() {
   const { accountId } = useParams({ from: "/_app/investments/$accountId" })
   const navigate = useNavigate()
 
-  const { data: positionsData } = tsr.investments.listPositions.useQuery({
+  const { data: positionsData } = useQuery({
     queryKey: ["positions"],
+    queryFn: async () => {
+      const res = await api.positions.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const positions = (positionsData?.body.positions ?? []).filter(
+  const positions = (positionsData?.positions ?? []).filter(
     (p) => p.accountId === accountId
   )
 
-  const { data: accountsData } = tsr.accounts.list.useQuery({
+  const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
+    queryFn: async () => {
+      const res = await api.accounts.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
   })
-  const account = accountsData?.body.find((a) => a.id === accountId)
+  const account = (accountsData ?? []).find((a) => a.id === accountId)
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import type { Transaction } from "@workspace/api-contract"
-import { tsr } from "@/lib/api"
+import { api } from "@/lib/api"
 
 const PAGE_SIZE = 100
 
@@ -22,7 +22,7 @@ async function fetchAllTransactions(
   let page = 1
 
   while (true) {
-    const result = await tsr.transactions.list.query({
+    const res = await api.transactions.$get({
       query: {
         dateFrom,
         dateTo,
@@ -31,8 +31,11 @@ async function fetchAllTransactions(
         page,
       },
     })
-
-    const body = result.body as { data: Array<Transaction>; total: number }
+    if (!res.ok) throw await res.json()
+    const body = (await res.json()) as {
+      data: Array<Transaction>
+      total: number
+    }
     all.push(...body.data)
 
     if (all.length >= body.total) break

@@ -9,19 +9,19 @@ import {
   buildValidationError,
   type ApiError,
 } from "@workspace/shared/errors"
-import { accountsRoutes } from "@/hono/modules/accounts/routes"
-import { authRoutes } from "@/hono/modules/auth/routes"
-import { categoriesRoutes } from "@/hono/modules/categories/routes"
-import { exchangeRatesRoutes } from "@/hono/modules/exchange-rates/routes"
+import { accountsRoutes } from "./modules/accounts/routes"
+import { authRoutes } from "./modules/auth/routes"
+import { categoriesRoutes } from "./modules/categories/routes"
+import { exchangeRatesRoutes } from "./modules/exchange-rates/routes"
 import {
   instrumentsRoutes,
   investmentsRoutes,
   positionsRoutes,
   tradesRoutes,
-} from "@/hono/modules/investments/routes"
-import { statsRoutes } from "@/hono/modules/stats/routes"
-import { transactionsRoutes } from "@/hono/modules/transactions/routes"
-import { usersRoutes } from "@/hono/modules/users/routes"
+} from "./modules/investments/routes"
+import { statsRoutes } from "./modules/stats/routes"
+import { transactionsRoutes } from "./modules/transactions/routes"
+import { usersRoutes } from "./modules/users/routes"
 
 type StatusForJson = Parameters<Context["json"]>[1]
 
@@ -63,28 +63,29 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
   return app
 }
 
-export const honoApp = attachErrorHandlers(new Hono())
-
-honoApp.use(
-  "*",
-  cors({
-    origin: env.WEB_URL,
-    credentials: true,
-    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allowHeaders: ["Content-Type"],
-  }),
+export const honoApp = attachErrorHandlers(
+  new Hono()
+    .use(
+      "*",
+      cors({
+        origin: env.WEB_URL,
+        credentials: true,
+        allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+        allowHeaders: ["Content-Type"],
+      }),
+    )
+    .get("/healthz", (c) => c.json({ status: "ok" }))
+    .route("/accounts", accountsRoutes)
+    .route("/auth", authRoutes)
+    .route("/categories", categoriesRoutes)
+    .route("/exchange-rates", exchangeRatesRoutes)
+    .route("/stats", statsRoutes)
+    .route("/instruments", instrumentsRoutes)
+    .route("/positions", positionsRoutes)
+    .route("/trades", tradesRoutes)
+    .route("/investments", investmentsRoutes)
+    .route("/transactions", transactionsRoutes)
+    .route("/users", usersRoutes),
 )
 
-honoApp.get("/healthz", (c) => c.json({ status: "ok" }))
-
-honoApp.route("/accounts", accountsRoutes)
-honoApp.route("/auth", authRoutes)
-honoApp.route("/categories", categoriesRoutes)
-honoApp.route("/exchange-rates", exchangeRatesRoutes)
-honoApp.route("/stats", statsRoutes)
-honoApp.route("/instruments", instrumentsRoutes)
-honoApp.route("/positions", positionsRoutes)
-honoApp.route("/trades", tradesRoutes)
-honoApp.route("/investments", investmentsRoutes)
-honoApp.route("/transactions", transactionsRoutes)
-honoApp.route("/users", usersRoutes)
+export type AppType = typeof honoApp

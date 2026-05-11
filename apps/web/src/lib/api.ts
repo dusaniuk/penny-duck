@@ -1,29 +1,32 @@
-import { initTsrReactQuery } from "@ts-rest/react-query/v5"
-import { tsRestFetchApi } from "@ts-rest/core"
 import { QueryClient } from "@tanstack/react-query"
-import { contract } from "@workspace/api-contract"
-import type { ApiFetcherArgs } from "@ts-rest/core"
+import { hc } from "hono/client"
+import type { AppType } from "api/hono/app"
 
 let refreshPromise: Promise<Response> | null = null
 
-async function fetchWithRefresh(args: ApiFetcherArgs) {
-  const res = await tsRestFetchApi(args)
+function refreshSession() {
+  refreshPromise ??= fetch("/api/auth/refresh", {
+    method: "POST",
+    credentials: "include",
+  }).finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
+}
 
-  if (res.status === 401 && !args.path.includes("/auth/refresh")) {
-    if (!refreshPromise) {
-      refreshPromise = fetch("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      }).finally(() => {
-        refreshPromise = null
-      })
-    }
+async function fetchWithRefresh(input: RequestInfo | URL, init?: RequestInit) {
+  const url =
+    typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url
+  const merged: RequestInit = { ...init, credentials: "include" }
+  const res = await fetch(input, merged)
 
-    const refreshRes = await refreshPromise
-
-    if (refreshRes.ok) {
-      return tsRestFetchApi(args)
-    }
+  if (res.status === 401 && !url.includes("/auth/refresh")) {
+    const refreshRes = await refreshSession()
+    if (refreshRes.ok) return fetch(input, merged)
   }
 
   return res
@@ -38,9 +41,4 @@ export const queryClient = new QueryClient({
   },
 })
 
-export const tsr = initTsrReactQuery(contract, {
-  baseUrl: "/api",
-  credentials: "include",
-  baseHeaders: { "Content-Type": "application/json" },
-  api: fetchWithRefresh,
-})
+export const api = hc<AppType>("/api", { fetch: fetchWithRefresh })
