@@ -1,19 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, beforeEach } from "bun:test"
+import { quoteMock, searchMock } from "@/test/yahoo-mock"
 import { fetchQuotes, searchYahoo, RateLimitedError } from "./yahoo"
-
-const quoteMock = vi.fn()
-const searchMock = vi.fn()
-
-vi.mock("yahoo-finance2", () => ({
-  default: class YahooFinance {
-    quote(...args: unknown[]) {
-      return quoteMock(...args)
-    }
-    search(...args: unknown[]) {
-      return searchMock(...args)
-    }
-  },
-}))
 
 beforeEach(() => {
   quoteMock.mockReset()

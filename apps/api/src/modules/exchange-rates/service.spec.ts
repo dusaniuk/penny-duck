@@ -1,3 +1,11 @@
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterAll,
+} from "bun:test"
 import { eq, and } from "drizzle-orm"
 import { exchangeRates } from "@workspace/db"
 import { db } from "@/db"
@@ -61,7 +69,9 @@ describe("getRate", () => {
     // Cache round-trips through the int-scaled `rate` column (6 decimals),
     // so the second call equals the cached value, not the full live rate.
     expect(second).toBeCloseTo(first, 5)
-    expect(second).toBe(await readCachedRate(todayStr(), "UAH", "PLN"))
+    const cached = await readCachedRate(todayStr(), "UAH", "PLN")
+    expect(cached).not.toBeNull()
+    expect(second).toBe(cached as number)
   })
 })
 

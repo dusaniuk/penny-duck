@@ -12,7 +12,9 @@ export async function createTestApp(): Promise<{ db: DbClient }> {
 }
 
 export async function closeTestApp() {
-  await db.$client.end()
+  // No-op under bun test: all spec files share the singleton db pool in a
+  // single process, so ending it after one file's afterAll would break later
+  // files. Process exit cleans up the connection.
 }
 
 export async function truncateAll() {

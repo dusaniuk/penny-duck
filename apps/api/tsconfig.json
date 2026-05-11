@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "declaration": true,
-    "types": ["vitest/globals"],
+    "types": ["bun"],
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {

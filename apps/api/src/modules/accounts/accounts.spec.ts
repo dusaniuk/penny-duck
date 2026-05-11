@@ -5,7 +5,7 @@ import {
   describe,
   it,
   expect,
-} from "vitest"
+} from "bun:test"
 import { env } from "@workspace/env/api"
 import type { Account } from "@workspace/api-contract"
 import { honoApp } from "@/app"

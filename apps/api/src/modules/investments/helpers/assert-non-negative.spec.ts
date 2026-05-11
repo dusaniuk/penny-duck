@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from "bun:test"
 import { HTTPException } from "hono/http-exception"
 import { assertNonNegative } from "./assert-non-negative"
 import type { ReplayTrade } from "./replay-position"
@@ -32,7 +32,7 @@ describe("assertNonNegative", () => {
   it("throws 409 when a sell would exceed running quantity", () => {
     try {
       assertNonNegative([buy(10), sell(11)])
-      expect.fail("expected throw")
+      throw new Error("expected throw")
     } catch (err) {
       expect(err).toBeInstanceOf(HTTPException)
       expect((err as HTTPException).status).toBe(409)

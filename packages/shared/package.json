@@ -3,26 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "build": "tsup"
-  },
-  "tsup": {
-    "entry": ["src/currencies.ts", "src/errors.ts"],
-    "format": ["esm"],
-    "dts": false,
-    "sourcemap": true
-  },
   "dependencies": {
     "zod": "^4.0.0"
   },
   "exports": {
-    "./currencies": {
-      "node": "./dist/currencies.js",
-      "default": "./src/currencies.ts"
-    },
-    "./errors": {
-      "node": "./dist/errors.js",
-      "default": "./src/errors.ts"
-    }
+    "./currencies": "./src/currencies.ts",
+    "./errors": "./src/errors.ts"
   }
 }

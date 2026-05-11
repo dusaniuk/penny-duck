@@ -4,21 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsup",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\"",
     "typecheck": "tsc --noEmit"
   },
-  "tsup": {
-    "entry": ["src/api.ts", "src/web.ts"],
-    "format": ["esm"],
-    "dts": false,
-    "sourcemap": true
-  },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.8",
-    "dotenv": "^16.6.1",
-    "dotenv-expand": "^12.0.3",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -27,13 +18,7 @@
     "vite": "^7.2.4"
   },
   "exports": {
-    "./api": {
-      "node": "./dist/api.js",
-      "default": "./src/api.ts"
-    },
-    "./web": {
-      "node": "./dist/web.js",
-      "default": "./src/web.ts"
-    }
+    "./api": "./src/api.ts",
+    "./web": "./src/web.ts"
   }
 }

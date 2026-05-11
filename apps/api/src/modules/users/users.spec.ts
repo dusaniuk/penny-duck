@@ -5,7 +5,7 @@ import {
   describe,
   it,
   expect,
-} from "vitest"
+} from "bun:test"
 import { eq } from "drizzle-orm"
 import { type DbClient, organizations, users } from "@workspace/db"
 import { env } from "@workspace/env/api"

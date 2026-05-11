@@ -6,8 +6,7 @@ import {
   describe,
   expect,
   it,
-  vi,
-} from "vitest"
+} from "bun:test"
 import { HTTPException } from "hono/http-exception"
 import { eq } from "drizzle-orm"
 import {
@@ -275,8 +274,9 @@ describe("Auth", () => {
   })
 
   describe("HTTP layer", () => {
+    const originalNodeEnv = process.env.NODE_ENV
     afterEach(() => {
-      vi.unstubAllEnvs()
+      process.env.NODE_ENV = originalNodeEnv
     })
 
     it("POST /auth/login sets access_token and refresh_token cookies", async () => {
@@ -320,7 +320,7 @@ describe("Auth", () => {
     })
 
     it("rate limits POST /auth/login to 5/min in production", async () => {
-      vi.stubEnv("NODE_ENV", "production")
+      process.env.NODE_ENV = "production"
       const body = JSON.stringify({
         email: "ratelimited@example.com",
         password: "wrongpassword",

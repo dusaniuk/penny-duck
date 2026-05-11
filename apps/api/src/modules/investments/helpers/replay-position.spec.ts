@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from "bun:test"
 import { replayPosition, type ReplayTrade } from "./replay-position"
 
 function mkTrade(overrides: Partial<ReplayTrade> & { type: ReplayTrade["type"] }): ReplayTrade {

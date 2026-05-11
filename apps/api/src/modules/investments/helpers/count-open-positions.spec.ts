@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from "bun:test"
 import { countOpenPositionsFromTrades } from "./count-open-positions"
 import type { ReplayTrade } from "./replay-position"
 

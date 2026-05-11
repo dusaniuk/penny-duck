@@ -1,4 +1,12 @@
 import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterAll,
+} from "bun:test"
+import {
   closeTestApp,
   createTestApp,
   flushEvents,

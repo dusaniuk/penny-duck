@@ -17,6 +17,7 @@ const config = defineConfig({
   },
   plugins: [
     nitro({
+      preset: "bun",
       routeRules: {
         "/api/**": {
           proxy: `${apiUrl}/**`,

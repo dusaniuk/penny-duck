@@ -1,5 +1,4 @@
-import { describe, it, expect, vi } from "vitest"
-import * as bcrypt from "bcrypt"
+import { describe, it, expect, mock } from "bun:test"
 import {
   InvalidCredentialsError,
   InvalidRefreshTokenError,
@@ -16,22 +15,27 @@ import {
 const PASSWORD = "correct-horse-battery-staple"
 let cachedHash: string | null = null
 async function passwordHash(): Promise<string> {
-  if (!cachedHash) cachedHash = await bcrypt.hash(PASSWORD, 4)
+  if (!cachedHash) {
+    cachedHash = await Bun.password.hash(PASSWORD, {
+      algorithm: "bcrypt",
+      cost: 4,
+    })
+  }
   return cachedHash
 }
 
 describe("login", () => {
   it("returns user, payload, and refresh token on success", async () => {
     const hash = await passwordHash()
-    const insertRefreshToken = vi.fn().mockResolvedValue(undefined)
+    const insertRefreshToken = mock().mockResolvedValue(undefined)
     const result = await login("Alice@Example.com  ", PASSWORD, {
-      findUserByEmail: vi.fn().mockResolvedValue({
+      findUserByEmail: mock().mockResolvedValue({
         id: "u1",
         email: "alice@example.com",
         name: "Alice",
         passwordHash: hash,
       }),
-      findOrgByUserId: vi.fn().mockResolvedValue({ id: "o1" }),
+      findOrgByUserId: mock().mockResolvedValue({ id: "o1" }),
       insertRefreshToken,
     })
 
@@ -48,7 +52,7 @@ describe("login", () => {
     expect(typeof result.refreshToken).toBe("string")
     expect(result.refreshToken.length).toBeGreaterThan(40)
 
-    expect(insertRefreshToken).toHaveBeenCalledOnce()
+    expect(insertRefreshToken).toHaveBeenCalledTimes(1)
     const call = insertRefreshToken.mock.calls[0][0]
     expect(call.userId).toBe("u1")
     expect(call.token).toBe(result.refreshToken)
@@ -58,12 +62,12 @@ describe("login", () => {
   })
 
   it("normalizes email to lowercase + trim before lookup", async () => {
-    const findUserByEmail = vi.fn().mockResolvedValue(null)
+    const findUserByEmail = mock().mockResolvedValue(null)
     await expect(
       login("  Bob@Example.COM ", PASSWORD, {
         findUserByEmail,
-        findOrgByUserId: vi.fn(),
-        insertRefreshToken: vi.fn(),
+        findOrgByUserId: mock(),
+        insertRefreshToken: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
     expect(findUserByEmail).toHaveBeenCalledWith("bob@example.com")
@@ -72,9 +76,9 @@ describe("login", () => {
   it("throws InvalidCredentialsError when user not found", async () => {
     await expect(
       login("missing@example.com", PASSWORD, {
-        findUserByEmail: vi.fn().mockResolvedValue(null),
-        findOrgByUserId: vi.fn(),
-        insertRefreshToken: vi.fn(),
+        findUserByEmail: mock().mockResolvedValue(null),
+        findOrgByUserId: mock(),
+        insertRefreshToken: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
@@ -83,14 +87,14 @@ describe("login", () => {
     const hash = await passwordHash()
     await expect(
       login("alice@example.com", "wrong-password", {
-        findUserByEmail: vi.fn().mockResolvedValue({
+        findUserByEmail: mock().mockResolvedValue({
           id: "u1",
           email: "alice@example.com",
           name: "Alice",
           passwordHash: hash,
         }),
-        findOrgByUserId: vi.fn(),
-        insertRefreshToken: vi.fn(),
+        findOrgByUserId: mock(),
+        insertRefreshToken: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
@@ -99,14 +103,14 @@ describe("login", () => {
     const hash = await passwordHash()
     await expect(
       login("alice@example.com", PASSWORD, {
-        findUserByEmail: vi.fn().mockResolvedValue({
+        findUserByEmail: mock().mockResolvedValue({
           id: "u1",
           email: "alice@example.com",
           name: "Alice",
           passwordHash: hash,
         }),
-        findOrgByUserId: vi.fn().mockResolvedValue(null),
-        insertRefreshToken: vi.fn(),
+        findOrgByUserId: mock().mockResolvedValue(null),
+        insertRefreshToken: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidCredentialsError)
   })
@@ -115,22 +119,22 @@ describe("login", () => {
 describe("rotateRefreshToken", () => {
   it("deletes the old token before inserting a new one", async () => {
     const calls: string[] = []
-    const deleteRefreshToken = vi.fn().mockImplementation(async () => {
+    const deleteRefreshToken = mock().mockImplementation(async () => {
       calls.push("delete")
     })
-    const insertRefreshToken = vi.fn().mockImplementation(async () => {
+    const insertRefreshToken = mock().mockImplementation(async () => {
       calls.push("insert")
     })
 
     await rotateRefreshToken("old-token", {
-      findRefreshToken: vi.fn().mockResolvedValue({
+      findRefreshToken: mock().mockResolvedValue({
         userId: "u1",
         expiresAt: new Date(Date.now() + 60_000),
       }),
       deleteRefreshToken,
       insertRefreshToken,
-      findUserById: vi.fn().mockResolvedValue({ email: "alice@example.com" }),
-      findOrgByUserId: vi.fn().mockResolvedValue({ id: "o1" }),
+      findUserById: mock().mockResolvedValue({ email: "alice@example.com" }),
+      findOrgByUserId: mock().mockResolvedValue({ id: "o1" }),
     })
 
     expect(calls).toEqual(["delete", "insert"])
@@ -138,14 +142,14 @@ describe("rotateRefreshToken", () => {
 
   it("returns a new payload + refresh token", async () => {
     const result = await rotateRefreshToken("old-token", {
-      findRefreshToken: vi.fn().mockResolvedValue({
+      findRefreshToken: mock().mockResolvedValue({
         userId: "u1",
         expiresAt: new Date(Date.now() + 60_000),
       }),
-      deleteRefreshToken: vi.fn().mockResolvedValue(undefined),
-      insertRefreshToken: vi.fn().mockResolvedValue(undefined),
-      findUserById: vi.fn().mockResolvedValue({ email: "alice@example.com" }),
-      findOrgByUserId: vi.fn().mockResolvedValue({ id: "o1" }),
+      deleteRefreshToken: mock().mockResolvedValue(undefined),
+      insertRefreshToken: mock().mockResolvedValue(undefined),
+      findUserById: mock().mockResolvedValue({ email: "alice@example.com" }),
+      findOrgByUserId: mock().mockResolvedValue({ id: "o1" }),
     })
     expect(result.accessToken).toEqual({
       sub: "u1",
@@ -159,11 +163,11 @@ describe("rotateRefreshToken", () => {
   it("throws InvalidRefreshTokenError when token is missing", async () => {
     await expect(
       rotateRefreshToken("missing", {
-        findRefreshToken: vi.fn().mockResolvedValue(null),
-        deleteRefreshToken: vi.fn(),
-        insertRefreshToken: vi.fn(),
-        findUserById: vi.fn(),
-        findOrgByUserId: vi.fn(),
+        findRefreshToken: mock().mockResolvedValue(null),
+        deleteRefreshToken: mock(),
+        insertRefreshToken: mock(),
+        findUserById: mock(),
+        findOrgByUserId: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidRefreshTokenError)
   })
@@ -171,14 +175,14 @@ describe("rotateRefreshToken", () => {
   it("throws InvalidRefreshTokenError when token is expired", async () => {
     await expect(
       rotateRefreshToken("expired", {
-        findRefreshToken: vi.fn().mockResolvedValue({
+        findRefreshToken: mock().mockResolvedValue({
           userId: "u1",
           expiresAt: new Date(Date.now() - 1000),
         }),
-        deleteRefreshToken: vi.fn(),
-        insertRefreshToken: vi.fn(),
-        findUserById: vi.fn(),
-        findOrgByUserId: vi.fn(),
+        deleteRefreshToken: mock(),
+        insertRefreshToken: mock(),
+        findUserById: mock(),
+        findOrgByUserId: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidRefreshTokenError)
   })
@@ -186,14 +190,14 @@ describe("rotateRefreshToken", () => {
   it("throws InvalidRefreshTokenError when user lookup fails", async () => {
     await expect(
       rotateRefreshToken("token", {
-        findRefreshToken: vi.fn().mockResolvedValue({
+        findRefreshToken: mock().mockResolvedValue({
           userId: "u1",
           expiresAt: new Date(Date.now() + 60_000),
         }),
-        deleteRefreshToken: vi.fn().mockResolvedValue(undefined),
-        insertRefreshToken: vi.fn().mockResolvedValue(undefined),
-        findUserById: vi.fn().mockResolvedValue(null),
-        findOrgByUserId: vi.fn(),
+        deleteRefreshToken: mock().mockResolvedValue(undefined),
+        insertRefreshToken: mock().mockResolvedValue(undefined),
+        findUserById: mock().mockResolvedValue(null),
+        findOrgByUserId: mock(),
       })
     ).rejects.toBeInstanceOf(InvalidRefreshTokenError)
   })
@@ -201,14 +205,14 @@ describe("rotateRefreshToken", () => {
   it("throws InvalidRefreshTokenError when org lookup fails", async () => {
     await expect(
       rotateRefreshToken("token", {
-        findRefreshToken: vi.fn().mockResolvedValue({
+        findRefreshToken: mock().mockResolvedValue({
           userId: "u1",
           expiresAt: new Date(Date.now() + 60_000),
         }),
-        deleteRefreshToken: vi.fn().mockResolvedValue(undefined),
-        insertRefreshToken: vi.fn().mockResolvedValue(undefined),
-        findUserById: vi.fn().mockResolvedValue({ email: "alice@example.com" }),
-        findOrgByUserId: vi.fn().mockResolvedValue(null),
+        deleteRefreshToken: mock().mockResolvedValue(undefined),
+        insertRefreshToken: mock().mockResolvedValue(undefined),
+        findUserById: mock().mockResolvedValue({ email: "alice@example.com" }),
+        findOrgByUserId: mock().mockResolvedValue(null),
       })
     ).rejects.toBeInstanceOf(InvalidRefreshTokenError)
   })
@@ -216,7 +220,7 @@ describe("rotateRefreshToken", () => {
 
 describe("logout", () => {
   it("deletes the refresh token", async () => {
-    const deleteRefreshToken = vi.fn().mockResolvedValue(undefined)
+    const deleteRefreshToken = mock().mockResolvedValue(undefined)
     await logout("token", { deleteRefreshToken })
     expect(deleteRefreshToken).toHaveBeenCalledWith("token")
   })
@@ -227,20 +231,22 @@ describe("signup", () => {
     overrides: Partial<Parameters<typeof signup>[1]> = {}
   ): Parameters<typeof signup>[1] {
     return {
-      findUserByEmail: vi.fn().mockResolvedValue(null),
-      findOrgByInviteCode: vi.fn().mockResolvedValue(null),
-      insertUser: vi
-        .fn()
-        .mockResolvedValue({ id: "u1", email: "alice@example.com", name: "Alice" }),
-      addOrgMember: vi.fn().mockResolvedValue(undefined),
-      createOrgWithOwner: vi.fn().mockResolvedValue({ id: "o1" }),
+      findUserByEmail: mock().mockResolvedValue(null),
+      findOrgByInviteCode: mock().mockResolvedValue(null),
+      insertUser: mock().mockResolvedValue({
+        id: "u1",
+        email: "alice@example.com",
+        name: "Alice",
+      }),
+      addOrgMember: mock().mockResolvedValue(undefined),
+      createOrgWithOwner: mock().mockResolvedValue({ id: "o1" }),
       ...overrides,
     }
   }
 
   it("returns null when email is already registered (no leak)", async () => {
     const deps = buildDeps({
-      findUserByEmail: vi.fn().mockResolvedValue({ id: "existing" }),
+      findUserByEmail: mock().mockResolvedValue({ id: "existing" }),
     })
     const result = await signup(
       {
@@ -257,7 +263,7 @@ describe("signup", () => {
 
   it("returns null when invite code is invalid (no leak)", async () => {
     const deps = buildDeps({
-      findOrgByInviteCode: vi.fn().mockResolvedValue(null),
+      findOrgByInviteCode: mock().mockResolvedValue(null),
     })
     const result = await signup(
       {
@@ -328,15 +334,15 @@ describe("signup", () => {
       deps
     )
     const insertedHash = (
-      deps.insertUser as ReturnType<typeof vi.fn>
+      deps.insertUser as ReturnType<typeof mock>
     ).mock.calls[0][0].passwordHash
     expect(insertedHash).not.toBe(PASSWORD)
-    expect(await bcrypt.compare(PASSWORD, insertedHash)).toBe(true)
+    expect(await Bun.password.verify(PASSWORD, insertedHash)).toBe(true)
   })
 
   it("joins existing org when invite code is valid", async () => {
     const deps = buildDeps({
-      findOrgByInviteCode: vi.fn().mockResolvedValue({ id: "invited-org" }),
+      findOrgByInviteCode: mock().mockResolvedValue({ id: "invited-org" }),
     })
     const result = await signup(
       {
@@ -356,14 +362,14 @@ describe("signup", () => {
 describe("getInvite", () => {
   it("returns the org name when found", async () => {
     const result = await getInvite("code-1", {
-      findOrgByInviteCode: vi.fn().mockResolvedValue({ name: "Acme" }),
+      findOrgByInviteCode: mock().mockResolvedValue({ name: "Acme" }),
     })
     expect(result).toEqual({ organizationName: "Acme" })
   })
 
   it("returns null when not found", async () => {
     const result = await getInvite("nope", {
-      findOrgByInviteCode: vi.fn().mockResolvedValue(null),
+      findOrgByInviteCode: mock().mockResolvedValue(null),
     })
     expect(result).toBeNull()
   })
@@ -371,9 +377,9 @@ describe("getInvite", () => {
 
 describe("generateInviteCode", () => {
   it("returns the new invite code for an owner", async () => {
-    const setInviteCode = vi.fn().mockResolvedValue("invite-xyz")
+    const setInviteCode = mock().mockResolvedValue("invite-xyz")
     const result = await generateInviteCode("u1", "o1", {
-      getMemberRole: vi.fn().mockResolvedValue("owner"),
+      getMemberRole: mock().mockResolvedValue("owner"),
       setInviteCode,
     })
     expect(result).toBe("invite-xyz")
@@ -383,8 +389,8 @@ describe("generateInviteCode", () => {
   it("throws NotOrgOwnerError for a non-owner member", async () => {
     await expect(
       generateInviteCode("u1", "o1", {
-        getMemberRole: vi.fn().mockResolvedValue("member"),
-        setInviteCode: vi.fn(),
+        getMemberRole: mock().mockResolvedValue("member"),
+        setInviteCode: mock(),
       })
     ).rejects.toBeInstanceOf(NotOrgOwnerError)
   })
@@ -392,8 +398,8 @@ describe("generateInviteCode", () => {
   it("throws NotOrgOwnerError for a non-member", async () => {
     await expect(
       generateInviteCode("u1", "o1", {
-        getMemberRole: vi.fn().mockResolvedValue(null),
-        setInviteCode: vi.fn(),
+        getMemberRole: mock().mockResolvedValue(null),
+        setInviteCode: mock(),
       })
     ).rejects.toBeInstanceOf(NotOrgOwnerError)
   })

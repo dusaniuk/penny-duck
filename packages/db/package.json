@@ -5,26 +5,14 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsup",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:deploy": "node dist/migrate.js",
+    "db:deploy": "bun src/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\""
-  },
-  "tsup": {
-    "entry": [
-      "src/index.ts",
-      "src/migrate.ts"
-    ],
-    "format": [
-      "esm"
-    ],
-    "dts": false,
-    "sourcemap": true
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -37,13 +25,7 @@
     "typescript": "^5.9.3"
   },
   "exports": {
-    ".": {
-      "node": "./dist/index.js",
-      "default": "./src/index.ts"
-    },
-    "./*": {
-      "node": "./dist/*.js",
-      "default": "./src/*.ts"
-    }
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
   }
 }

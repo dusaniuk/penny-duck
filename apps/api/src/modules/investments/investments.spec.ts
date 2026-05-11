@@ -1,17 +1,17 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
-import { eq } from "drizzle-orm"
 import {
-  vi,
   beforeAll,
   afterAll,
   beforeEach,
   describe,
   it,
   expect,
-} from "vitest"
+} from "bun:test"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { eq } from "drizzle-orm"
 import { type DbClient, accounts as accountsTable } from "@workspace/db"
 import { env } from "@workspace/env/api"
+import { quoteMock, searchMock } from "@/test/yahoo-mock"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
@@ -28,20 +28,6 @@ import {
 } from "@/test/setup"
 
 const IMPORT_FIXTURES = join(__dirname, "import", "fixtures")
-
-const quoteMock = vi.fn()
-const searchMock = vi.fn()
-
-vi.mock("yahoo-finance2", () => ({
-  default: class YahooFinance {
-    quote(...args: unknown[]) {
-      return quoteMock(...args)
-    }
-    search(...args: unknown[]) {
-      return searchMock(...args)
-    }
-  },
-}))
 
 let db: DbClient
 let cookie: string

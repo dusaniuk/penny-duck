@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto"
-import * as bcrypt from "bcrypt"
 import type { AccessTokenPayload } from "./jwt"
 
 export class InvalidCredentialsError extends Error {
@@ -93,7 +92,7 @@ export async function login(
   const user = await deps.findUserByEmail(normalizeEmail(email))
   if (!user) throw new InvalidCredentialsError()
 
-  const valid = await bcrypt.compare(password, user.passwordHash)
+  const valid = await Bun.password.verify(password, user.passwordHash)
   if (!valid) throw new InvalidCredentialsError()
 
   const org = await deps.findOrgByUserId(user.id)
@@ -207,7 +206,10 @@ export async function signup(
     )
   }
 
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST)
+  const passwordHash = await Bun.password.hash(input.password, {
+    algorithm: "bcrypt",
+    cost: BCRYPT_COST,
+  })
   const user = await deps.insertUser({
     email: normalizedEmail,
     name: input.name,
