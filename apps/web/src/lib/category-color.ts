@@ -107,8 +107,10 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v))
 }
 
-function oklchCss({ l, c, h }: Oklch): string {
-  return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`
+function oklchCss({ l, c, h }: Oklch, a?: number): string {
+  return a != null
+    ? `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)} / ${a})`
+    : `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`
 }
 
 function isKnownToken(s: string | null | undefined): s is CategoryColor {
@@ -121,8 +123,22 @@ function isKnownToken(s: string | null | undefined): s is CategoryColor {
 
 export const NEUTRAL_COLOR = oklchCss(NEUTRAL)
 
-export function paletteColor(token: string | null | undefined): string {
-  return isKnownToken(token) ? oklchCss(PALETTE[token]) : NEUTRAL_COLOR
+export interface PaletteColorOpts {
+  l?: number
+  c?: number
+  a?: number
+}
+
+export function paletteColor(
+  token: string | null | undefined,
+  opts?: PaletteColorOpts
+): string {
+  const base = isKnownToken(token) ? PALETTE[token] : NEUTRAL
+  if (!opts) return isKnownToken(token) ? oklchCss(base) : NEUTRAL_COLOR
+  return oklchCss(
+    { l: opts.l ?? base.l, c: opts.c ?? base.c, h: base.h },
+    opts.a
+  )
 }
 
 export function categoryColor(

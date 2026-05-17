@@ -59,10 +59,25 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
+  )
+}
+
+function DrawerHandle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Handle>) {
+  return (
+    <DrawerPrimitive.Handle
+      data-slot="drawer-handle"
+      className={cn(
+        "mx-auto my-1.5 h-1 w-9 shrink-0 rounded-full bg-foreground/15",
+        className
+      )}
+      {...props}
+    />
   )
 }
 
@@ -125,6 +140,7 @@ export {
   DrawerTrigger,
   DrawerClose,
   DrawerContent,
+  DrawerHandle,
   DrawerHeader,
   DrawerFooter,
   DrawerTitle,

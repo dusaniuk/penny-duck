@@ -1,6 +1,11 @@
 import { useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import type { Account, Category, Member } from "@workspace/api-contract"
+import type {
+  Account,
+  Category,
+  CategoryUsageItem,
+  Member,
+} from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 
@@ -31,6 +36,16 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     },
   })
   const categories: Array<Category> = categoriesData ?? []
+
+  const { data: categoryUsageData } = useQuery({
+    queryKey: ["categories", "usage"],
+    queryFn: async () => {
+      const res = await api.categories.usage.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+  const categoryUsage: Array<CategoryUsageItem> = categoryUsageData ?? []
 
   const { data: meData } = useQuery({
     queryKey: ["users", "me"],
@@ -65,6 +80,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["transactions"] })
     queryClient.invalidateQueries({ queryKey: ["accounts"] })
+    queryClient.invalidateQueries({ queryKey: ["categories", "usage"] })
     options?.onSuccess?.()
   }
 
@@ -144,6 +160,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       currentUserId={currentUserId}
       exchangeRates={latestRates}
       defaultAccountId={defaultAccountId}
+      categoryUsage={categoryUsage}
       onSubmitTransaction={handleSubmitTransaction}
       onSubmitTransfer={handleSubmitTransfer}
     />

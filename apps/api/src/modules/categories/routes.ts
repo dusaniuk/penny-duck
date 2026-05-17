@@ -9,6 +9,7 @@ import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
 import {
   createCategory,
   deleteCategory,
+  getCategoryUsage,
   listCategories,
   updateCategory,
 } from "./service"
@@ -20,6 +21,11 @@ export const categoriesRoutes = new Hono<AuthedEnv>()
   .get("/", async (c) => {
     const user = c.get("user")
     const result = await listCategories(user.organizationId)
+    return c.json(result)
+  })
+  .get("/usage", async (c) => {
+    const user = c.get("user")
+    const result = await getCategoryUsage(user.organizationId)
     return c.json(result)
   })
   .post("/", zValidator("json", CreateCategorySchema), async (c) => {

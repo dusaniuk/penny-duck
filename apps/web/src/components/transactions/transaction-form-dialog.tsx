@@ -1,13 +1,38 @@
-import { useEffect, useState } from "react"
-import { Button } from "@workspace/ui/components/button"
+import { useEffect, useRef, useState } from "react"
 import {
-  ResponsiveDialog,
-  ResponsiveDialogContent,
-  ResponsiveDialogHeader,
-  ResponsiveDialogTitle,
-} from "@workspace/ui/components/responsive-dialog"
-import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
-import { Input } from "@workspace/ui/components/input"
+  IconAlertTriangle,
+  IconArrowRight,
+  IconArrowsRightLeft,
+  IconCalendar,
+  IconMinus,
+  IconNote,
+  IconPlus,
+  IconX,
+} from "@tabler/icons-react"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
+import { Calendar } from "@workspace/ui/components/calendar"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@workspace/ui/components/dialog"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHandle,
+  DrawerTitle,
+} from "@workspace/ui/components/drawer"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@workspace/ui/components/input-group"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover"
 import {
   Select,
   SelectContent,
@@ -16,15 +41,29 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
+import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
+import { cn } from "@workspace/ui/lib/utils"
+import {
+  TransactionAccountBlock,
+  TransactionAccountChips,
+} from "./transaction-account-chips"
+import { TransactionCategoryGrid } from "./transaction-category-grid"
+import { TransactionCategoryPicker } from "./transaction-category-picker"
 import type {
   Account,
   Category,
+  CategoryUsageItem,
   Member,
   Transaction,
 } from "@workspace/api-contract"
-import { getCategoryIcon } from "@/lib/category-icons"
 
 type TransactionType = "expense" | "income" | "transfer"
+type View = "form" | "picker"
 
 interface TransactionFormDialogProps {
   open: boolean
@@ -38,6 +77,8 @@ interface TransactionFormDialogProps {
   exchangeRates?: Record<string, Record<string, number>>
   pairedAccountId?: string | null
   defaultAccountId?: string
+  categoryUsage?: ReadonlyArray<CategoryUsageItem>
+  recentCategoryIds?: ReadonlyArray<string>
   onSubmitTransaction: (data: {
     accountId: string
     type: string
@@ -60,9 +101,116 @@ interface TransactionFormDialogProps {
     madeById?: string
   }) => Promise<void>
   onDelete?: () => void
+  onCreateCategory?: () => void
 }
 
-export function TransactionFormDialog({
+// Per-type accent colors used on the eyebrow, amount sign, and submit button.
+// `ink` = light tint shown on the dark shell; `solidSubmit` = full-saturation
+// CTA bg (transfer swaps to a violet CTA distinct from the orange default).
+const TYPE_PALETTE: Record<
+  TransactionType,
+  { ink: string; inkBg: string; inkRing: string; solidSubmit: string; submitFg: string }
+> = {
+  expense: {
+    ink: "#fb7185",
+    inkBg: "rgba(251,113,133,0.14)",
+    inkRing: "rgba(251,113,133,0.4)",
+    solidSubmit: "#f97316",
+    submitFg: "#0a0a0a",
+  },
+  income: {
+    ink: "#4ade80",
+    inkBg: "rgba(74,222,128,0.14)",
+    inkRing: "rgba(74,222,128,0.4)",
+    solidSubmit: "#f97316",
+    submitFg: "#0a0a0a",
+  },
+  transfer: {
+    ink: "#c4b5fd",
+    inkBg: "rgba(196,181,253,0.14)",
+    inkRing: "rgba(196,181,253,0.4)",
+    solidSubmit: "#7c3aed",
+    submitFg: "#fafafa",
+  },
+}
+
+function todayIso(): string {
+  return new Date().toISOString().split("T")[0]
+}
+function yesterdayIso(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return d.toISOString().split("T")[0]
+}
+function formatDDMM(iso: string): string {
+  const parts = iso.split("-")
+  if (parts.length !== 3) return iso
+  return `${parts[2]}.${parts[1]}`
+}
+// Parse a YYYY-MM-DD string as a local-time Date. Using `new Date(iso)`
+// parses as UTC midnight, which shifts the day for users west of UTC.
+function parseLocalDate(iso: string): Date | undefined {
+  const parts = iso.split("-").map(Number)
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined
+  return new Date(parts[0], parts[1] - 1, parts[2])
+}
+function toLocalIso(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+// Shell utility classes shared between Dialog (desktop) and Drawer (mobile)
+// variants. Desktop is a 440px floating card with bottom-padded shadow;
+// mobile is a bottom sheet rounded at the top only.
+const SHELL_BASE =
+  "flex flex-col gap-[14px] bg-linear-to-b from-[#131418] to-[#0c0d10] text-[#e8e8e8] [font-family:Inter,system-ui,sans-serif]"
+const SHELL_DESKTOP =
+  "w-[440px] rounded-[18px] border border-white/[0.06] p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
+const SHELL_MOBILE = "w-full rounded-t-[24px] px-4 pt-2 pb-[22px]"
+
+const SECTION_LABEL =
+  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-white/40"
+
+const ICON_BTN =
+  "size-[30px] bg-transparent text-white/55 hover:bg-white/[0.06] hover:text-white"
+
+export function TransactionFormDialog(props: TransactionFormDialogProps) {
+  const isMobile = useIsMobile()
+  const { open, onOpenChange } = props
+  const title = props.transaction ? "Edit transaction" : "New transaction"
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[90vh] rounded-t-[24px] border-0 bg-transparent p-0 text-popover-foreground">
+          <DrawerHandle />
+          <DrawerTitle className="sr-only">{title}</DrawerTitle>
+          <TransactionModalBody {...props} variant="mobile" />
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        className="w-[440px] max-w-none gap-0 rounded-none border-0 bg-transparent p-0 ring-0"
+      >
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <TransactionModalBody {...props} variant="desktop" />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface ModalBodyProps extends TransactionFormDialogProps {
+  variant: "desktop" | "mobile"
+}
+
+function TransactionModalBody({
   open,
   onOpenChange,
   transaction,
@@ -74,29 +222,38 @@ export function TransactionFormDialog({
   exchangeRates,
   pairedAccountId,
   defaultAccountId,
+  categoryUsage = [],
+  recentCategoryIds = [],
   onSubmitTransaction,
   onSubmitTransfer,
   onDelete,
-}: TransactionFormDialogProps) {
+  onCreateCategory,
+  variant,
+}: ModalBodyProps) {
   const isEdit = !!transaction
   const isTransferEdit = isEdit && !!transaction.transferId
+  const isMobile = variant === "mobile"
 
   const [type, setType] = useState<TransactionType>(defaultType)
   const [amount, setAmount] = useState("")
   const [accountId, setAccountId] = useState("")
-  const [categoryId, setCategoryId] = useState("")
-  const [date, setDate] = useState("")
+  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const [date, setDate] = useState(todayIso())
   const [note, setNote] = useState("")
   const [unsettled, setUnsettled] = useState(false)
   const [madeById, setMadeById] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [view, setView] = useState<View>("form")
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
 
-  // Transfer-specific state
   const [fromAccountId, setFromAccountId] = useState("")
   const [toAccountId, setToAccountId] = useState("")
   const [transferExchangeRate, setTransferExchangeRate] = useState("")
   const [receiveAmount, setReceiveAmount] = useState("")
+
+  const formRef = useRef<HTMLFormElement | null>(null)
+  const amountRef = useRef<HTMLInputElement | null>(null)
 
   const activeType: TransactionType = isEdit
     ? isTransferEdit
@@ -104,56 +261,48 @@ export function TransactionFormDialog({
       : transaction.type
     : type
 
-  // Category hierarchy (expense/income only, filtered to active type)
   const typedCategories =
     activeType === "transfer"
       ? []
       : categories.filter((c) => c.type === activeType)
-  const parents = typedCategories.filter((c) => c.parentId === null)
-  const childrenByParent = typedCategories.reduce<
-    Record<string, Array<Category>>
-  >((acc, c) => {
-    if (c.parentId !== null) {
-      acc[c.parentId] = [...(acc[c.parentId] ?? []), c]
-    }
-    return acc
-  }, {})
 
-  // Transfer exchange rate logic
   const fromAccount = accounts.find((a) => a.id === fromAccountId)
   const toAccount = accounts.find((a) => a.id === toAccountId)
   const currenciesDiffer =
-    fromAccount && toAccount && fromAccount.currency !== toAccount.currency
-  const showTransferExchangeRate = !!currenciesDiffer
+    !!fromAccount && !!toAccount && fromAccount.currency !== toAccount.currency
+  const showTransferExchangeRate = currenciesDiffer
 
   useEffect(() => {
-    if (open) {
-      if (isTransferEdit) {
-        setType("transfer")
-      } else if (transaction) {
-        setType(transaction.type)
-      } else {
-        setType(defaultType)
-      }
-      setAmount(transaction ? transaction.amount.toString() : "")
-      setAccountId(transaction?.accountId ?? defaultAccountId ?? "")
-      setCategoryId(transaction?.categoryId ?? "")
-      setDate(
-        transaction?.date
-          ? new Date(transaction.date).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0]
-      )
-      setNote(transaction?.note ?? "")
-      setUnsettled(transaction ? !transaction.settled : false)
-      setMadeById(transaction?.madeBy?.id ?? currentUserId)
-      setError(null)
-
-      // Transfer fields
-      setFromAccountId(transaction?.accountId ?? defaultAccountId ?? "")
-      setToAccountId(pairedAccountId ?? "")
-      setTransferExchangeRate(transaction?.exchangeRate?.toString() ?? "")
-      setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
+    if (!open) return
+    if (isTransferEdit) {
+      setType("transfer")
+    } else if (transaction) {
+      setType(transaction.type)
+    } else {
+      setType(defaultType)
     }
+    setAmount(transaction ? transaction.amount.toString() : "")
+    setAccountId(
+      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? ""
+    )
+    setCategoryId(transaction?.categoryId ?? null)
+    setDate(
+      transaction?.date
+        ? new Date(transaction.date).toISOString().split("T")[0]
+        : todayIso()
+    )
+    setNote(transaction?.note ?? "")
+    setUnsettled(transaction ? !transaction.settled : false)
+    setMadeById(transaction?.madeBy?.id ?? currentUserId)
+    setError(null)
+    setView("form")
+
+    setFromAccountId(
+      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? ""
+    )
+    setToAccountId(pairedAccountId ?? "")
+    setTransferExchangeRate(transaction?.exchangeRate?.toString() ?? "")
+    setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
   }, [
     open,
     transaction,
@@ -161,6 +310,8 @@ export function TransactionFormDialog({
     currentUserId,
     pairedAccountId,
     defaultAccountId,
+    accounts,
+    isTransferEdit,
   ])
 
   useEffect(() => {
@@ -168,13 +319,11 @@ export function TransactionFormDialog({
       activeType === "transfer" &&
       showTransferExchangeRate &&
       exchangeRates &&
-      !isEdit
+      !isEdit &&
+      fromAccount &&
+      toAccount
     ) {
-      const fromCurrency = fromAccount.currency
-      const toCurrency = toAccount.currency
-      const rate = (
-        exchangeRates as Record<string, Record<string, number> | undefined>
-      )[fromCurrency]?.[toCurrency]
+      const rate = exchangeRates[fromAccount.currency]?.[toAccount.currency]
       if (rate !== undefined) {
         setTransferExchangeRate(rate.toFixed(6))
       }
@@ -197,8 +346,35 @@ export function TransactionFormDialog({
     }
   }, [amount, transferExchangeRate, activeType])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const palette = TYPE_PALETTE[activeType]
+  const currency =
+    activeType === "transfer"
+      ? (fromAccount?.currency ?? "UAH")
+      : (accounts.find((a) => a.id === accountId)?.currency ?? "UAH")
+
+  const datePreset: "today" | "yesterday" | "custom" =
+    date === todayIso()
+      ? "today"
+      : date === yesterdayIso()
+        ? "yesterday"
+        : "custom"
+
+  const submitDisabled = (() => {
+    if (loading) return true
+    if (!amount || parseFloat(amount) <= 0) return true
+    if (activeType === "transfer") {
+      if (!fromAccountId || !toAccountId) return true
+      if (fromAccountId === toAccountId) return true
+    } else {
+      if (!accountId) return true
+      if (!categoryId) return true
+    }
+    return false
+  })()
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (submitDisabled) return
     setError(null)
     setLoading(true)
     try {
@@ -209,7 +385,10 @@ export function TransactionFormDialog({
           amount: parseFloat(amount),
           date: new Date(date).toISOString(),
           ...(note ? { note } : {}),
-          ...(showTransferExchangeRate && transferExchangeRate && receiveAmount
+          ...(showTransferExchangeRate &&
+          transferExchangeRate &&
+          receiveAmount &&
+          toAccount
             ? {
                 exchangeRate: parseFloat(transferExchangeRate),
                 originalAmount: parseFloat(receiveAmount),
@@ -219,6 +398,7 @@ export function TransactionFormDialog({
           ...(members.length > 1 ? { madeById } : {}),
         })
       } else {
+        if (!categoryId) return
         await onSubmitTransaction({
           accountId,
           type: activeType,
@@ -238,312 +418,462 @@ export function TransactionFormDialog({
     }
   }
 
-  const toAccountOptions = accounts.filter((a) => a.id !== fromAccountId)
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape" && view === "picker") {
+      e.preventDefault()
+      setView("form")
+      return
+    }
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      void handleSubmit()
+    }
+  }
+
+  const shellClass = cn(SHELL_BASE, isMobile ? SHELL_MOBILE : SHELL_DESKTOP)
+
+  if (view === "picker") {
+    return (
+      <div
+        className={cn(shellClass, "gap-3")}
+        role="dialog"
+        aria-label="Select category"
+        onKeyDown={handleKeyDown}
+      >
+        <TransactionCategoryPicker
+          categories={typedCategories}
+          selectedId={categoryId}
+          recentIds={recentCategoryIds}
+          onSelect={(id) => {
+            setCategoryId(id)
+            setView("form")
+          }}
+          onClose={() => setView("form")}
+          onCreateCategory={onCreateCategory}
+          variant={variant}
+        />
+      </div>
+    )
+  }
 
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent>
-        <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>
-            {isEdit
-              ? `Edit ${activeType.charAt(0).toUpperCase() + activeType.slice(1)}`
-              : "New Transaction"}
-          </ResponsiveDialogTitle>
-        </ResponsiveDialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup className="gap-3 pt-2">
-            {!isEdit && (
-              <Tabs
-                value={type}
-                onValueChange={(v) => {
-                  setType(v as TransactionType)
-                  setCategoryId("")
-                }}
-              >
-                <TabsList className="w-full">
-                  <TabsTrigger
-                    value="expense"
-                    className="flex-1 data-active:bg-red-500/15 data-active:text-red-500"
-                  >
-                    Expense
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="income"
-                    className="flex-1 data-active:bg-green-500/15 data-active:text-green-500"
-                  >
-                    Income
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="transfer"
-                    className="flex-1 data-active:bg-violet-500/15 data-active:text-violet-500"
-                  >
-                    Transfer
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
+    <form
+      ref={formRef}
+      className={shellClass}
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <Badge
+          size="xs"
+          className="border-0"
+          style={{ color: palette.ink, background: palette.inkBg }}
+        >
+          <span
+            className="size-1.5 rounded-full"
+            style={{ background: palette.ink }}
+          />
+          {isEdit ? "Edit" : "New"} {activeType}
+        </Badge>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onOpenChange(false)}
+          aria-label="Close"
+          className={ICON_BTN}
+        >
+          <IconX size={16} />
+        </Button>
+      </div>
 
-            <Field>
-              <FieldLabel>Amount</FieldLabel>
-              <Input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                required
+      {!isEdit && (
+        <Tabs
+          value={type}
+          onValueChange={(v) => {
+            setType(v as TransactionType)
+            setCategoryId(null)
+          }}
+        >
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-white/[0.04] bg-white/[0.04] p-[3px]">
+            {(["expense", "income", "transfer"] as const).map((t) => {
+              const isActive = type === t
+              const tonePalette = TYPE_PALETTE[t]
+              return (
+                <TabsTrigger
+                  key={t}
+                  value={t}
+                  className={cn(
+                    "h-auto gap-1.5 py-2 text-[13px] text-white/55 hover:text-white/80 dark:text-white/55 dark:hover:text-white/80",
+                    isMobile && "py-2.5"
+                  )}
+                  style={
+                    isActive
+                      ? {
+                          color: tonePalette.ink,
+                          background: tonePalette.inkBg,
+                          boxShadow: `inset 0 0 0 1px ${tonePalette.inkRing}`,
+                        }
+                      : undefined
+                  }
+                >
+                  {t === "expense" && <IconMinus size={14} />}
+                  {t === "income" && <IconPlus size={14} />}
+                  {t === "transfer" && <IconArrowsRightLeft size={14} />}
+                  <span className="capitalize">{t}</span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </Tabs>
+      )}
+
+      <div
+        className={cn(
+          "border-b border-dashed border-white/[0.07] px-1",
+          isMobile ? "pt-[14px] pb-2.5" : "pt-[18px] pb-[14px]"
+        )}
+      >
+        <div className="flex items-baseline justify-center gap-1.5">
+          <span
+            className="text-[34px] font-light leading-none tabular-nums"
+            style={{ color: palette.ink }}
+          >
+            {activeType === "expense"
+              ? "−"
+              : activeType === "income"
+                ? "+"
+                : "↔"}
+          </span>
+          <input
+            ref={amountRef}
+            type="text"
+            inputMode="decimal"
+            autoFocus
+            value={amount}
+            placeholder="0.00"
+            onChange={(e) => {
+              const v = e.target.value.replace(",", ".")
+              if (v === "" || /^\d*\.?\d*$/.test(v)) setAmount(v)
+            }}
+            aria-label="Amount"
+            className={cn(
+              "min-w-[2.5ch] max-w-[calc(100%-80px)] border-0 bg-transparent p-0 text-left font-semibold leading-none tracking-[-0.03em] tabular-nums text-foreground caret-orange-500 outline-none [field-sizing:content] [font-family:Geist,Inter,system-ui] placeholder:text-white/[0.28]",
+              isMobile ? "text-[46px]" : "text-[52px]"
+            )}
+          />
+          <span className="self-end pb-2 text-[14px] font-medium tracking-[0.04em] text-white/40">
+            {currency}
+          </span>
+        </div>
+      </div>
+
+      {activeType !== "transfer" ? (
+        <TransactionAccountChips
+          accounts={accounts}
+          selectedId={accountId}
+          onSelect={setAccountId}
+          label={activeType === "income" ? "Into account" : "From account"}
+        />
+      ) : (
+        <div className="flex flex-col">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-1.5">
+            <div className="min-w-0">
+              <div className={SECTION_LABEL}>From</div>
+              <div className="relative block">
+                {fromAccount && (
+                  <TransactionAccountBlock account={fromAccount} />
+                )}
+                <select
+                  className="absolute inset-0 cursor-pointer border-0 bg-transparent opacity-0 [font-family:inherit]"
+                  value={fromAccountId}
+                  onChange={(e) => setFromAccountId(e.target.value)}
+                  aria-label="From account"
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} — {a.balance.toFixed(2)} {a.currency}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid h-[54px] place-items-center text-violet-300">
+              <IconArrowRight size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className={SECTION_LABEL}>To</div>
+              <div className="relative block">
+                {toAccount ? (
+                  <TransactionAccountBlock account={toAccount} />
+                ) : (
+                  <button
+                    type="button"
+                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-300/35 bg-white/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-white/[0.05]"
+                  >
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ background: "rgba(255,255,255,0.12)" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12.5px] font-medium text-foreground">
+                        Pick account
+                      </div>
+                      <div className="truncate text-[11px] tabular-nums text-white/45">
+                        —
+                      </div>
+                    </div>
+                  </button>
+                )}
+                <select
+                  className="absolute inset-0 cursor-pointer border-0 bg-transparent opacity-0 [font-family:inherit]"
+                  value={toAccountId}
+                  onChange={(e) => setToAccountId(e.target.value)}
+                  aria-label="To account"
+                >
+                  <option value="">Pick account</option>
+                  {accounts
+                    .filter((a) => a.id !== fromAccountId)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} — {a.balance.toFixed(2)} {a.currency}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          {showTransferExchangeRate && fromAccount && toAccount && (
+            <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-300/[0.18] bg-violet-300/[0.06] px-3 py-2 text-[12px]">
+              <span className="font-semibold text-violet-300/90">Rate</span>
+              <span className="tabular-nums text-white/75">
+                1 {fromAccount.currency} =
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={transferExchangeRate}
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".")
+                  if (v === "" || /^\d*\.?\d*$/.test(v))
+                    setTransferExchangeRate(v)
+                }}
+                aria-label="Exchange rate"
+                className="w-[7em] border-0 bg-transparent p-0 text-[12px] tabular-nums text-foreground outline-none [font-family:inherit]"
+              />
+              <span className="tabular-nums text-white/75">
+                {toAccount.currency}
+              </span>
+              <span className="ml-auto tabular-nums text-white/60">
+                → receive{" "}
+                <strong className="font-semibold text-foreground">
+                  {receiveAmount
+                    ? parseFloat(receiveAmount).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    : "0.00"}{" "}
+                  {toAccount.currency}
+                </strong>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {members.length > 1 && (
+        <div className="flex flex-col">
+          <div className={SECTION_LABEL}>Made by</div>
+          <Select value={madeById} onValueChange={setMadeById}>
+            <SelectTrigger
+              size="default"
+              className="h-auto rounded-[10px] border-white/[0.05] bg-white/[0.025] px-[11px] py-2 text-[12.5px] text-foreground hover:bg-white/[0.05] dark:bg-white/[0.025] dark:hover:bg-white/[0.05]"
+            >
+              <SelectValue placeholder="Select member" />
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {activeType !== "transfer" && (
+        <TransactionCategoryGrid
+          categories={typedCategories}
+          usage={categoryUsage}
+          selectedId={categoryId}
+          onSelect={setCategoryId}
+          onMore={() => setView("picker")}
+          onClearSelection={() => setCategoryId(null)}
+          variant={variant}
+        />
+      )}
+
+      <div className="flex flex-col">
+        <div className={SECTION_LABEL}>Date</div>
+        <div className="flex gap-1.5">
+          {(["today", "yesterday"] as const).map((preset) => {
+            const isActive = datePreset === preset
+            const label = preset === "today" ? "Today" : "Yesterday"
+            const setter = preset === "today" ? todayIso : yesterdayIso
+            return (
+              <Badge
+                key={preset}
+                size="lg"
+                variant="outline"
+                asChild
+                className={cn(
+                  "cursor-pointer border-white/[0.06] bg-white/[0.03] font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/90",
+                  isActive &&
+                    "border-orange-500/45 bg-orange-500/10 text-orange-400 hover:bg-orange-500/[0.16] hover:text-orange-400",
+                  isMobile && "px-[13px] py-2"
+                )}
+              >
+                <button type="button" onClick={() => setDate(setter())}>
+                  {label}
+                </button>
+              </Badge>
+            )
+          })}
+          <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Badge
+                size="lg"
+                variant="outline"
+                asChild
+                className={cn(
+                  "cursor-pointer gap-1.5 border-white/[0.06] bg-white/[0.03] font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/90",
+                  datePreset === "custom" &&
+                    "border-orange-500/45 bg-orange-500/10 text-orange-400 hover:bg-orange-500/[0.16] hover:text-orange-400",
+                  isMobile && "px-[13px] py-2"
+                )}
+              >
+                <button type="button" aria-label="Pick date">
+                  <IconCalendar size={13} />
+                  {formatDDMM(date)}
+                </button>
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={parseLocalDate(date)}
+                onSelect={(d) => {
+                  if (!d) return
+                  setDate(toLocalIso(d))
+                  setDatePickerOpen(false)
+                }}
                 autoFocus
               />
-            </Field>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
 
-            {activeType !== "transfer" && (
-              <Field>
-                <FieldLabel>Account</FieldLabel>
-                <Select value={accountId} onValueChange={setAccountId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name} — {a.balance.toFixed(2)} {a.currency}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-
-            {activeType === "transfer" && (
-              <div className="flex items-end gap-2">
-                <Field className="min-w-0 flex-1">
-                  <FieldLabel>From</FieldLabel>
-                  <Select
-                    value={fromAccountId}
-                    onValueChange={setFromAccountId}
-                    required
-                  >
-                    <SelectTrigger className="w-full overflow-hidden">
-                      <SelectValue placeholder="Source account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name} — {a.balance.toFixed(2)} {a.currency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <span className="pb-2.5 text-muted-foreground">→</span>
-                <Field className="min-w-0 flex-1">
-                  <FieldLabel>To</FieldLabel>
-                  <Select
-                    value={toAccountId}
-                    onValueChange={setToAccountId}
-                    required
-                  >
-                    <SelectTrigger className="w-full overflow-hidden">
-                      <SelectValue placeholder="Destination account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {toAccountOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name} — {a.balance.toFixed(2)} {a.currency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            )}
-
-            {activeType === "transfer" && showTransferExchangeRate && (
-              <div className="rounded-md border border-blue-400/30 bg-blue-400/5 p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <Field>
-                    <FieldLabel>Rate</FieldLabel>
-                    <Input
-                      type="number"
-                      step="0.000001"
-                      value={transferExchangeRate}
-                      onChange={(e) => setTransferExchangeRate(e.target.value)}
-                      placeholder="41.52"
-                      required
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel>Receive amount</FieldLabel>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={receiveAmount}
-                      onChange={(e) => setReceiveAmount(e.target.value)}
-                      placeholder="4152.00"
-                      required
-                    />
-                  </Field>
-                </div>
-              </div>
-            )}
-
-            {members.length > 1 && (
-              <Field>
-                <FieldLabel>Made by</FieldLabel>
-                <Select value={madeById} onValueChange={setMadeById} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                            {m.name.charAt(0).toUpperCase()}
-                          </span>
-                          {m.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-
-            {activeType !== "transfer" && (
-              <Field>
-                <FieldLabel>Category</FieldLabel>
-                <Select
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {parents.map((parent) => {
-                      const parentIcon = getCategoryIcon(parent.icon)
-                      return (
-                        <div key={parent.id}>
-                          <SelectItem value={parent.id}>
-                            <span className="flex items-center gap-1.5">
-                              {parentIcon ? (
-                                <parentIcon.component className="size-4" />
-                              ) : parent.icon ? (
-                                parent.icon
-                              ) : null}
-                              {parent.name}
-                            </span>
-                          </SelectItem>
-                          {(childrenByParent[parent.id] ?? []).map((child) => {
-                            const childIcon = getCategoryIcon(child.icon)
-                            return (
-                              <SelectItem key={child.id} value={child.id}>
-                                <span className="flex items-center gap-1.5 pl-4">
-                                  {childIcon ? (
-                                    <childIcon.component className="size-4" />
-                                  ) : child.icon ? (
-                                    child.icon
-                                  ) : null}
-                                  {child.name}
-                                </span>
-                              </SelectItem>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-
-            <Field>
-              <FieldLabel>Date</FieldLabel>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel>Note</FieldLabel>
-              <Input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Optional note"
-                maxLength={500}
-              />
-            </Field>
-
-            {activeType !== "transfer" && (
-              <div className="flex gap-3">
-                {!isEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setUnsettled(!unsettled)}
-                    className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
-                      unsettled
-                        ? "border-amber-400 bg-amber-400/20 text-amber-400"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {unsettled ? "Unsettled" : "Mark unsettled"}
-                  </button>
-                )}
-                {isEdit && !isTransferEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setUnsettled(!unsettled)}
-                    className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
-                      unsettled
-                        ? "border-amber-400 bg-amber-400/20 text-amber-400"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {unsettled ? "Unsettled" : "Mark unsettled"}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex gap-2">
-                {isEdit && onDelete && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={onDelete}
-                    disabled={loading}
-                  >
-                    Delete
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-2">
+      <InputGroup
+        className={cn(
+          "h-auto items-center rounded-[11px] border-white/[0.05] bg-white/[0.025] px-3 py-2.5",
+          isMobile && "px-3 py-3"
+        )}
+      >
+        <InputGroupAddon
+          align="inline-start"
+          className="text-white/35"
+        >
+          <IconNote size={14} />
+        </InputGroupAddon>
+        <InputGroupInput
+          type="text"
+          placeholder="Add a note…"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={500}
+          aria-label="Note"
+          className="text-[13px] text-foreground placeholder:text-white/35"
+        />
+        {activeType !== "transfer" && (
+          <InputGroupAddon align="inline-end">
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
+                  size="icon-sm"
+                  onClick={() => setUnsettled(!unsettled)}
+                  aria-pressed={unsettled}
+                  aria-label={unsettled ? "Mark settled" : "Mark unsettled"}
+                  className={cn(
+                    unsettled &&
+                      "border-amber-400/50 bg-amber-400/[0.12] text-amber-400 hover:border-amber-400/50 hover:bg-amber-400/[0.16] hover:text-amber-400 dark:border-amber-400/50 dark:bg-amber-400/[0.12] dark:hover:bg-amber-400/[0.16]"
+                  )}
                 >
-                  Cancel
+                  <IconAlertTriangle />
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Saving…" : isEdit ? "Save Changes" : "Create"}
-                </Button>
-              </div>
-            </div>
-          </FieldGroup>
-        </form>
-      </ResponsiveDialogContent>
-    </ResponsiveDialog>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={6}>
+                {unsettled ? "Mark settled" : "Mark unsettled"}
+              </TooltipContent>
+            </Tooltip>
+          </InputGroupAddon>
+        )}
+      </InputGroup>
+
+      {error && (
+        <p className="-mt-1 text-right text-[12px] text-rose-400">{error}</p>
+      )}
+
+      <div className={cn("flex items-center gap-2 pt-1.5", isMobile && "pt-2")}>
+        {isEdit && onDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={onDelete}
+            disabled={loading}
+            className="mr-auto h-auto rounded-[10px] border border-rose-400/35 bg-transparent px-[14px] py-[10px] text-[13px] text-rose-400 hover:bg-rose-400/10"
+          >
+            Delete
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onOpenChange(false)}
+          disabled={loading}
+          className={cn(
+            "h-auto rounded-[10px] border-white/10 bg-transparent px-[18px] py-[10px] text-[13px] text-white/70 hover:bg-white/[0.04] hover:text-white",
+            !isEdit && "ml-auto",
+            isMobile && "shrink-0"
+          )}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={submitDisabled}
+          className={cn(
+            "h-auto rounded-[10px] border-0 px-[20px] py-[10px] text-[13px] font-semibold hover:brightness-110",
+            isMobile && "flex-1"
+          )}
+          style={{
+            background: palette.solidSubmit,
+            color: palette.submitFg,
+          }}
+        >
+          {loading
+            ? "Saving…"
+            : isEdit
+              ? "Save changes"
+              : `Create ${activeType}`}
+        </Button>
+      </div>
+    </form>
   )
 }

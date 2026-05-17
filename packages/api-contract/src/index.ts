@@ -24,10 +24,16 @@ export type { Account } from "./schemas/accounts"
 export {
   CategorySchema,
   CategoryTypeSchema,
+  CategoryUsageItemSchema,
+  CategoryUsageResponseSchema,
   CreateCategorySchema,
   UpdateCategorySchema,
 } from "./schemas/categories"
-export type { Category, CategoryType } from "./schemas/categories"
+export type {
+  Category,
+  CategoryType,
+  CategoryUsageItem,
+} from "./schemas/categories"
 
 export {
   TransactionSchema,

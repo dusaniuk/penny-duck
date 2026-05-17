@@ -1,0 +1,284 @@
+import { useMemo, useState } from "react"
+import {
+  IconArrowLeft,
+  IconPlus,
+  IconSearch,
+  IconSparkles,
+  IconX,
+} from "@tabler/icons-react"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@workspace/ui/components/input-group"
+import { cn } from "@workspace/ui/lib/utils"
+import type { Category } from "@workspace/api-contract"
+import { paletteColor } from "@/lib/category-color"
+import { getCategoryIcon } from "@/lib/category-icons"
+
+interface TransactionCategoryPickerProps {
+  categories: Array<Category>
+  selectedId: string | null
+  recentIds: ReadonlyArray<string>
+  onSelect: (id: string) => void
+  onClose: () => void
+  onCreateCategory?: () => void
+  variant?: "desktop" | "mobile"
+}
+
+const ICON_BTN_CLASS =
+  "size-[30px] bg-transparent text-white/55 hover:bg-white/[0.06] hover:text-white"
+
+const CHIP_CLASS =
+  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-white/[0.05] bg-white/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-white/[0.78] transition-colors hover:bg-white/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+
+export function TransactionCategoryPicker({
+  categories,
+  selectedId,
+  recentIds,
+  onSelect,
+  onClose,
+  onCreateCategory,
+  variant = "desktop",
+}: TransactionCategoryPickerProps) {
+  const [search, setSearch] = useState("")
+
+  const byId = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories]
+  )
+  const parents = useMemo(
+    () => categories.filter((c) => c.parentId === null),
+    [categories]
+  )
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, Array<Category>>()
+    for (const c of categories) {
+      if (c.parentId !== null) {
+        const list = map.get(c.parentId) ?? []
+        list.push(c)
+        map.set(c.parentId, list)
+      }
+    }
+    return map
+  }, [categories])
+
+  const q = search.trim().toLowerCase()
+  const matches = (c: Category) =>
+    q === "" || c.name.toLowerCase().includes(q)
+
+  const gridCols = variant === "mobile" ? "grid-cols-2" : "grid-cols-3"
+  const bodyMaxH = variant === "mobile" ? "max-h-[600px]" : "max-h-[540px]"
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Back to form"
+          className={ICON_BTN_CLASS}
+        >
+          <IconArrowLeft size={16} />
+        </Button>
+        <div className="flex-1 text-center font-heading text-[14px] font-semibold text-foreground">
+          Select category
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close"
+          className={ICON_BTN_CLASS}
+        >
+          <IconX size={16} />
+        </Button>
+      </div>
+
+      <InputGroup className="h-auto rounded-[11px] border-white/[0.06] bg-white/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-white/35">
+        <InputGroupAddon align="inline-start" className="text-white/40">
+          <IconSearch size={15} />
+        </InputGroupAddon>
+        <InputGroupInput
+          autoFocus
+          placeholder="Search categories"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <InputGroupAddon align="inline-end">
+            <button
+              type="button"
+              className="grid size-[18px] place-items-center rounded-full border-0 bg-white/10 text-white/70"
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+            >
+              <IconX size={12} />
+            </button>
+          </InputGroupAddon>
+        )}
+      </InputGroup>
+
+      <div
+        className={cn(
+          "-mx-1 flex flex-col gap-3.5 overflow-y-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:w-0",
+          bodyMaxH
+        )}
+      >
+        {q === "" && recentIds.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center">
+              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] uppercase text-white/45">
+                <IconSparkles size={12} /> Recent
+              </span>
+            </div>
+            <div className={cn("grid gap-1", gridCols)}>
+              {recentIds.map((id) => {
+                const c = byId.get(id)
+                if (!c) return null
+                const fg = paletteColor(c.color, { l: 0.78, c: 0.14 })
+                const bg = paletteColor(c.color, { l: 0.42, c: 0.1, a: 0.4 })
+                const active = c.id === selectedId
+                const icon = getCategoryIcon(c.icon)
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => onSelect(c.id)}
+                    className={CHIP_CLASS}
+                    aria-pressed={active}
+                    style={
+                      active
+                        ? { background: bg, borderColor: fg, color: fg }
+                        : undefined
+                    }
+                  >
+                    <span
+                      className="grid shrink-0 place-items-center"
+                      style={{ color: fg }}
+                    >
+                      {icon ? <icon.component size={15} /> : null}
+                    </span>
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {parents.map((parent) => {
+          const children = childrenByParent.get(parent.id) ?? []
+          const visibleChildren = children.filter(matches)
+          const parentMatches = matches(parent)
+          if (q !== "" && !parentMatches && visibleChildren.length === 0) {
+            return null
+          }
+          const fg = paletteColor(parent.color, { l: 0.78, c: 0.14 })
+          const bg = paletteColor(parent.color, { l: 0.42, c: 0.1, a: 0.35 })
+          const parentActive = parent.id === selectedId
+          const parentIcon = getCategoryIcon(parent.icon)
+          return (
+            <div key={parent.id} className="flex flex-col gap-1.5">
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => onSelect(parent.id)}
+                  aria-pressed={parentActive}
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-[9px] border border-white/[0.05] bg-white/[0.025] px-[11px] py-2 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                  style={
+                    parentActive
+                      ? { background: bg, color: fg, borderColor: fg }
+                      : undefined
+                  }
+                >
+                  <span
+                    className="grid shrink-0 place-items-center"
+                    style={{ color: fg }}
+                  >
+                    {parentIcon ? <parentIcon.component size={15} /> : null}
+                  </span>
+                  <span className="flex-1">{parent.name}</span>
+                  {children.length > 0 && (
+                    <Badge
+                      size="sm"
+                      variant="secondary"
+                      className="border-0 bg-white/[0.05] text-white/40"
+                    >
+                      {children.length}
+                    </Badge>
+                  )}
+                </button>
+              </div>
+              {visibleChildren.length > 0 && (
+                <div
+                  className={cn(
+                    "relative grid gap-1 pl-[22px] before:absolute before:left-[10px] before:top-1 before:bottom-1 before:w-px before:bg-white/[0.07] before:content-['']",
+                    gridCols
+                  )}
+                >
+                  {visibleChildren.map((child) => {
+                    const active = child.id === selectedId
+                    const childIcon = getCategoryIcon(child.icon)
+                    const childFg = paletteColor(child.color, {
+                      l: 0.78,
+                      c: 0.14,
+                    })
+                    const childBg = paletteColor(child.color, {
+                      l: 0.42,
+                      c: 0.1,
+                      a: 0.4,
+                    })
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => onSelect(child.id)}
+                        aria-pressed={active}
+                        className={cn(CHIP_CLASS, "text-[11px]")}
+                        style={
+                          active
+                            ? {
+                                background: childBg,
+                                borderColor: childFg,
+                                color: childFg,
+                              }
+                            : undefined
+                        }
+                      >
+                        <span
+                          className="grid size-[18px] shrink-0 place-items-center"
+                          style={{ color: childFg }}
+                        >
+                          {childIcon ? <childIcon.component size={13} /> : null}
+                        </span>
+                        <span className="truncate">{child.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        {onCreateCategory && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCreateCategory}
+            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-white/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-white/50 hover:border-orange-500/40 hover:bg-transparent hover:text-orange-400"
+          >
+            <IconPlus size={14} />
+            Create new category
+          </Button>
+        )}
+      </div>
+    </>
+  )
+}

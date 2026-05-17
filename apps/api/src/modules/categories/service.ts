@@ -1,7 +1,11 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNotNull, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
-import { categories } from "@workspace/db"
-import { type Category, type CategoryType } from "@workspace/api-contract"
+import { categories, transactions } from "@workspace/db"
+import {
+  type Category,
+  type CategoryType,
+  type CategoryUsageItem,
+} from "@workspace/api-contract"
 import { db } from "@/db"
 
 type CategoryRow = typeof categories.$inferSelect
@@ -140,6 +144,34 @@ export async function listCategories(
     .from(categories)
     .where(eq(categories.organizationId, organizationId))
   return rows.map(toResponse)
+}
+
+// Count of transactions per category, scoped to the org. Used by the
+// transaction-form category grid to surface most-used categories first.
+// Transfers and reimbursements have no category and are filtered out by
+// the IS NOT NULL guard.
+export async function getCategoryUsage(
+  organizationId: string,
+): Promise<CategoryUsageItem[]> {
+  const rows = await db
+    .select({
+      categoryId: transactions.categoryId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.organizationId, organizationId),
+        isNotNull(transactions.categoryId),
+      ),
+    )
+    .groupBy(transactions.categoryId)
+
+  return rows
+    .filter((r): r is { categoryId: string; count: number } =>
+      r.categoryId !== null,
+    )
+    .map((r) => ({ categoryId: r.categoryId, count: r.count }))
 }
 
 export interface CreateCategoryInput {

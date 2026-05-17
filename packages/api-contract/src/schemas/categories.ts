@@ -47,6 +47,14 @@ export const UpdateCategorySchema = z.object({
   color: CategoryColorSchema.optional(),
 })
 
+export const CategoryUsageItemSchema = z.object({
+  categoryId: z.uuid(),
+  count: z.number().int().nonnegative(),
+})
+
+export const CategoryUsageResponseSchema = z.array(CategoryUsageItemSchema)
+
 export type CategoryType = z.infer<typeof CategoryTypeSchema>
 export type CategoryColor = z.infer<typeof CategoryColorSchema>
 export type Category = z.infer<typeof CategorySchema>
+export type CategoryUsageItem = z.infer<typeof CategoryUsageItemSchema>
