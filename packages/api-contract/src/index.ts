@@ -50,6 +50,20 @@ export {
 export type { MonthlySummaryItem } from "./schemas/stats"
 
 export {
+  NetWorthTopAccountSchema,
+  NetWorthChangeSchema,
+  NetWorthCurrentSchema,
+  NetWorthHistoryPointSchema,
+  NetWorthHistorySchema,
+  NetWorthResponseSchema,
+} from "./schemas/net-worth"
+export type {
+  NetWorthCurrent,
+  NetWorthHistory,
+  NetWorthResponse,
+} from "./schemas/net-worth"
+
+export {
   InstrumentSchema,
   InstrumentSearchQuerySchema,
   PositionSchema,

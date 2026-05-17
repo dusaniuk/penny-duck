@@ -6,6 +6,7 @@ import { MonthlySummaryQuerySchema } from "@workspace/api-contract"
 import { db } from "@/db"
 import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
 import { getMonthlySummary } from "./service"
+import { getNetWorth } from "./net-worth/service"
 
 export const statsRoutes = new Hono<AuthedEnv>()
   .use("*", honoAuthMiddleware)
@@ -31,3 +32,8 @@ export const statsRoutes = new Hono<AuthedEnv>()
       return c.json(summary)
     },
   )
+  .get("/net-worth", async (c) => {
+    const user = c.get("user")
+    const result = await getNetWorth(user.organizationId, user.sub)
+    return c.json(result)
+  })
