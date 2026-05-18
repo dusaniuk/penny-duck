@@ -684,7 +684,7 @@ function TransactionModalBody({
                     setTransferExchangeRate(v)
                 }}
                 aria-label="Exchange rate"
-                className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-[12px] text-foreground tabular-nums outline-none"
+                className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-base text-foreground tabular-nums outline-none md:text-[12px]"
               />
               <span className="text-foreground/75 tabular-nums">
                 {toAccount.currency}
@@ -816,7 +816,7 @@ function TransactionModalBody({
           onChange={(e) => setNote(e.target.value)}
           maxLength={500}
           aria-label="Note"
-          className="text-[13px] text-foreground placeholder:text-foreground/35"
+          className="text-base text-foreground placeholder:text-foreground/35 md:text-[13px]"
         />
         {activeType !== "transfer" && (
           <InputGroupAddon align="inline-end">

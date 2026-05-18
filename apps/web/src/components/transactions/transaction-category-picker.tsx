@@ -111,7 +111,7 @@ export function TransactionCategoryPicker({
         </Button>
       </div>
 
-      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-foreground/35">
+      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-base md:[&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-foreground/35">
         <InputGroupAddon align="inline-start" className="text-foreground/40">
           <IconSearch size={15} />
         </InputGroupAddon>
