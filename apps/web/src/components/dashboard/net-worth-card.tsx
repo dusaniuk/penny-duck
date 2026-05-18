@@ -10,7 +10,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
-import { cn } from "@workspace/ui/lib/utils"
 import type { ChartConfig } from "@workspace/ui/components/chart"
 import { api } from "@/lib/api"
 
@@ -32,19 +31,6 @@ function formatAmount(n: number): { whole: string; fraction: string } {
 
 function formatInt(n: number): string {
   return Math.round(n).toLocaleString("en-US")
-}
-
-function formatSignedPct(p: number): string {
-  const sign = p >= 0 ? "+" : ""
-  return `${sign}${p.toFixed(1)}%`
-}
-
-function formatSignedAmount(n: number, currency: string): string {
-  const sign = n >= 0 ? "+" : "−"
-  return `${sign}${Math.abs(n).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })} ${currency}`
 }
 
 export function NetWorthCard() {
@@ -69,8 +55,6 @@ export function NetWorthCard() {
 
   const { current, history } = data
   const { whole, fraction } = formatAmount(current.total)
-  const isPositive = (history.change?.absolute ?? 0) >= 0
-  const changeColor = isPositive ? "text-emerald-500" : "text-rose-500"
 
   return (
     <Card className="h-full">
@@ -86,15 +70,10 @@ export function NetWorthCard() {
       </CardHeader>
 
       {/* Mobile header */}
-      <CardHeader className="flex flex-row items-start justify-between md:hidden">
+      <CardHeader className="md:hidden">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Net worth
         </span>
-        {history.change && (
-          <span className="rounded-md bg-primary/90 px-2 py-1 text-xs font-medium text-primary-foreground">
-            {formatSignedPct(history.change.percent)}
-          </span>
-        )}
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -103,21 +82,6 @@ export function NetWorthCard() {
             <span>{whole}</span>
             <span className="text-muted-foreground/50">.{fraction}</span>
           </p>
-
-          {/* Desktop sub-line: absolute + label + percent */}
-          {history.change && (
-            <p className="mt-2 hidden text-sm md:block">
-              <span className={cn("font-semibold", changeColor)}>
-                {formatSignedAmount(
-                  history.change.absolute,
-                  current.homeCurrency,
-                )}
-              </span>
-              <span className="ml-3 text-muted-foreground">
-                past year · {formatSignedPct(history.change.percent)}
-              </span>
-            </p>
-          )}
 
           {/* Mobile sub-line: total across N accounts */}
           <p className="mt-2 text-xs uppercase tracking-wider text-muted-foreground md:hidden">

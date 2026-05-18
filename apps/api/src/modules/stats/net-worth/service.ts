@@ -155,14 +155,6 @@ export async function getNetWorth(
   }
   points.reverse()
 
-  let change: NetWorthResponse["history"]["change"] = null
-  if (points.length >= 2 && points[0].total !== 0) {
-    const first = points[0].total
-    const absolute = total - first
-    const percent = (absolute / first) * 100
-    change = { absolute, percent }
-  }
-
   return {
     current: {
       total,
@@ -173,6 +165,6 @@ export async function getNetWorth(
       accountsCount: accountRows.length,
       topAccounts,
     },
-    history: { points, change },
+    history: { points },
   }
 }

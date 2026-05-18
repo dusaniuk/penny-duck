@@ -78,7 +78,6 @@ describe("GET /stats/net-worth", () => {
     expect(
       body.history.points.every((p: { total: number }) => p.total === 0),
     ).toBe(true)
-    expect(body.history.change).toBeNull()
   })
 
   it("includes account balances in current.total and top-3 accounts", async () => {
@@ -165,40 +164,5 @@ describe("GET /stats/net-worth", () => {
     for (let i = 0; i < body.history.points.length - 1; i++) {
       expect(body.history.points[i].total).toBeCloseTo(1000, 2)
     }
-    // change: from oldest (1000) to current (1500) = +500, +50%.
-    expect(body.history.change).not.toBeNull()
-    expect(body.history.change.absolute).toBeCloseTo(500, 2)
-    expect(body.history.change.percent).toBeCloseTo(50, 2)
-  })
-
-  it("returns null change when oldest point is zero", async () => {
-    const { cookie, organizationId, userId } = await authed()
-    const account = await createAccount({
-      organizationId,
-      userId,
-      name: "Bank",
-      type: "bank",
-      currency: "UAH",
-      balance: 0,
-    })
-    const categories = await listCategories(organizationId)
-    const categoryId = categories[0].id
-
-    await createTransaction({
-      organizationId,
-      accountId: account.id,
-      type: "income",
-      amount: 100,
-      categoryId,
-      date: new Date(),
-      madeById: userId,
-    })
-
-    const res = await honoApp.request("/stats/net-worth", {
-      headers: { cookie },
-    })
-    const body = await res.json()
-    expect(body.current.total).toBeCloseTo(100, 2)
-    expect(body.history.change).toBeNull()
   })
 })

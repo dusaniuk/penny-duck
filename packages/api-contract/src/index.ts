@@ -57,7 +57,6 @@ export type { MonthlySummaryItem } from "./schemas/stats"
 
 export {
   NetWorthTopAccountSchema,
-  NetWorthChangeSchema,
   NetWorthCurrentSchema,
   NetWorthHistoryPointSchema,
   NetWorthHistorySchema,

@@ -6,11 +6,6 @@ export const NetWorthTopAccountSchema = z.object({
   homeBalance: z.number(),
 })
 
-export const NetWorthChangeSchema = z.object({
-  absolute: z.number(),
-  percent: z.number(),
-})
-
 export const NetWorthCurrentSchema = z.object({
   total: z.number(),
   cash: z.number(),
@@ -28,7 +23,6 @@ export const NetWorthHistoryPointSchema = z.object({
 
 export const NetWorthHistorySchema = z.object({
   points: z.array(NetWorthHistoryPointSchema),
-  change: NetWorthChangeSchema.nullable(),
 })
 
 export const NetWorthResponseSchema = z.object({
