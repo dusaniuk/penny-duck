@@ -18,12 +18,6 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog"
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHandle,
-  DrawerTitle,
-} from "@workspace/ui/components/drawer"
-import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -109,7 +103,13 @@ interface TransactionFormDialogProps {
 // CTA bg (transfer swaps to a violet CTA distinct from the orange default).
 const TYPE_PALETTE: Record<
   TransactionType,
-  { ink: string; inkBg: string; inkRing: string; solidSubmit: string; submitFg: string }
+  {
+    ink: string
+    inkBg: string
+    inkRing: string
+    solidSubmit: string
+    submitFg: string
+  }
 > = {
   expense: {
     ink: "#fb7185",
@@ -161,14 +161,16 @@ function toLocalIso(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-// Shell utility classes shared between Dialog (desktop) and Drawer (mobile)
-// variants. Desktop is a 440px floating card with bottom-padded shadow;
-// mobile is a bottom sheet rounded at the top only.
+// Shell utility classes shared between desktop and mobile variants.
+// Desktop is a 440px floating card with drop shadow; mobile is a
+// full-screen Dialog (slides up from the bottom) — Vaul Drawer was tried
+// but its viewport-tracking behavior fights soft-keyboard open/close.
 const SHELL_BASE =
   "flex flex-col gap-[14px] bg-linear-to-b from-[#131418] to-[#0c0d10] text-[#e8e8e8] [font-family:Inter,system-ui,sans-serif]"
 const SHELL_DESKTOP =
   "w-[440px] rounded-[18px] border border-white/[0.06] p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
-const SHELL_MOBILE = "w-full rounded-t-[24px] px-4 pt-2 pb-[22px]"
+const SHELL_MOBILE =
+  "min-h-dvh w-full px-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),22px)]"
 
 const SECTION_LABEL =
   "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-white/40"
@@ -181,26 +183,30 @@ export function TransactionFormDialog(props: TransactionFormDialogProps) {
   const { open, onOpenChange } = props
   const title = props.transaction ? "Edit transaction" : "New transaction"
 
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh] rounded-t-[24px] border-0 bg-transparent p-0 text-popover-foreground">
-          <DrawerHandle />
-          <DrawerTitle className="sr-only">{title}</DrawerTitle>
-          <TransactionModalBody {...props} variant="mobile" />
-        </DrawerContent>
-      </Drawer>
-    )
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-[440px] max-w-none gap-0 rounded-none border-0 bg-transparent p-0 ring-0"
+        className={cn(
+          "gap-0 rounded-none border-0 bg-transparent p-0 ring-0",
+          isMobile
+            ? "top-0 left-0 h-dvh max-w-none translate-x-0 translate-y-0 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4"
+            : "w-[440px] max-w-none"
+        )}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
-        <TransactionModalBody {...props} variant="desktop" />
+        {isMobile ? (
+          // Scroll lives on this inner flex wrapper rather than on the Dialog
+          // content. Touch scrolling on iOS Safari is more reliable here than
+          // on a position:fixed h-dvh container, and overflow-x-hidden
+          // localises any rogue horizontal overflow without clipping the
+          // scroll axis.
+          <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+            <TransactionModalBody {...props} variant="mobile" />
+          </div>
+        ) : (
+          <TransactionModalBody {...props} variant="desktop" />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -495,7 +501,7 @@ function TransactionModalBody({
             setCategoryId(null)
           }}
         >
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-white/[0.04] bg-white/[0.04] p-[3px]">
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-white/4 bg-white/4 p-[3px]">
             {(["expense", "income", "transfer"] as const).map((t) => {
               const isActive = type === t
               const tonePalette = TYPE_PALETTE[t]
@@ -536,7 +542,7 @@ function TransactionModalBody({
       >
         <div className="flex items-baseline justify-center gap-1.5">
           <span
-            className="text-[34px] font-light leading-none tabular-nums"
+            className="text-[34px] leading-none font-light tabular-nums"
             style={{ color: palette.ink }}
           >
             {activeType === "expense"
@@ -558,7 +564,7 @@ function TransactionModalBody({
             }}
             aria-label="Amount"
             className={cn(
-              "min-w-[2.5ch] max-w-[calc(100%-80px)] border-0 bg-transparent p-0 text-left font-semibold leading-none tracking-[-0.03em] tabular-nums text-foreground caret-orange-500 outline-none [field-sizing:content] [font-family:Geist,Inter,system-ui] placeholder:text-white/[0.28]",
+              "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-white/[0.28]",
               isMobile ? "text-[46px]" : "text-[52px]"
             )}
           />
@@ -585,7 +591,7 @@ function TransactionModalBody({
                   <TransactionAccountBlock account={fromAccount} />
                 )}
                 <select
-                  className="absolute inset-0 cursor-pointer border-0 bg-transparent opacity-0 [font-family:inherit]"
+                  className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
                   value={fromAccountId}
                   onChange={(e) => setFromAccountId(e.target.value)}
                   aria-label="From account"
@@ -619,14 +625,14 @@ function TransactionModalBody({
                       <div className="truncate text-[12.5px] font-medium text-foreground">
                         Pick account
                       </div>
-                      <div className="truncate text-[11px] tabular-nums text-white/45">
+                      <div className="truncate text-[11px] text-white/45 tabular-nums">
                         —
                       </div>
                     </div>
                   </button>
                 )}
                 <select
-                  className="absolute inset-0 cursor-pointer border-0 bg-transparent opacity-0 [font-family:inherit]"
+                  className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
                   value={toAccountId}
                   onChange={(e) => setToAccountId(e.target.value)}
                   aria-label="To account"
@@ -646,7 +652,7 @@ function TransactionModalBody({
           {showTransferExchangeRate && fromAccount && toAccount && (
             <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-300/[0.18] bg-violet-300/[0.06] px-3 py-2 text-[12px]">
               <span className="font-semibold text-violet-300/90">Rate</span>
-              <span className="tabular-nums text-white/75">
+              <span className="text-white/75 tabular-nums">
                 1 {fromAccount.currency} =
               </span>
               <input
@@ -659,12 +665,12 @@ function TransactionModalBody({
                     setTransferExchangeRate(v)
                 }}
                 aria-label="Exchange rate"
-                className="w-[7em] border-0 bg-transparent p-0 text-[12px] tabular-nums text-foreground outline-none [font-family:inherit]"
+                className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-[12px] text-foreground tabular-nums outline-none"
               />
-              <span className="tabular-nums text-white/75">
+              <span className="text-white/75 tabular-nums">
                 {toAccount.currency}
               </span>
-              <span className="ml-auto tabular-nums text-white/60">
+              <span className="ml-auto text-white/60 tabular-nums">
                 → receive{" "}
                 <strong className="font-semibold text-foreground">
                   {receiveAmount
@@ -781,10 +787,7 @@ function TransactionModalBody({
           isMobile && "px-3 py-3"
         )}
       >
-        <InputGroupAddon
-          align="inline-start"
-          className="text-white/35"
-        >
+        <InputGroupAddon align="inline-start" className="text-white/35">
           <IconNote size={14} />
         </InputGroupAddon>
         <InputGroupInput
