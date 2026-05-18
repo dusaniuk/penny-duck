@@ -99,8 +99,9 @@ interface TransactionFormDialogProps {
 }
 
 // Per-type accent colors used on the eyebrow, amount sign, and submit button.
-// `ink` = light tint shown on the dark shell; `solidSubmit` = full-saturation
-// CTA bg (transfer swaps to a violet CTA distinct from the orange default).
+// Values are CSS variables defined in globals.css so they adapt per theme
+// (paler hues on the dark shell, darker/saturated hues on light bg).
+// `solidSubmit` is the CTA bg — transfer swaps to violet distinct from orange.
 const TYPE_PALETTE: Record<
   TransactionType,
   {
@@ -112,25 +113,25 @@ const TYPE_PALETTE: Record<
   }
 > = {
   expense: {
-    ink: "#fb7185",
-    inkBg: "rgba(251,113,133,0.14)",
-    inkRing: "rgba(251,113,133,0.4)",
-    solidSubmit: "#f97316",
-    submitFg: "#0a0a0a",
+    ink: "var(--tx-expense-ink)",
+    inkBg: "var(--tx-expense-ink-bg)",
+    inkRing: "var(--tx-expense-ink-ring)",
+    solidSubmit: "var(--tx-submit-default-bg)",
+    submitFg: "var(--tx-submit-default-fg)",
   },
   income: {
-    ink: "#4ade80",
-    inkBg: "rgba(74,222,128,0.14)",
-    inkRing: "rgba(74,222,128,0.4)",
-    solidSubmit: "#f97316",
-    submitFg: "#0a0a0a",
+    ink: "var(--tx-income-ink)",
+    inkBg: "var(--tx-income-ink-bg)",
+    inkRing: "var(--tx-income-ink-ring)",
+    solidSubmit: "var(--tx-submit-default-bg)",
+    submitFg: "var(--tx-submit-default-fg)",
   },
   transfer: {
-    ink: "#c4b5fd",
-    inkBg: "rgba(196,181,253,0.14)",
-    inkRing: "rgba(196,181,253,0.4)",
-    solidSubmit: "#7c3aed",
-    submitFg: "#fafafa",
+    ink: "var(--tx-transfer-ink)",
+    inkBg: "var(--tx-transfer-ink-bg)",
+    inkRing: "var(--tx-transfer-ink-ring)",
+    solidSubmit: "var(--tx-submit-transfer-bg)",
+    submitFg: "var(--tx-submit-transfer-fg)",
   },
 }
 
@@ -165,18 +166,20 @@ function toLocalIso(d: Date): string {
 // Desktop is a 440px floating card with drop shadow; mobile is a
 // full-screen Dialog (slides up from the bottom) — Vaul Drawer was tried
 // but its viewport-tracking behavior fights soft-keyboard open/close.
+// Dark mode keeps the original premium-dark gradient; light mode uses
+// the flat card surface from the design tokens.
 const SHELL_BASE =
-  "flex flex-col gap-[14px] bg-linear-to-b from-[#131418] to-[#0c0d10] text-[#e8e8e8] [font-family:Inter,system-ui,sans-serif]"
+  "flex flex-col gap-[14px] bg-card text-foreground [font-family:Inter,system-ui,sans-serif] dark:bg-linear-to-b dark:from-[#131418] dark:to-[#0c0d10] dark:text-[#e8e8e8]"
 const SHELL_DESKTOP =
-  "w-[440px] rounded-[18px] border border-white/[0.06] p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
+  "w-[440px] rounded-[18px] border border-border p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.18)] dark:border-foreground/[0.06] dark:shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
 const SHELL_MOBILE =
   "min-h-dvh w-full px-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),22px)]"
 
 const SECTION_LABEL =
-  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-white/40"
+  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted-foreground"
 
 const ICON_BTN =
-  "size-[30px] bg-transparent text-white/55 hover:bg-white/[0.06] hover:text-white"
+  "size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
 
 export function TransactionFormDialog(props: TransactionFormDialogProps) {
   const isMobile = useIsMobile()
@@ -501,7 +504,7 @@ function TransactionModalBody({
             setCategoryId(null)
           }}
         >
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-white/4 bg-white/4 p-[3px]">
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-foreground/4 bg-foreground/4 p-[3px]">
             {(["expense", "income", "transfer"] as const).map((t) => {
               const isActive = type === t
               const tonePalette = TYPE_PALETTE[t]
@@ -510,7 +513,7 @@ function TransactionModalBody({
                   key={t}
                   value={t}
                   className={cn(
-                    "h-auto gap-1.5 py-2 text-[13px] text-white/55 hover:text-white/80 dark:text-white/55 dark:hover:text-white/80",
+                    "h-auto gap-1.5 py-2 text-[13px] text-foreground/55 hover:text-foreground/80 dark:text-foreground/55 dark:hover:text-foreground/80",
                     isMobile && "py-2.5"
                   )}
                   style={
@@ -536,7 +539,7 @@ function TransactionModalBody({
 
       <div
         className={cn(
-          "border-b border-dashed border-white/[0.07] px-1",
+          "border-b border-dashed border-foreground/[0.07] px-1",
           isMobile ? "pt-[14px] pb-2.5" : "pt-[18px] pb-[14px]"
         )}
       >
@@ -564,11 +567,11 @@ function TransactionModalBody({
             }}
             aria-label="Amount"
             className={cn(
-              "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-white/[0.28]",
+              "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
               isMobile ? "text-[46px]" : "text-[52px]"
             )}
           />
-          <span className="self-end pb-2 text-[14px] font-medium tracking-[0.04em] text-white/40">
+          <span className="self-end pb-2 text-[14px] font-medium tracking-[0.04em] text-foreground/40">
             {currency}
           </span>
         </div>
@@ -604,7 +607,7 @@ function TransactionModalBody({
                 </select>
               </div>
             </div>
-            <div className="grid h-[54px] place-items-center text-violet-300">
+            <div className="grid h-[54px] place-items-center text-violet-600 dark:text-violet-300">
               <IconArrowRight size={18} />
             </div>
             <div className="min-w-0">
@@ -615,17 +618,14 @@ function TransactionModalBody({
                 ) : (
                   <button
                     type="button"
-                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-300/35 bg-white/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-white/[0.05]"
+                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-foreground/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/[0.05] dark:border-violet-300/35"
                   >
-                    <span
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ background: "rgba(255,255,255,0.12)" }}
-                    />
+                    <span className="size-2 shrink-0 rounded-full bg-muted-foreground/40" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12.5px] font-medium text-foreground">
                         Pick account
                       </div>
-                      <div className="truncate text-[11px] text-white/45 tabular-nums">
+                      <div className="truncate text-[11px] text-foreground/45 tabular-nums">
                         —
                       </div>
                     </div>
@@ -650,9 +650,11 @@ function TransactionModalBody({
             </div>
           </div>
           {showTransferExchangeRate && fromAccount && toAccount && (
-            <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-300/[0.18] bg-violet-300/[0.06] px-3 py-2 text-[12px]">
-              <span className="font-semibold text-violet-300/90">Rate</span>
-              <span className="text-white/75 tabular-nums">
+            <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-500/25 bg-violet-500/[0.08] px-3 py-2 text-[12px] dark:border-violet-300/[0.18] dark:bg-violet-300/[0.06]">
+              <span className="font-semibold text-violet-600 dark:text-violet-300/90">
+                Rate
+              </span>
+              <span className="text-foreground/75 tabular-nums">
                 1 {fromAccount.currency} =
               </span>
               <input
@@ -667,10 +669,10 @@ function TransactionModalBody({
                 aria-label="Exchange rate"
                 className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-[12px] text-foreground tabular-nums outline-none"
               />
-              <span className="text-white/75 tabular-nums">
+              <span className="text-foreground/75 tabular-nums">
                 {toAccount.currency}
               </span>
-              <span className="ml-auto text-white/60 tabular-nums">
+              <span className="ml-auto text-foreground/60 tabular-nums">
                 → receive{" "}
                 <strong className="font-semibold text-foreground">
                   {receiveAmount
@@ -693,7 +695,7 @@ function TransactionModalBody({
           <Select value={madeById} onValueChange={setMadeById}>
             <SelectTrigger
               size="default"
-              className="h-auto rounded-[10px] border-white/[0.05] bg-white/[0.025] px-[11px] py-2 text-[12.5px] text-foreground hover:bg-white/[0.05] dark:bg-white/[0.025] dark:hover:bg-white/[0.05]"
+              className="h-auto rounded-[10px] border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-[12.5px] text-foreground hover:bg-foreground/[0.05] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.05]"
             >
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -734,9 +736,9 @@ function TransactionModalBody({
                 variant="outline"
                 asChild
                 className={cn(
-                  "cursor-pointer border-white/[0.06] bg-white/[0.03] font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/90",
+                  "cursor-pointer border-foreground/[0.06] bg-foreground/[0.03] font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground/90",
                   isActive &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-400 hover:bg-orange-500/[0.16] hover:text-orange-400",
+                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/[0.16] hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
                   isMobile && "px-[13px] py-2"
                 )}
               >
@@ -753,9 +755,9 @@ function TransactionModalBody({
                 variant="outline"
                 asChild
                 className={cn(
-                  "cursor-pointer gap-1.5 border-white/[0.06] bg-white/[0.03] font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/90",
+                  "cursor-pointer gap-1.5 border-foreground/[0.06] bg-foreground/[0.03] font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground/90",
                   datePreset === "custom" &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-400 hover:bg-orange-500/[0.16] hover:text-orange-400",
+                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/[0.16] hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
                   isMobile && "px-[13px] py-2"
                 )}
               >
@@ -783,11 +785,11 @@ function TransactionModalBody({
 
       <InputGroup
         className={cn(
-          "h-auto items-center rounded-[11px] border-white/[0.05] bg-white/[0.025] px-3 py-2.5",
+          "h-auto items-center rounded-[11px] border-foreground/[0.05] bg-foreground/[0.025] px-3 py-2.5",
           isMobile && "px-3 py-3"
         )}
       >
-        <InputGroupAddon align="inline-start" className="text-white/35">
+        <InputGroupAddon align="inline-start" className="text-foreground/35">
           <IconNote size={14} />
         </InputGroupAddon>
         <InputGroupInput
@@ -797,7 +799,7 @@ function TransactionModalBody({
           onChange={(e) => setNote(e.target.value)}
           maxLength={500}
           aria-label="Note"
-          className="text-[13px] text-foreground placeholder:text-white/35"
+          className="text-[13px] text-foreground placeholder:text-foreground/35"
         />
         {activeType !== "transfer" && (
           <InputGroupAddon align="inline-end">
@@ -827,7 +829,7 @@ function TransactionModalBody({
       </InputGroup>
 
       {error && (
-        <p className="-mt-1 text-right text-[12px] text-rose-400">{error}</p>
+        <p className="-mt-1 text-right text-[12px] text-destructive">{error}</p>
       )}
 
       <div className={cn("flex items-center gap-2 pt-1.5", isMobile && "pt-2")}>
@@ -838,7 +840,7 @@ function TransactionModalBody({
             size="sm"
             onClick={onDelete}
             disabled={loading}
-            className="mr-auto h-auto rounded-[10px] border border-rose-400/35 bg-transparent px-[14px] py-[10px] text-[13px] text-rose-400 hover:bg-rose-400/10"
+            className="mr-auto h-auto rounded-[10px] border border-destructive/35 bg-transparent px-[14px] py-[10px] text-[13px] text-destructive hover:bg-destructive/10"
           >
             Delete
           </Button>
@@ -850,7 +852,7 @@ function TransactionModalBody({
           onClick={() => onOpenChange(false)}
           disabled={loading}
           className={cn(
-            "h-auto rounded-[10px] border-white/10 bg-transparent px-[18px] py-[10px] text-[13px] text-white/70 hover:bg-white/[0.04] hover:text-white",
+            "h-auto rounded-[10px] border-foreground/10 bg-transparent px-[18px] py-[10px] text-[13px] text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
             !isEdit && "ml-auto",
             isMobile && "shrink-0"
           )}

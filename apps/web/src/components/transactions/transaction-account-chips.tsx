@@ -30,10 +30,10 @@ function accountDotColor(account: Account): string {
 }
 
 const SECTION_LABEL_CLASS =
-  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-white/40"
+  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-foreground/40"
 
 const CHIP_BASE_CLASS =
-  "flex shrink-0 items-center gap-2 rounded-[11px] border border-white/[0.06] bg-white/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+  "flex shrink-0 items-center gap-2 rounded-[11px] border border-foreground/[0.06] bg-foreground/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
 
 interface TransactionAccountChipsProps {
   accounts: Array<Account>
@@ -91,7 +91,7 @@ export function TransactionAccountBlock({
       onClick={onClick}
       className={cn(
         CHIP_BASE_CLASS,
-        "w-full max-w-none border-violet-300/35 sm:px-3 sm:py-2.5"
+        "w-full max-w-none border-violet-500/40 sm:px-3 sm:py-2.5 dark:border-violet-300/35"
       )}
     >
       <AccountDot color={accountDotColor(account)} />
@@ -115,7 +115,7 @@ function AccountText({ account }: { account: Account }) {
       <div className="truncate text-[12.5px] font-medium text-foreground">
         {account.name}
       </div>
-      <div className="truncate text-[11px] tabular-nums text-white/45">
+      <div className="truncate text-[11px] tabular-nums text-foreground/45">
         {account.balance.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,

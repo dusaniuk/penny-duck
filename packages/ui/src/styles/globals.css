@@ -51,6 +51,21 @@
   --sidebar-accent-foreground: oklch(0.16 0.005 270);
   --sidebar-border: oklch(0 0 0 / 0.08);
   --sidebar-ring: oklch(0.52 0.18 45);
+
+  /* Transaction dialog per-type accents (light theme tuned for white-ish bg) */
+  --tx-expense-ink: #e11d48; /* rose-600 */
+  --tx-expense-ink-bg: rgba(225, 29, 72, 0.1);
+  --tx-expense-ink-ring: rgba(225, 29, 72, 0.32);
+  --tx-income-ink: #16a34a; /* green-600 */
+  --tx-income-ink-bg: rgba(22, 163, 74, 0.1);
+  --tx-income-ink-ring: rgba(22, 163, 74, 0.32);
+  --tx-transfer-ink: #7c3aed; /* violet-600 */
+  --tx-transfer-ink-bg: rgba(124, 58, 237, 0.1);
+  --tx-transfer-ink-ring: rgba(124, 58, 237, 0.32);
+  --tx-submit-default-bg: #f97316; /* orange-500 */
+  --tx-submit-default-fg: #0a0a0a;
+  --tx-submit-transfer-bg: #7c3aed; /* violet-600 */
+  --tx-submit-transfer-fg: #fafafa;
 }
 
 .dark {
@@ -91,6 +106,21 @@
   --sidebar-accent-foreground: oklch(0.96 0.003 270);
   --sidebar-border: oklch(1 0 0 / 0.06);
   --sidebar-ring: oklch(0.74 0.18 50);
+
+  /* Transaction dialog per-type accents (dark theme — softer/paler hues on dark surface) */
+  --tx-expense-ink: #fb7185; /* rose-400 */
+  --tx-expense-ink-bg: rgba(251, 113, 133, 0.14);
+  --tx-expense-ink-ring: rgba(251, 113, 133, 0.4);
+  --tx-income-ink: #4ade80; /* green-400 */
+  --tx-income-ink-bg: rgba(74, 222, 128, 0.14);
+  --tx-income-ink-ring: rgba(74, 222, 128, 0.4);
+  --tx-transfer-ink: #c4b5fd; /* violet-300 */
+  --tx-transfer-ink-bg: rgba(196, 181, 253, 0.14);
+  --tx-transfer-ink-ring: rgba(196, 181, 253, 0.4);
+  --tx-submit-default-bg: #f97316; /* orange-500 */
+  --tx-submit-default-fg: #0a0a0a;
+  --tx-submit-transfer-bg: #7c3aed; /* violet-600 */
+  --tx-submit-transfer-fg: #fafafa;
 }
 
 @theme inline {

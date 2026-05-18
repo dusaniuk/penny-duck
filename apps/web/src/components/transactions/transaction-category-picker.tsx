@@ -13,10 +13,20 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@workspace/ui/components/input-group"
+import { useIsDark } from "@workspace/ui/hooks/use-is-dark"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Category } from "@workspace/api-contract"
 import { paletteColor } from "@/lib/category-color"
 import { getCategoryIcon } from "@/lib/category-icons"
+
+// Lightness/chroma for category accents shifts per theme: pale colors read
+// on a dark surface, vivid darker colors read on a light surface.
+const FG_OPTS_DARK = { l: 0.78, c: 0.14 } as const
+const FG_OPTS_LIGHT = { l: 0.5, c: 0.18 } as const
+const BG_OPTS_DARK = { l: 0.42, c: 0.1, a: 0.4 } as const
+const BG_OPTS_LIGHT = { l: 0.62, c: 0.16, a: 0.18 } as const
+const BG_PARENT_OPTS_DARK = { l: 0.42, c: 0.1, a: 0.35 } as const
+const BG_PARENT_OPTS_LIGHT = { l: 0.62, c: 0.16, a: 0.16 } as const
 
 interface TransactionCategoryPickerProps {
   categories: Array<Category>
@@ -29,10 +39,10 @@ interface TransactionCategoryPickerProps {
 }
 
 const ICON_BTN_CLASS =
-  "size-[30px] bg-transparent text-white/55 hover:bg-white/[0.06] hover:text-white"
+  "size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
 
 const CHIP_CLASS =
-  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-white/[0.05] bg-white/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-white/[0.78] transition-colors hover:bg-white/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-foreground/[0.05] bg-foreground/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
 
 export function TransactionCategoryPicker({
   categories,
@@ -44,6 +54,10 @@ export function TransactionCategoryPicker({
   variant = "desktop",
 }: TransactionCategoryPickerProps) {
   const [search, setSearch] = useState("")
+  const isDark = useIsDark()
+  const fgOpts = isDark ? FG_OPTS_DARK : FG_OPTS_LIGHT
+  const bgOpts = isDark ? BG_OPTS_DARK : BG_OPTS_LIGHT
+  const bgParentOpts = isDark ? BG_PARENT_OPTS_DARK : BG_PARENT_OPTS_LIGHT
 
   const byId = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -100,8 +114,8 @@ export function TransactionCategoryPicker({
         </Button>
       </div>
 
-      <InputGroup className="h-auto rounded-[11px] border-white/[0.06] bg-white/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-white/35">
-        <InputGroupAddon align="inline-start" className="text-white/40">
+      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-foreground/35">
+        <InputGroupAddon align="inline-start" className="text-foreground/40">
           <IconSearch size={15} />
         </InputGroupAddon>
         <InputGroupInput
@@ -114,7 +128,7 @@ export function TransactionCategoryPicker({
           <InputGroupAddon align="inline-end">
             <button
               type="button"
-              className="grid size-[18px] place-items-center rounded-full border-0 bg-white/10 text-white/70"
+              className="grid size-[18px] place-items-center rounded-full border-0 bg-foreground/10 text-foreground/70"
               onClick={() => setSearch("")}
               aria-label="Clear search"
             >
@@ -133,7 +147,7 @@ export function TransactionCategoryPicker({
         {q === "" && recentIds.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center">
-              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] uppercase text-white/45">
+              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] uppercase text-foreground/45">
                 <IconSparkles size={12} /> Recent
               </span>
             </div>
@@ -141,8 +155,8 @@ export function TransactionCategoryPicker({
               {recentIds.map((id) => {
                 const c = byId.get(id)
                 if (!c) return null
-                const fg = paletteColor(c.color, { l: 0.78, c: 0.14 })
-                const bg = paletteColor(c.color, { l: 0.42, c: 0.1, a: 0.4 })
+                const fg = paletteColor(c.color, fgOpts)
+                const bg = paletteColor(c.color, bgOpts)
                 const active = c.id === selectedId
                 const icon = getCategoryIcon(c.icon)
                 return (
@@ -179,8 +193,8 @@ export function TransactionCategoryPicker({
           if (q !== "" && !parentMatches && visibleChildren.length === 0) {
             return null
           }
-          const fg = paletteColor(parent.color, { l: 0.78, c: 0.14 })
-          const bg = paletteColor(parent.color, { l: 0.42, c: 0.1, a: 0.35 })
+          const fg = paletteColor(parent.color, fgOpts)
+          const bg = paletteColor(parent.color, bgParentOpts)
           const parentActive = parent.id === selectedId
           const parentIcon = getCategoryIcon(parent.icon)
           return (
@@ -190,7 +204,7 @@ export function TransactionCategoryPicker({
                   type="button"
                   onClick={() => onSelect(parent.id)}
                   aria-pressed={parentActive}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-[9px] border border-white/[0.05] bg-white/[0.025] px-[11px] py-2 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-[9px] border border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
                   style={
                     parentActive
                       ? { background: bg, color: fg, borderColor: fg }
@@ -208,7 +222,7 @@ export function TransactionCategoryPicker({
                     <Badge
                       size="sm"
                       variant="secondary"
-                      className="border-0 bg-white/[0.05] text-white/40"
+                      className="border-0 bg-foreground/[0.05] text-foreground/40"
                     >
                       {children.length}
                     </Badge>
@@ -218,22 +232,15 @@ export function TransactionCategoryPicker({
               {visibleChildren.length > 0 && (
                 <div
                   className={cn(
-                    "relative grid gap-1 pl-[22px] before:absolute before:left-[10px] before:top-1 before:bottom-1 before:w-px before:bg-white/[0.07] before:content-['']",
+                    "relative grid gap-1 pl-[22px] before:absolute before:left-[10px] before:top-1 before:bottom-1 before:w-px before:bg-foreground/[0.07] before:content-['']",
                     gridCols
                   )}
                 >
                   {visibleChildren.map((child) => {
                     const active = child.id === selectedId
                     const childIcon = getCategoryIcon(child.icon)
-                    const childFg = paletteColor(child.color, {
-                      l: 0.78,
-                      c: 0.14,
-                    })
-                    const childBg = paletteColor(child.color, {
-                      l: 0.42,
-                      c: 0.1,
-                      a: 0.4,
-                    })
+                    const childFg = paletteColor(child.color, fgOpts)
+                    const childBg = paletteColor(child.color, bgOpts)
                     return (
                       <button
                         key={child.id}
@@ -272,7 +279,7 @@ export function TransactionCategoryPicker({
             type="button"
             variant="outline"
             onClick={onCreateCategory}
-            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-white/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-white/50 hover:border-orange-500/40 hover:bg-transparent hover:text-orange-400"
+            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-foreground/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-foreground/50 hover:border-orange-500/40 hover:bg-transparent hover:text-orange-400"
           >
             <IconPlus size={14} />
             Create new category
