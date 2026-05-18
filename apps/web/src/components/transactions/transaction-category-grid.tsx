@@ -22,7 +22,11 @@ interface TransactionCategoryGridProps {
   variant?: "desktop" | "mobile"
 }
 
-const VISIBLE_CHILDREN = 7
+// Grid is 4 cols on desktop / 3 cols on mobile. Keep visible-cell count one
+// less than a full grid so "More…" fills the last slot — and bump mobile to
+// 8 so the layout fills three rows of three instead of leaving a half-row.
+const VISIBLE_CHILDREN_DESKTOP = 7
+const VISIBLE_CHILDREN_MOBILE = 8
 
 const CELL_CLASS =
   "flex cursor-pointer flex-col items-center gap-1 rounded-[10px] border border-foreground/[0.05] bg-foreground/[0.025] px-1 pt-2.5 pb-2 text-center text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
@@ -68,12 +72,18 @@ export function TransactionCategoryGrid({
       ? (byId.get(selectedCat.parentId) ?? null)
       : null
 
+  const visibleCount =
+    variant === "mobile" ? VISIBLE_CHILDREN_MOBILE : VISIBLE_CHILDREN_DESKTOP
+  // Only need a "More…" affordance when there are more children than fit.
+  // For e.g. the income tab (usually 3–4 categories) the grid stays flush.
+  const showMore = sortedChildren.length > visibleCount
+
   // Surface the selected child even if its usage rank is below the visible
   // cut-off, so the active state always lights up in the grid.
   const visible = (() => {
-    const head = sortedChildren.slice(0, VISIBLE_CHILDREN)
+    const head = sortedChildren.slice(0, visibleCount)
     if (selectedCat && !head.some((c) => c.id === selectedCat.id)) {
-      return [selectedCat, ...head.slice(0, VISIBLE_CHILDREN - 1)]
+      return [selectedCat, ...head.slice(0, visibleCount - 1)]
     }
     return head
   })()
@@ -125,19 +135,21 @@ export function TransactionCategoryGrid({
             </button>
           )
         })}
-        <button
-          type="button"
-          onClick={onMore}
-          className={cn(CELL_CLASS, "border-dashed text-foreground/50")}
-          aria-label="More categories"
-        >
-          <span className="grid size-[22px] shrink-0 place-items-center">
-            <IconDots size={16} />
-          </span>
-          <span className="max-w-full truncate text-[11px] font-medium leading-[1.15]">
-            More…
-          </span>
-        </button>
+        {showMore && (
+          <button
+            type="button"
+            onClick={onMore}
+            className={cn(CELL_CLASS, "border-dashed text-foreground/50")}
+            aria-label="More categories"
+          >
+            <span className="grid size-[22px] shrink-0 place-items-center">
+              <IconDots size={16} />
+            </span>
+            <span className="max-w-full truncate text-[11px] font-medium leading-[1.15]">
+              More…
+            </span>
+          </button>
+        )}
       </div>
       {selectedCat && selectedCat.parentId !== null && (
         <div className="mt-2 flex items-center gap-[7px] rounded-[9px] border border-foreground/[0.06] bg-foreground/[0.025] px-[11px] py-[7px] text-[12px] font-medium text-foreground">
