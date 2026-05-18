@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -50,6 +50,7 @@ import { TransactionCategoryGrid } from "./transaction-category-grid"
 import { TransactionCategoryPicker } from "./transaction-category-picker"
 import type {
   Account,
+  AccountUsageItem,
   Category,
   CategoryUsageItem,
   Member,
@@ -71,6 +72,7 @@ interface TransactionFormDialogProps {
   exchangeRates?: Record<string, Record<string, number>>
   pairedAccountId?: string | null
   defaultAccountId?: string
+  accountUsage?: ReadonlyArray<AccountUsageItem>
   categoryUsage?: ReadonlyArray<CategoryUsageItem>
   recentCategoryIds?: ReadonlyArray<string>
   onSubmitTransaction: (data: {
@@ -231,6 +233,7 @@ function TransactionModalBody({
   exchangeRates,
   pairedAccountId,
   defaultAccountId,
+  accountUsage = [],
   categoryUsage = [],
   recentCategoryIds = [],
   onSubmitTransaction,
@@ -274,6 +277,20 @@ function TransactionModalBody({
     activeType === "transfer"
       ? []
       : categories.filter((c) => c.type === activeType)
+
+  // Sort: user-default first, then most-used, then alphabetical. Applied to
+  // chips and to the transfer From/To selects so order stays consistent
+  // across tabs.
+  const sortedAccounts = useMemo(() => {
+    const usageMap = new Map(accountUsage.map((u) => [u.accountId, u.count]))
+    return [...accounts].sort((a, b) => {
+      if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1
+      const ua = usageMap.get(a.id) ?? 0
+      const ub = usageMap.get(b.id) ?? 0
+      if (ua !== ub) return ub - ua
+      return a.name.localeCompare(b.name)
+    })
+  }, [accounts, accountUsage])
 
   const fromAccount = accounts.find((a) => a.id === fromAccountId)
   const toAccount = accounts.find((a) => a.id === toAccountId)
@@ -579,7 +596,7 @@ function TransactionModalBody({
 
       {activeType !== "transfer" ? (
         <TransactionAccountChips
-          accounts={accounts}
+          accounts={sortedAccounts}
           selectedId={accountId}
           onSelect={setAccountId}
           label={activeType === "income" ? "Into account" : "From account"}
@@ -599,7 +616,7 @@ function TransactionModalBody({
                   onChange={(e) => setFromAccountId(e.target.value)}
                   aria-label="From account"
                 >
-                  {accounts.map((a) => (
+                  {sortedAccounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name} — {a.balance.toFixed(2)} {a.currency}
                     </option>
@@ -638,7 +655,7 @@ function TransactionModalBody({
                   aria-label="To account"
                 >
                   <option value="">Pick account</option>
-                  {accounts
+                  {sortedAccounts
                     .filter((a) => a.id !== fromAccountId)
                     .map((a) => (
                       <option key={a.id} value={a.id}>

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
   Account,
+  AccountUsageItem,
   Category,
   CategoryUsageItem,
   Member,
@@ -26,6 +27,16 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
   })
   const accounts: Array<Account> = accountsData ?? []
   const defaultAccountId = accounts.find((a) => a.isDefault)?.id
+
+  const { data: accountUsageData } = useQuery({
+    queryKey: ["accounts", "usage"],
+    queryFn: async () => {
+      const res = await api.accounts.usage.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+  const accountUsage: Array<AccountUsageItem> = accountUsageData ?? []
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -160,6 +171,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       currentUserId={currentUserId}
       exchangeRates={latestRates}
       defaultAccountId={defaultAccountId}
+      accountUsage={accountUsage}
       categoryUsage={categoryUsage}
       onSubmitTransaction={handleSubmitTransaction}
       onSubmitTransfer={handleSubmitTransfer}

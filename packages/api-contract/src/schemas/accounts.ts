@@ -22,4 +22,12 @@ export const UpdateAccountSchema = z.object({
   type: z.string().min(1).optional(),
 })
 
+export const AccountUsageItemSchema = z.object({
+  accountId: z.uuid(),
+  count: z.number().int().nonnegative(),
+})
+
+export const AccountUsageResponseSchema = z.array(AccountUsageItemSchema)
+
 export type Account = z.infer<typeof AccountSchema>
+export type AccountUsageItem = z.infer<typeof AccountUsageItemSchema>

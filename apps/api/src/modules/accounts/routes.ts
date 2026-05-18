@@ -11,6 +11,7 @@ import {
   createAccount,
   deleteAccount,
   getAccount,
+  getAccountUsage,
   listAccounts,
   setDefaultAccount,
   updateAccount,
@@ -23,6 +24,11 @@ export const accountsRoutes = new Hono<AuthedEnv>()
   .get("/", async (c) => {
     const user = c.get("user")
     const result = await listAccounts(user.organizationId, user.sub)
+    return c.json(result)
+  })
+  .get("/usage", async (c) => {
+    const user = c.get("user")
+    const result = await getAccountUsage(user.organizationId)
     return c.json(result)
   })
   .post("/", zValidator("json", CreateAccountSchema), async (c) => {

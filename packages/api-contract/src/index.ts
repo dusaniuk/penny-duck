@@ -16,10 +16,12 @@ export type { Member } from "./schemas/users"
 
 export {
   AccountSchema,
+  AccountUsageItemSchema,
+  AccountUsageResponseSchema,
   CreateAccountSchema,
   UpdateAccountSchema,
 } from "./schemas/accounts"
-export type { Account } from "./schemas/accounts"
+export type { Account, AccountUsageItem } from "./schemas/accounts"
 
 export {
   CategorySchema,

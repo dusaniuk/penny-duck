@@ -7,7 +7,7 @@ import {
   transactions,
   users,
 } from "@workspace/db"
-import { type Account } from "@workspace/api-contract"
+import { type Account, type AccountUsageItem } from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 import { countOpenPositionsFromTrades } from "@/modules/investments/helpers/count-open-positions"
@@ -141,6 +141,25 @@ export async function listAccounts(
   )
 
   return rows.map((r) => toResponse(r, rates.get(r.currency) ?? 1))
+}
+
+// Count of transactions per account, scoped to the org. Used by the
+// transaction-form account chips to surface the most-used accounts first.
+// Includes both regular transactions and transfer legs (both write rows
+// with accountId set).
+export async function getAccountUsage(
+  organizationId: string,
+): Promise<AccountUsageItem[]> {
+  const rows = await db
+    .select({
+      accountId: transactions.accountId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(transactions)
+    .where(eq(transactions.organizationId, organizationId))
+    .groupBy(transactions.accountId)
+
+  return rows.map((r) => ({ accountId: r.accountId, count: r.count }))
 }
 
 export async function getAccount(
