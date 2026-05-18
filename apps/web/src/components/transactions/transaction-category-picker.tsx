@@ -25,8 +25,6 @@ const FG_OPTS_DARK = { l: 0.78, c: 0.14 } as const
 const FG_OPTS_LIGHT = { l: 0.5, c: 0.18 } as const
 const BG_OPTS_DARK = { l: 0.42, c: 0.1, a: 0.4 } as const
 const BG_OPTS_LIGHT = { l: 0.62, c: 0.16, a: 0.18 } as const
-const BG_PARENT_OPTS_DARK = { l: 0.42, c: 0.1, a: 0.35 } as const
-const BG_PARENT_OPTS_LIGHT = { l: 0.62, c: 0.16, a: 0.16 } as const
 
 interface TransactionCategoryPickerProps {
   categories: Array<Category>
@@ -57,7 +55,6 @@ export function TransactionCategoryPicker({
   const isDark = useIsDark()
   const fgOpts = isDark ? FG_OPTS_DARK : FG_OPTS_LIGHT
   const bgOpts = isDark ? BG_OPTS_DARK : BG_OPTS_LIGHT
-  const bgParentOpts = isDark ? BG_PARENT_OPTS_DARK : BG_PARENT_OPTS_LIGHT
 
   const byId = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -154,7 +151,9 @@ export function TransactionCategoryPicker({
             <div className={cn("grid gap-1", gridCols)}>
               {recentIds.map((id) => {
                 const c = byId.get(id)
-                if (!c) return null
+                // Parents are not selectable in this picker, so don't surface
+                // them via the Recent shortcut either.
+                if (!c || c.parentId === null) return null
                 const fg = paletteColor(c.color, fgOpts)
                 const bg = paletteColor(c.color, bgOpts)
                 const active = c.id === selectedId
@@ -189,27 +188,20 @@ export function TransactionCategoryPicker({
         {parents.map((parent) => {
           const children = childrenByParent.get(parent.id) ?? []
           const visibleChildren = children.filter(matches)
-          const parentMatches = matches(parent)
-          if (q !== "" && !parentMatches && visibleChildren.length === 0) {
+          // During search, only show the parent header when at least one
+          // child matches — a parent-name match alone would render a label
+          // with nothing selectable beneath it.
+          if (q !== "" && visibleChildren.length === 0) {
             return null
           }
           const fg = paletteColor(parent.color, fgOpts)
-          const bg = paletteColor(parent.color, bgParentOpts)
-          const parentActive = parent.id === selectedId
           const parentIcon = getCategoryIcon(parent.icon)
           return (
             <div key={parent.id} className="flex flex-col gap-1.5">
               <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() => onSelect(parent.id)}
-                  aria-pressed={parentActive}
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-[9px] border border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
-                  style={
-                    parentActive
-                      ? { background: bg, color: fg, borderColor: fg }
-                      : undefined
-                  }
+                <div
+                  className="flex w-full items-center gap-2 rounded-[9px] border border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-[13px] font-medium text-foreground"
+                  role="presentation"
                 >
                   <span
                     className="grid shrink-0 place-items-center"
@@ -227,7 +219,7 @@ export function TransactionCategoryPicker({
                       {children.length}
                     </Badge>
                   )}
-                </button>
+                </div>
               </div>
               {visibleChildren.length > 0 && (
                 <div
