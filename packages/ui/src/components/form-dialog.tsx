@@ -21,7 +21,7 @@ export const FORM_FIELD_LABEL =
   "text-[11px] font-semibold tracking-[0.06em] uppercase text-muted-foreground"
 
 export const FORM_TRIGGER_ROW =
-  "h-auto w-full rounded-[11px] border-border bg-foreground/[0.025] px-[11px] py-2.5 text-[13px] hover:bg-foreground/[0.04] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.04]"
+  "w-full rounded-[11px] border-border bg-foreground/[0.025] px-3 text-[13px] hover:bg-foreground/[0.04] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.04]"
 
 export const FORM_CANCEL_BUTTON =
   "h-auto rounded-[10px] border-foreground/10 bg-transparent px-[18px] py-[10px] text-[13px] text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground"

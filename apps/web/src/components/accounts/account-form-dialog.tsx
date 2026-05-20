@@ -298,7 +298,7 @@ function AccountModalBody({
                   id={field.name}
                   placeholder="Search currency..."
                   disabled
-                  className="h-auto rounded-[11px] border-border bg-foreground/2.5 px-[11px] py-2.5 text-[13px] dark:bg-foreground/2.5"
+                  className="rounded-[11px] border-border bg-foreground/2.5 px-3 text-[13px] dark:bg-foreground/2.5"
                 />
                 <ComboboxContent container={portalContainer}>
                   <ComboboxEmpty>No currency found.</ComboboxEmpty>
@@ -346,7 +346,7 @@ function AccountModalBody({
                       aria-invalid={isInvalid}
                       placeholder="Search currency..."
                       className={cn(
-                        "h-auto rounded-[11px] border-border bg-foreground/2.5 px-[11px] py-2.5 text-[13px] dark:bg-foreground/2.5",
+                        "rounded-[11px] border-border bg-foreground/2.5 px-3 text-[13px] dark:bg-foreground/2.5",
                         isInvalid && "border-destructive/45"
                       )}
                     />
@@ -377,7 +377,7 @@ function AccountModalBody({
                     >
                       Initial balance
                     </FieldLabel>
-                    <InputGroup className="h-auto items-center rounded-[11px] border-border bg-foreground/2.5 px-3 py-2 dark:bg-foreground/2.5">
+                    <InputGroup className="items-center rounded-[11px] border-border bg-foreground/2.5 px-3 dark:bg-foreground/2.5">
                       <InputGroupInput
                         id={field.name}
                         name={field.name}
