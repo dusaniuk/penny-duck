@@ -1,9 +1,23 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type Locator } from "@playwright/test"
 import { env } from "../../shared/env"
 import {
   createAccountData,
   signupAndLoginViaPage,
 } from "../../shared/factories"
+
+// The category grid only shows the top ~7 children; the rest sit behind a
+// "More categories" picker. Fall back to the picker (with search) when the
+// chip isn't in the visible slice.
+async function selectCategoryChip(dialog: Locator, name: string) {
+  const chip = dialog.getByRole("button", { name, exact: true })
+  if ((await chip.count()) > 0) {
+    await chip.click()
+    return
+  }
+  await dialog.getByRole("button", { name: "More categories" }).click()
+  await dialog.getByPlaceholder("Search categories").fill(name)
+  await dialog.getByRole("button", { name, exact: true }).click()
+}
 
 async function createAccountViaPage(
   page: any,
@@ -20,16 +34,20 @@ async function getFirstCategory(
   page: any,
   type: "expense" | "income" = "expense",
 ) {
+  // Only return leaf categories: parents render in the picker as section
+  // headers and aren't clickable as a transaction category.
+  const isLeaf = (c: { type: string; parentId: string | null }) =>
+    c.type === type && c.parentId !== null
   for (let i = 0; i < 10; i++) {
     const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
     const categories = await res.json()
-    const match = categories.find((c: { type: string }) => c.type === type)
+    const match = categories.find(isLeaf)
     if (match) return match
     await new Promise((r) => setTimeout(r, 300))
   }
   const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
   const all = await res.json()
-  return all.find((c: { type: string }) => c.type === type) ?? all[0]
+  return all.find(isLeaf) ?? all[0]
 }
 
 test.describe("Transactions management", () => {
@@ -69,17 +87,15 @@ test.describe("Transactions management", () => {
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("42.50")
 
-    // Select account
-    await dialog.getByText("Select account").click()
-    await page.getByRole("option", { name: new RegExp(account.name) }).click()
-
-    // Select category
-    await dialog.getByText("Select category").click()
-    await page
-      .getByRole("option", { name: new RegExp(category.name) })
+    // Select account chip
+    await dialog
+      .getByRole("button", { name: new RegExp(account.name) })
       .click()
 
-    await dialog.getByRole("button", { name: "Create" }).click()
+    // Select category chip in the grid
+    await selectCategoryChip(dialog, category.name)
+
+    await dialog.getByRole("button", { name: /^Create/ }).click()
 
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
     await expect(page.getByText("-42.50").first()).toBeVisible()
@@ -100,14 +116,12 @@ test.describe("Transactions management", () => {
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Income" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("1000")
-    await dialog.getByText("Select account").click()
-    await page.getByRole("option", { name: new RegExp(account.name) }).click()
-    await dialog.getByText("Select category").click()
-    await page
-      .getByRole("option", { name: new RegExp(category.name) })
+    await dialog
+      .getByRole("button", { name: new RegExp(account.name) })
       .click()
+    await selectCategoryChip(dialog, category.name)
 
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await dialog.getByRole("button", { name: /^Create/ }).click()
 
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
     await expect(page.getByText("+1000.00").first()).toBeVisible()
@@ -128,17 +142,15 @@ test.describe("Transactions management", () => {
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")
-    await dialog.getByText("Select account").click()
-    await page.getByRole("option", { name: new RegExp(account.name) }).click()
-    await dialog.getByText("Select category").click()
-    await page
-      .getByRole("option", { name: new RegExp(category.name) })
+    await dialog
+      .getByRole("button", { name: new RegExp(account.name) })
       .click()
+    await selectCategoryChip(dialog, category.name)
 
-    // Mark as unsettled
-    await dialog.getByText("Mark unsettled").click()
+    // Mark as unsettled — toggle button uses aria-label only (icon, no text).
+    await dialog.getByRole("button", { name: "Mark unsettled" }).click()
 
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await dialog.getByRole("button", { name: /^Create/ }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     // Open row action menu and settle
@@ -161,13 +173,11 @@ test.describe("Transactions management", () => {
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("50")
-    await dialog.getByText("Select account").click()
-    await page.getByRole("option", { name: new RegExp(account.name) }).click()
-    await dialog.getByText("Select category").click()
-    await page
-      .getByRole("option", { name: new RegExp(category.name) })
+    await dialog
+      .getByRole("button", { name: new RegExp(account.name) })
       .click()
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await selectCategoryChip(dialog, category.name)
+    await dialog.getByRole("button", { name: /^Create/ }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     // Open row action menu and click Edit
@@ -175,12 +185,12 @@ test.describe("Transactions management", () => {
     await page.getByRole("menuitem", { name: "Edit" }).click()
 
     const editDialog = page.getByRole("dialog")
-    await expect(editDialog.getByText("Edit Expense")).toBeVisible()
+    await expect(editDialog.getByText("Edit expense")).toBeVisible()
 
     const amountInput = editDialog.getByPlaceholder("0.00").first()
     await amountInput.clear()
     await amountInput.fill("75")
-    await editDialog.getByRole("button", { name: "Save Changes" }).click()
+    await editDialog.getByRole("button", { name: "Save changes" }).click()
 
     await expect(editDialog).not.toBeVisible({ timeout: 5000 })
     await expect(page.getByText("-75.00").first()).toBeVisible()
@@ -201,14 +211,12 @@ test.describe("Transactions management", () => {
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("tab", { name: "Expense" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("99.99")
-    await dialog.getByText("Select account").click()
-    await page.getByRole("option", { name: new RegExp(account.name) }).click()
-    await dialog.getByText("Select category").click()
-    await page
-      .getByRole("option", { name: new RegExp(category.name) })
+    await dialog
+      .getByRole("button", { name: new RegExp(account.name) })
       .click()
-    await dialog.getByPlaceholder("Optional note").fill("to delete")
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await selectCategoryChip(dialog, category.name)
+    await dialog.getByPlaceholder("Add a note…").fill("to delete")
+    await dialog.getByRole("button", { name: /^Create/ }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     // Open row action menu and click Delete
@@ -253,15 +261,11 @@ test.describe("Transfers", () => {
     await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("500")
 
-    // Select From account
-    await dialog.getByText("Source account").click()
-    await page.getByRole("option", { name: /UAH Source/ }).click()
+    // Transfer accounts are native <select> overlays with aria-labels.
+    await dialog.getByLabel("From account").selectOption(acc1.id)
+    await dialog.getByLabel("To account").selectOption(acc2.id)
 
-    // Select To account
-    await dialog.getByText("Destination account").click()
-    await page.getByRole("option", { name: /UAH Target/ }).click()
-
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await dialog.getByRole("button", { name: /^Create/ }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     // Should show transfer with both account names
@@ -290,19 +294,18 @@ test.describe("Transfers", () => {
     await dialog.getByRole("tab", { name: "Transfer" }).click()
     await dialog.getByPlaceholder("0.00").first().fill("100")
 
-    await dialog.getByText("Source account").click()
-    await page.getByRole("option", { name: /USD Acc/ }).click()
+    await dialog.getByLabel("From account").selectOption(usd.id)
+    await dialog.getByLabel("To account").selectOption(uah.id)
 
-    await dialog.getByText("Destination account").click()
-    await page.getByRole("option", { name: /UAH Acc/ }).click()
+    // Exchange rate input is shown when currencies differ.
+    const rate = dialog.getByLabel("Exchange rate")
+    await rate.clear()
+    await rate.fill("41.52")
 
-    // Exchange rate section appears when accounts have different currencies
-    await dialog.getByPlaceholder("41.52").fill("41.52")
+    // Receive amount is rendered as text (not an input), formatted by toLocaleString.
+    await expect(dialog.getByText(/4[,. ]?152[.,]00\s+UAH/)).toBeVisible()
 
-    // Receive amount should auto-calculate
-    await expect(dialog.getByPlaceholder("4152.00")).toHaveValue("4152.00")
-
-    await dialog.getByRole("button", { name: "Create" }).click()
+    await dialog.getByRole("button", { name: /^Create/ }).click()
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
 
     await expect(page.getByText("100.00").first()).toBeVisible()

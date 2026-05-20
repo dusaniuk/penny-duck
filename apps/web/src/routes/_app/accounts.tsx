@@ -134,19 +134,27 @@ function AccountsPage() {
     type: string
     currency?: string
     balance?: number
+    isDefault?: boolean
   }) {
+    let savedId: string
+    const wasDefault = !!editAccount?.isDefault
     if (editAccount) {
       await updateMutation.mutateAsync({
         id: editAccount.id,
         body: { name: formData.name, type: formData.type },
       })
+      savedId = editAccount.id
     } else {
-      await createMutation.mutateAsync({
+      const created = await createMutation.mutateAsync({
         name: formData.name,
         type: formData.type,
         currency: formData.currency!,
         balance: formData.balance,
       })
+      savedId = created.id
+    }
+    if (formData.isDefault && !wasDefault) {
+      await setDefaultMutation.mutateAsync(savedId)
     }
   }
 
@@ -199,6 +207,7 @@ function AccountsPage() {
         }}
         account={editAccount}
         onSubmit={handleFormSubmit}
+        onArchive={handleOpenDelete}
       />
 
       <AccountDeleteDialog

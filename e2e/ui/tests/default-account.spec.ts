@@ -45,10 +45,13 @@ test.describe("Default account", () => {
 
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
-    await page.locator(".fixed.bottom-6.right-6").click()
+    await page.getByRole("button", { name: "Add transaction" }).click()
     const txDialog = page.getByRole("dialog")
+    // The default account chip is pre-selected (aria-pressed=true).
     await expect(
-      txDialog.locator("[data-slot=select-value]").filter({ hasText: target.name })
+      txDialog
+        .locator('button[aria-pressed="true"]')
+        .filter({ hasText: target.name }),
     ).toBeVisible()
   })
 })

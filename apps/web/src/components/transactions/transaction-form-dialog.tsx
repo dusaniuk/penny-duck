@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   IconAlertTriangle,
   IconArrowRight,
@@ -7,16 +7,19 @@ import {
   IconMinus,
   IconNote,
   IconPlus,
-  IconX,
 } from "@tabler/icons-react"
+import { useForm, useStore } from "@tanstack/react-form"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Calendar } from "@workspace/ui/components/calendar"
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@workspace/ui/components/dialog"
+  FORM_CANCEL_BUTTON,
+  FORM_FIELD_LABEL,
+  FORM_SUBMIT_BUTTON,
+  FormDialog,
+  FormDialogFooter,
+  FormDialogHeader,
+} from "@workspace/ui/components/form-dialog"
 import {
   InputGroup,
   InputGroupAddon,
@@ -40,7 +43,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
-import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
 import { cn } from "@workspace/ui/lib/utils"
 import {
   TransactionAccountBlock,
@@ -164,66 +166,61 @@ function toLocalIso(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-// Shell utility classes shared between desktop and mobile variants.
-// Desktop is a 440px floating card with drop shadow; mobile is a
-// full-screen Dialog (slides up from the bottom) — Vaul Drawer was tried
-// but its viewport-tracking behavior fights soft-keyboard open/close.
-// Dark mode keeps the original premium-dark gradient; light mode uses
-// the flat card surface from the design tokens.
-const SHELL_BASE =
-  "flex flex-col gap-[14px] bg-card text-foreground [font-family:Inter,system-ui,sans-serif] dark:bg-linear-to-b dark:from-[#131418] dark:to-[#0c0d10] dark:text-[#e8e8e8]"
-const SHELL_DESKTOP =
-  "w-[440px] rounded-[18px] border border-border p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.18)] dark:border-foreground/[0.06] dark:shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
-const SHELL_MOBILE =
-  "min-h-dvh w-full px-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),22px)]"
+// Section labels in this file get a bottom margin the shared field label does
+// not — they head a group rather than label a single input.
+const SECTION_LABEL = cn(FORM_FIELD_LABEL, "mb-2")
 
-const SECTION_LABEL =
-  "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-muted-foreground"
+interface FormValues {
+  type: TransactionType
+  amount: string
+  accountId: string
+  categoryId: string | null
+  fromAccountId: string
+  toAccountId: string
+  exchangeRate: string
+  receiveAmount: string
+  date: string
+  note: string
+  unsettled: boolean
+  madeById: string
+}
 
-const ICON_BTN =
-  "size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+function isValid(v: FormValues): boolean {
+  if (!v.amount || parseFloat(v.amount) <= 0) return false
+  if (v.type === "transfer") {
+    return (
+      !!v.fromAccountId &&
+      !!v.toAccountId &&
+      v.fromAccountId !== v.toAccountId
+    )
+  }
+  return !!v.accountId && !!v.categoryId
+}
 
 export function TransactionFormDialog(props: TransactionFormDialogProps) {
-  const isMobile = useIsMobile()
-  const { open, onOpenChange } = props
   const title = props.transaction ? "Edit transaction" : "New transaction"
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className={cn(
-          "gap-0 rounded-none border-0 bg-transparent p-0 ring-0",
-          isMobile
-            ? "top-0 left-0 h-dvh max-w-none translate-x-0 translate-y-0 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4"
-            : "w-[440px] max-w-none"
-        )}
-      >
-        <DialogTitle className="sr-only">{title}</DialogTitle>
-        {isMobile ? (
-          // Scroll lives on this inner flex wrapper rather than on the Dialog
-          // content. Touch scrolling on iOS Safari is more reliable here than
-          // on a position:fixed h-dvh container, and overflow-x-hidden
-          // localises any rogue horizontal overflow without clipping the
-          // scroll axis.
-          <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
-            <TransactionModalBody {...props} variant="mobile" />
-          </div>
-        ) : (
-          <TransactionModalBody {...props} variant="desktop" />
-        )}
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      title={title}
+    >
+      {(ctx) => <TransactionModalBody {...props} ctx={ctx} />}
+    </FormDialog>
   )
 }
 
 interface ModalBodyProps extends TransactionFormDialogProps {
-  variant: "desktop" | "mobile"
+  ctx: {
+    shellClass: string
+    portalContainer: HTMLElement | null
+    isMobile: boolean
+    close: () => void
+  }
 }
 
 function TransactionModalBody({
-  open,
-  onOpenChange,
   transaction,
   defaultType = "expense",
   accounts,
@@ -240,38 +237,125 @@ function TransactionModalBody({
   onSubmitTransfer,
   onDelete,
   onCreateCategory,
-  variant,
+  ctx,
 }: ModalBodyProps) {
   const isEdit = !!transaction
   const isTransferEdit = isEdit && !!transaction.transferId
-  const isMobile = variant === "mobile"
+  const { shellClass, isMobile, close } = ctx
+  const variant: "desktop" | "mobile" = isMobile ? "mobile" : "desktop"
 
-  const [type, setType] = useState<TransactionType>(defaultType)
-  const [amount, setAmount] = useState("")
-  const [accountId, setAccountId] = useState("")
-  const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [date, setDate] = useState(todayIso())
-  const [note, setNote] = useState("")
-  const [unsettled, setUnsettled] = useState(false)
-  const [madeById, setMadeById] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Body remounts on each dialog open because FormDialog wraps Radix <Dialog>,
+  // which unmounts DialogContent when closed. That gives us reset-on-open
+  // for free. Replacing the wrapper with one that keeps content mounted would
+  // silently break this — and field listeners would also refire across every
+  // field on form.reset().
+  const form = useForm({
+    defaultValues: {
+      type: isTransferEdit
+        ? "transfer"
+        : transaction
+          ? transaction.type
+          : defaultType,
+      amount: transaction ? transaction.amount.toString() : "",
+      accountId:
+        transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
+      categoryId: transaction?.categoryId ?? null,
+      fromAccountId:
+        transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
+      toAccountId: pairedAccountId ?? "",
+      exchangeRate: transaction?.exchangeRate?.toString() ?? "",
+      receiveAmount: transaction?.originalAmount?.toString() ?? "",
+      date: transaction?.date
+        ? new Date(transaction.date).toISOString().split("T")[0]
+        : todayIso(),
+      note: transaction?.note ?? "",
+      unsettled: transaction ? !transaction.settled : false,
+      madeById: transaction?.madeBy?.id ?? currentUserId,
+    } satisfies FormValues,
+    onSubmit: async ({ value, formApi }) => {
+      if (!isValid(value)) return
+      try {
+        if (value.type === "transfer") {
+          const fromAcc = accounts.find((a) => a.id === value.fromAccountId)
+          const toAcc = accounts.find((a) => a.id === value.toAccountId)
+          const diffCurrency =
+            !!fromAcc && !!toAcc && fromAcc.currency !== toAcc.currency
+          await onSubmitTransfer({
+            fromAccountId: value.fromAccountId,
+            toAccountId: value.toAccountId,
+            amount: parseFloat(value.amount),
+            date: new Date(value.date).toISOString(),
+            ...(value.note ? { note: value.note } : {}),
+            ...(diffCurrency &&
+            value.exchangeRate &&
+            value.receiveAmount &&
+            toAcc
+              ? {
+                  exchangeRate: parseFloat(value.exchangeRate),
+                  originalAmount: parseFloat(value.receiveAmount),
+                  originalCurrency: toAcc.currency,
+                }
+              : {}),
+            // Backend defaults madeBy to the current user; only send it when
+            // the household has multiple members and the picker is shown.
+            ...(members.length > 1 ? { madeById: value.madeById } : {}),
+          })
+        } else {
+          if (!value.categoryId) return
+          await onSubmitTransaction({
+            accountId: value.accountId,
+            type: value.type,
+            amount: parseFloat(value.amount),
+            categoryId: value.categoryId,
+            date: new Date(value.date).toISOString(),
+            ...(value.note ? { note: value.note } : {}),
+            settled: !value.unsettled,
+            ...(members.length > 1 ? { madeById: value.madeById } : {}),
+          })
+        }
+        close()
+      } catch (err) {
+        formApi.setErrorMap({
+          onSubmit: {
+            form: err instanceof Error ? err.message : "Something went wrong",
+            fields: {},
+          },
+        })
+      }
+    },
+  })
+
+  function recomputeRate() {
+    const v = form.state.values
+    if (v.type !== "transfer") return
+    const fromAcc = accounts.find((a) => a.id === v.fromAccountId)
+    const toAcc = accounts.find((a) => a.id === v.toAccountId)
+    if (!fromAcc || !toAcc) return
+    if (fromAcc.currency === toAcc.currency) return
+    const rate = exchangeRates?.[fromAcc.currency]?.[toAcc.currency]
+    if (rate !== undefined) {
+      form.setFieldValue("exchangeRate", rate.toFixed(6))
+    }
+  }
+
+  function recomputeReceive() {
+    const v = form.state.values
+    if (v.type !== "transfer") return
+    if (!v.amount || !v.exchangeRate) return
+    const calc = parseFloat(v.amount) * parseFloat(v.exchangeRate)
+    if (!isNaN(calc)) {
+      form.setFieldValue("receiveAmount", calc.toFixed(2))
+    }
+  }
+
   const [view, setView] = useState<View>("form")
   const [datePickerOpen, setDatePickerOpen] = useState(false)
 
-  const [fromAccountId, setFromAccountId] = useState("")
-  const [toAccountId, setToAccountId] = useState("")
-  const [transferExchangeRate, setTransferExchangeRate] = useState("")
-  const [receiveAmount, setReceiveAmount] = useState("")
+  const values = useStore(form.store, (s) => s.values)
+  const isSubmitting = useStore(form.store, (s) => s.isSubmitting)
+  const submitErrorRaw = useStore(form.store, (s) => s.errorMap.onSubmit)
 
-  const formRef = useRef<HTMLFormElement | null>(null)
-  const amountRef = useRef<HTMLInputElement | null>(null)
-
-  const activeType: TransactionType = isEdit
-    ? isTransferEdit
-      ? "transfer"
-      : transaction.type
-    : type
+  const activeType: TransactionType = values.type
 
   const typedCategories =
     activeType === "transfer"
@@ -292,157 +376,35 @@ function TransactionModalBody({
     })
   }, [accounts, accountUsage])
 
-  const fromAccount = accounts.find((a) => a.id === fromAccountId)
-  const toAccount = accounts.find((a) => a.id === toAccountId)
+  const fromAccount = accounts.find((a) => a.id === values.fromAccountId)
+  const toAccount = accounts.find((a) => a.id === values.toAccountId)
   const currenciesDiffer =
     !!fromAccount && !!toAccount && fromAccount.currency !== toAccount.currency
   const showTransferExchangeRate = currenciesDiffer
-
-  useEffect(() => {
-    if (!open) return
-    if (isTransferEdit) {
-      setType("transfer")
-    } else if (transaction) {
-      setType(transaction.type)
-    } else {
-      setType(defaultType)
-    }
-    setAmount(transaction ? transaction.amount.toString() : "")
-    setAccountId(
-      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? ""
-    )
-    setCategoryId(transaction?.categoryId ?? null)
-    setDate(
-      transaction?.date
-        ? new Date(transaction.date).toISOString().split("T")[0]
-        : todayIso()
-    )
-    setNote(transaction?.note ?? "")
-    setUnsettled(transaction ? !transaction.settled : false)
-    setMadeById(transaction?.madeBy?.id ?? currentUserId)
-    setError(null)
-    setView("form")
-
-    setFromAccountId(
-      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? ""
-    )
-    setToAccountId(pairedAccountId ?? "")
-    setTransferExchangeRate(transaction?.exchangeRate?.toString() ?? "")
-    setReceiveAmount(transaction?.originalAmount?.toString() ?? "")
-  }, [
-    open,
-    transaction,
-    defaultType,
-    currentUserId,
-    pairedAccountId,
-    defaultAccountId,
-    accounts,
-    isTransferEdit,
-  ])
-
-  useEffect(() => {
-    if (
-      activeType === "transfer" &&
-      showTransferExchangeRate &&
-      exchangeRates &&
-      !isEdit &&
-      fromAccount &&
-      toAccount
-    ) {
-      const rate = exchangeRates[fromAccount.currency]?.[toAccount.currency]
-      if (rate !== undefined) {
-        setTransferExchangeRate(rate.toFixed(6))
-      }
-    }
-  }, [
-    showTransferExchangeRate,
-    fromAccount,
-    toAccount,
-    exchangeRates,
-    isEdit,
-    activeType,
-  ])
-
-  useEffect(() => {
-    if (amount && transferExchangeRate && activeType === "transfer") {
-      const calc = parseFloat(amount) * parseFloat(transferExchangeRate)
-      if (!isNaN(calc)) {
-        setReceiveAmount(calc.toFixed(2))
-      }
-    }
-  }, [amount, transferExchangeRate, activeType])
 
   const palette = TYPE_PALETTE[activeType]
   const currency =
     activeType === "transfer"
       ? (fromAccount?.currency ?? "UAH")
-      : (accounts.find((a) => a.id === accountId)?.currency ?? "UAH")
+      : (accounts.find((a) => a.id === values.accountId)?.currency ?? "UAH")
 
   const datePreset: "today" | "yesterday" | "custom" =
-    date === todayIso()
+    values.date === todayIso()
       ? "today"
-      : date === yesterdayIso()
+      : values.date === yesterdayIso()
         ? "yesterday"
         : "custom"
 
-  const submitDisabled = (() => {
-    if (loading) return true
-    if (!amount || parseFloat(amount) <= 0) return true
-    if (activeType === "transfer") {
-      if (!fromAccountId || !toAccountId) return true
-      if (fromAccountId === toAccountId) return true
-    } else {
-      if (!accountId) return true
-      if (!categoryId) return true
-    }
-    return false
-  })()
+  const submitDisabled = isSubmitting || !isValid(values)
 
-  async function handleSubmit(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (submitDisabled) return
-    setError(null)
-    setLoading(true)
-    try {
-      if (activeType === "transfer") {
-        await onSubmitTransfer({
-          fromAccountId,
-          toAccountId,
-          amount: parseFloat(amount),
-          date: new Date(date).toISOString(),
-          ...(note ? { note } : {}),
-          ...(showTransferExchangeRate &&
-          transferExchangeRate &&
-          receiveAmount &&
-          toAccount
-            ? {
-                exchangeRate: parseFloat(transferExchangeRate),
-                originalAmount: parseFloat(receiveAmount),
-                originalCurrency: toAccount.currency,
-              }
-            : {}),
-          ...(members.length > 1 ? { madeById } : {}),
-        })
-      } else {
-        if (!categoryId) return
-        await onSubmitTransaction({
-          accountId,
-          type: activeType,
-          amount: parseFloat(amount),
-          categoryId,
-          date: new Date(date).toISOString(),
-          ...(note ? { note } : {}),
-          settled: !unsettled,
-          ...(members.length > 1 ? { madeById } : {}),
-        })
-      }
-      onOpenChange(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
-    } finally {
-      setLoading(false)
-    }
-  }
+  const submitErrorText =
+    typeof submitErrorRaw === "string"
+      ? submitErrorRaw
+      : submitErrorRaw &&
+          typeof submitErrorRaw === "object" &&
+          "form" in submitErrorRaw
+        ? (submitErrorRaw as { form?: string }).form
+        : undefined
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape" && view === "picker") {
@@ -452,11 +414,9 @@ function TransactionModalBody({
     }
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
-      void handleSubmit()
+      void form.handleSubmit()
     }
   }
-
-  const shellClass = cn(SHELL_BASE, isMobile ? SHELL_MOBILE : SHELL_DESKTOP)
 
   if (view === "picker") {
     return (
@@ -468,10 +428,10 @@ function TransactionModalBody({
       >
         <TransactionCategoryPicker
           categories={typedCategories}
-          selectedId={categoryId}
+          selectedId={values.categoryId}
           recentIds={recentCategoryIds}
           onSelect={(id) => {
-            setCategoryId(id)
+            form.setFieldValue("categoryId", id)
             setView("form")
           }}
           onClose={() => setView("form")}
@@ -484,12 +444,15 @@ function TransactionModalBody({
 
   return (
     <form
-      ref={formRef}
       className={shellClass}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        void form.handleSubmit()
+      }}
       onKeyDown={handleKeyDown}
     >
-      <div className="flex items-center justify-between gap-2">
+      <FormDialogHeader onClose={close}>
         <Badge
           size="xs"
           className="border-0"
@@ -501,29 +464,21 @@ function TransactionModalBody({
           />
           {isEdit ? "Edit" : "New"} {activeType}
         </Badge>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => onOpenChange(false)}
-          aria-label="Close"
-          className={ICON_BTN}
-        >
-          <IconX size={16} />
-        </Button>
-      </div>
+      </FormDialogHeader>
 
       {!isEdit && (
         <Tabs
-          value={type}
+          value={values.type}
           onValueChange={(v) => {
-            setType(v as TransactionType)
-            setCategoryId(null)
+            form.setFieldValue("type", v as TransactionType)
+            // Categories are typed (expense vs income), so any previous
+            // selection is invalid after a type change.
+            form.setFieldValue("categoryId", null)
           }}
         >
           <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-foreground/4 bg-foreground/4 p-[3px]">
             {(["expense", "income", "transfer"] as const).map((t) => {
-              const isActive = type === t
+              const isActive = values.type === t
               const tonePalette = TYPE_PALETTE[t]
               return (
                 <TabsTrigger
@@ -571,23 +526,26 @@ function TransactionModalBody({
                 ? "+"
                 : "↔"}
           </span>
-          <input
-            ref={amountRef}
-            type="text"
-            inputMode="decimal"
-            autoFocus
-            value={amount}
-            placeholder="0.00"
-            onChange={(e) => {
-              const v = e.target.value.replace(",", ".")
-              if (v === "" || /^\d*\.?\d*$/.test(v)) setAmount(v)
-            }}
-            aria-label="Amount"
-            className={cn(
-              "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
-              isMobile ? "text-[46px]" : "text-[52px]"
+          <form.Field name="amount" listeners={{ onChange: recomputeReceive }}>
+            {(field) => (
+              <input
+                type="text"
+                inputMode="decimal"
+                autoFocus
+                value={field.state.value}
+                placeholder="0.00"
+                onChange={(e) => {
+                  const v = e.target.value.replace(",", ".")
+                  if (v === "" || /^\d*\.?\d*$/.test(v)) field.handleChange(v)
+                }}
+                aria-label="Amount"
+                className={cn(
+                  "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
+                  isMobile ? "text-[46px]" : "text-[52px]"
+                )}
+              />
             )}
-          />
+          </form.Field>
           <span className="self-end pb-2 text-[14px] font-medium tracking-[0.04em] text-foreground/40">
             {currency}
           </span>
@@ -597,8 +555,8 @@ function TransactionModalBody({
       {activeType !== "transfer" ? (
         <TransactionAccountChips
           accounts={sortedAccounts}
-          selectedId={accountId}
-          onSelect={setAccountId}
+          selectedId={values.accountId}
+          onSelect={(id) => form.setFieldValue("accountId", id)}
           label={activeType === "income" ? "Into account" : "From account"}
         />
       ) : (
@@ -610,18 +568,27 @@ function TransactionModalBody({
                 {fromAccount && (
                   <TransactionAccountBlock account={fromAccount} />
                 )}
-                <select
-                  className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
-                  value={fromAccountId}
-                  onChange={(e) => setFromAccountId(e.target.value)}
-                  aria-label="From account"
+                <form.Field
+                  name="fromAccountId"
+                  listeners={
+                    !isEdit ? { onChange: recomputeRate } : undefined
+                  }
                 >
-                  {sortedAccounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} — {a.balance.toFixed(2)} {a.currency}
-                    </option>
-                  ))}
-                </select>
+                  {(field) => (
+                    <select
+                      className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-label="From account"
+                    >
+                      {sortedAccounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} — {a.balance.toFixed(2)} {a.currency}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </form.Field>
               </div>
             </div>
             <div className="grid h-[54px] place-items-center text-violet-600 dark:text-violet-300">
@@ -648,21 +615,30 @@ function TransactionModalBody({
                     </div>
                   </button>
                 )}
-                <select
-                  className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
-                  value={toAccountId}
-                  onChange={(e) => setToAccountId(e.target.value)}
-                  aria-label="To account"
+                <form.Field
+                  name="toAccountId"
+                  listeners={
+                    !isEdit ? { onChange: recomputeRate } : undefined
+                  }
                 >
-                  <option value="">Pick account</option>
-                  {sortedAccounts
-                    .filter((a) => a.id !== fromAccountId)
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} — {a.balance.toFixed(2)} {a.currency}
-                      </option>
-                    ))}
-                </select>
+                  {(field) => (
+                    <select
+                      className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-label="To account"
+                    >
+                      <option value="">Pick account</option>
+                      {sortedAccounts
+                        .filter((a) => a.id !== values.fromAccountId)
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name} — {a.balance.toFixed(2)} {a.currency}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                </form.Field>
               </div>
             </div>
           </div>
@@ -674,29 +650,39 @@ function TransactionModalBody({
               <span className="text-foreground/75 tabular-nums">
                 1 {fromAccount.currency} =
               </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={transferExchangeRate}
-                onChange={(e) => {
-                  const v = e.target.value.replace(",", ".")
-                  if (v === "" || /^\d*\.?\d*$/.test(v))
-                    setTransferExchangeRate(v)
-                }}
-                aria-label="Exchange rate"
-                className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-base text-foreground tabular-nums outline-none md:text-[12px]"
-              />
+              <form.Field
+                name="exchangeRate"
+                listeners={{ onChange: recomputeReceive }}
+              >
+                {(field) => (
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={field.state.value}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(",", ".")
+                      if (v === "" || /^\d*\.?\d*$/.test(v))
+                        field.handleChange(v)
+                    }}
+                    aria-label="Exchange rate"
+                    className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-base text-foreground tabular-nums outline-none md:text-[12px]"
+                  />
+                )}
+              </form.Field>
               <span className="text-foreground/75 tabular-nums">
                 {toAccount.currency}
               </span>
               <span className="ml-auto text-foreground/60 tabular-nums">
                 → receive{" "}
                 <strong className="font-semibold text-foreground">
-                  {receiveAmount
-                    ? parseFloat(receiveAmount).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
+                  {values.receiveAmount
+                    ? parseFloat(values.receiveAmount).toLocaleString(
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
+                      )
                     : "0.00"}{" "}
                   {toAccount.currency}
                 </strong>
@@ -709,7 +695,10 @@ function TransactionModalBody({
       {members.length > 1 && (
         <div className="flex flex-col">
           <div className={SECTION_LABEL}>Made by</div>
-          <Select value={madeById} onValueChange={setMadeById}>
+          <Select
+            value={values.madeById}
+            onValueChange={(v) => form.setFieldValue("madeById", v)}
+          >
             <SelectTrigger
               size="default"
               className="h-auto rounded-[10px] border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-[12.5px] text-foreground hover:bg-foreground/[0.05] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.05]"
@@ -731,10 +720,10 @@ function TransactionModalBody({
         <TransactionCategoryGrid
           categories={typedCategories}
           usage={categoryUsage}
-          selectedId={categoryId}
-          onSelect={setCategoryId}
+          selectedId={values.categoryId}
+          onSelect={(id) => form.setFieldValue("categoryId", id)}
           onMore={() => setView("picker")}
-          onClearSelection={() => setCategoryId(null)}
+          onClearSelection={() => form.setFieldValue("categoryId", null)}
           variant={variant}
         />
       )}
@@ -759,7 +748,10 @@ function TransactionModalBody({
                   isMobile && "px-[13px] py-2"
                 )}
               >
-                <button type="button" onClick={() => setDate(setter())}>
+                <button
+                  type="button"
+                  onClick={() => form.setFieldValue("date", setter())}
+                >
                   {label}
                 </button>
               </Badge>
@@ -780,17 +772,17 @@ function TransactionModalBody({
               >
                 <button type="button" aria-label="Pick date">
                   <IconCalendar size={13} />
-                  {formatDDMM(date)}
+                  {formatDDMM(values.date)}
                 </button>
               </Badge>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-0">
               <Calendar
                 mode="single"
-                selected={parseLocalDate(date)}
+                selected={parseLocalDate(values.date)}
                 onSelect={(d) => {
                   if (!d) return
-                  setDate(toLocalIso(d))
+                  form.setFieldValue("date", toLocalIso(d))
                   setDatePickerOpen(false)
                 }}
                 autoFocus
@@ -812,8 +804,8 @@ function TransactionModalBody({
         <InputGroupInput
           type="text"
           placeholder="Add a note…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
+          value={values.note}
+          onChange={(e) => form.setFieldValue("note", e.target.value)}
           maxLength={500}
           aria-label="Note"
           className="text-base text-foreground placeholder:text-foreground/35 md:text-[13px]"
@@ -826,11 +818,15 @@ function TransactionModalBody({
                   type="button"
                   variant="outline"
                   size="icon-sm"
-                  onClick={() => setUnsettled(!unsettled)}
-                  aria-pressed={unsettled}
-                  aria-label={unsettled ? "Mark settled" : "Mark unsettled"}
+                  onClick={() =>
+                    form.setFieldValue("unsettled", !values.unsettled)
+                  }
+                  aria-pressed={values.unsettled}
+                  aria-label={
+                    values.unsettled ? "Mark settled" : "Mark unsettled"
+                  }
                   className={cn(
-                    unsettled &&
+                    values.unsettled &&
                       "border-amber-400/50 bg-amber-400/[0.12] text-amber-400 hover:border-amber-400/50 hover:bg-amber-400/[0.16] hover:text-amber-400 dark:border-amber-400/50 dark:bg-amber-400/[0.12] dark:hover:bg-amber-400/[0.16]"
                   )}
                 >
@@ -838,25 +834,21 @@ function TransactionModalBody({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={6}>
-                {unsettled ? "Mark settled" : "Mark unsettled"}
+                {values.unsettled ? "Mark settled" : "Mark unsettled"}
               </TooltipContent>
             </Tooltip>
           </InputGroupAddon>
         )}
       </InputGroup>
 
-      {error && (
-        <p className="-mt-1 text-right text-[12px] text-destructive">{error}</p>
-      )}
-
-      <div className={cn("flex items-center gap-2 pt-1.5", isMobile && "pt-2")}>
+      <FormDialogFooter isMobile={isMobile} error={submitErrorText}>
         {isEdit && onDelete && (
           <Button
             type="button"
             variant="destructive"
             size="sm"
             onClick={onDelete}
-            disabled={loading}
+            disabled={isSubmitting}
             className="mr-auto h-auto rounded-[10px] border border-destructive/35 bg-transparent px-[14px] py-[10px] text-[13px] text-destructive hover:bg-destructive/10"
           >
             Delete
@@ -866,10 +858,10 @@ function TransactionModalBody({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onOpenChange(false)}
-          disabled={loading}
+          onClick={close}
+          disabled={isSubmitting}
           className={cn(
-            "h-auto rounded-[10px] border-foreground/10 bg-transparent px-[18px] py-[10px] text-[13px] text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
+            FORM_CANCEL_BUTTON,
             !isEdit && "ml-auto",
             isMobile && "shrink-0"
           )}
@@ -881,7 +873,8 @@ function TransactionModalBody({
           size="sm"
           disabled={submitDisabled}
           className={cn(
-            "h-auto rounded-[10px] border-0 px-[20px] py-[10px] text-[13px] font-semibold hover:brightness-110",
+            FORM_SUBMIT_BUTTON,
+            "border-0 hover:brightness-110",
             isMobile && "flex-1"
           )}
           style={{
@@ -889,13 +882,13 @@ function TransactionModalBody({
             color: palette.submitFg,
           }}
         >
-          {loading
+          {isSubmitting
             ? "Saving…"
             : isEdit
               ? "Save changes"
               : `Create ${activeType}`}
         </Button>
-      </div>
+      </FormDialogFooter>
     </form>
   )
 }
