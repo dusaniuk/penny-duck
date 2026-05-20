@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { exchangeRates } from "@workspace/db"
 import { db } from "@/db"
 
@@ -14,6 +14,8 @@ async function fetchRatesFromApi(
   const urls = [
     `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dateStr}/v1/currencies/${baseLower}.min.json`,
     `https://${dateStr}.currency-api.pages.dev/v1/currencies/${baseLower}.min.json`,
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dateStr}/v1/currencies/${baseLower}.json`,
+    `https://${dateStr}.currency-api.pages.dev/v1/currencies/${baseLower}.json`,
   ]
 
   let lastError: Error | null = null
@@ -70,6 +72,20 @@ async function findCachedRate(
   return rows[0]?.rate ?? null
 }
 
+async function findLatestCachedRate(
+  base: string,
+  target: string,
+): Promise<number | null> {
+  const rows = await db
+    .select({ rate: exchangeRates.rate })
+    .from(exchangeRates)
+    .where(and(eq(exchangeRates.base, base), eq(exchangeRates.target, target)))
+    .orderBy(desc(exchangeRates.date))
+    .limit(1)
+
+  return rows[0]?.rate ?? null
+}
+
 async function upsertRates(
   date: string,
   base: string,
@@ -106,7 +122,21 @@ export async function getRate(
   const cached = await findCachedRate(dateStr, base, target)
   if (cached !== null) return cached
 
-  const allRates = await fetchRatesFromApi(base, date)
+  let allRates: Record<string, number>
+  try {
+    allRates = await fetchRatesFromApi(base, date)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const fallback = await findLatestCachedRate(base, target)
+    if (fallback !== null) {
+      console.warn(
+        `Exchange rate API failed for ${base}->${target} on ${dateStr} (${message}); using latest cached rate`,
+      )
+      return fallback
+    }
+    throw err
+  }
+
   const allowedTargets = usedCurrencies
     ? new Set(usedCurrencies.map((c) => c.toUpperCase()))
     : null
