@@ -144,7 +144,7 @@ export const CURRENCIES: CurrencyInfo[] = [
   { code: "TZS", name: "Tanzanian Shilling" },
   { code: "UAH", name: "Ukrainian Hryvnia" },
   { code: "UGX", name: "Ugandan Shilling" },
-  { code: "USD", name: "United States Dollar" },
+  { code: "USD", name: "US Dollar" },
   { code: "UYU", name: "Uruguayan Peso" },
   { code: "UZS", name: "Uzbekistan Som" },
   { code: "VES", name: "Venezuelan Bolivar" },

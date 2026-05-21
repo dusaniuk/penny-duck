@@ -189,9 +189,7 @@ function isValid(v: FormValues): boolean {
   if (!v.amount || parseFloat(v.amount) <= 0) return false
   if (v.type === "transfer") {
     return (
-      !!v.fromAccountId &&
-      !!v.toAccountId &&
-      v.fromAccountId !== v.toAccountId
+      !!v.fromAccountId && !!v.toAccountId && v.fromAccountId !== v.toAccountId
     )
   }
   return !!v.accountId && !!v.categoryId
@@ -536,11 +534,12 @@ function TransactionModalBody({
                 placeholder="0.00"
                 onChange={(e) => {
                   const v = e.target.value.replace(",", ".")
-                  if (v === "" || /^\d*\.?\d*$/.test(v)) field.handleChange(v)
+                  if (v === "" || /^\d{0,12}(\.\d{0,2})?$/.test(v))
+                    field.handleChange(v)
                 }}
                 aria-label="Amount"
                 className={cn(
-                  "[field-sizing:content] max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left [font-family:Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
+                  "field-sizing-content max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left font-[Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
                   isMobile ? "text-[46px]" : "text-[52px]"
                 )}
               />
@@ -570,13 +569,11 @@ function TransactionModalBody({
                 )}
                 <form.Field
                   name="fromAccountId"
-                  listeners={
-                    !isEdit ? { onChange: recomputeRate } : undefined
-                  }
+                  listeners={!isEdit ? { onChange: recomputeRate } : undefined}
                 >
                   {(field) => (
                     <select
-                      className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
+                      className="absolute inset-0 cursor-pointer border-0 bg-transparent font-[inherit] opacity-0"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-label="From account"
@@ -602,7 +599,7 @@ function TransactionModalBody({
                 ) : (
                   <button
                     type="button"
-                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-foreground/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/[0.05] dark:border-violet-300/35"
+                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-foreground/2.5 px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/5 dark:border-violet-300/35"
                   >
                     <span className="size-2 shrink-0 rounded-full bg-muted-foreground/40" />
                     <div className="min-w-0 flex-1">
@@ -617,13 +614,11 @@ function TransactionModalBody({
                 )}
                 <form.Field
                   name="toAccountId"
-                  listeners={
-                    !isEdit ? { onChange: recomputeRate } : undefined
-                  }
+                  listeners={!isEdit ? { onChange: recomputeRate } : undefined}
                 >
                   {(field) => (
                     <select
-                      className="absolute inset-0 cursor-pointer border-0 bg-transparent [font-family:inherit] opacity-0"
+                      className="absolute inset-0 cursor-pointer border-0 bg-transparent font-[inherit] opacity-0"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-label="To account"
@@ -643,7 +638,7 @@ function TransactionModalBody({
             </div>
           </div>
           {showTransferExchangeRate && fromAccount && toAccount && (
-            <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-500/25 bg-violet-500/[0.08] px-3 py-2 text-[12px] dark:border-violet-300/[0.18] dark:bg-violet-300/[0.06]">
+            <div className="mt-2.5 flex items-center gap-2.5 rounded-[10px] border border-violet-500/25 bg-violet-500/8 px-3 py-2 text-[12px] dark:border-violet-300/18 dark:bg-violet-300/6">
               <span className="font-semibold text-violet-600 dark:text-violet-300/90">
                 Rate
               </span>
@@ -661,11 +656,11 @@ function TransactionModalBody({
                     value={field.state.value}
                     onChange={(e) => {
                       const v = e.target.value.replace(",", ".")
-                      if (v === "" || /^\d*\.?\d*$/.test(v))
+                      if (v === "" || /^\d{0,8}(\.\d{0,6})?$/.test(v))
                         field.handleChange(v)
                     }}
                     aria-label="Exchange rate"
-                    className="w-[7em] border-0 bg-transparent p-0 [font-family:inherit] text-base text-foreground tabular-nums outline-none md:text-[12px]"
+                    className="w-[7em] border-0 bg-transparent p-0 font-[inherit] text-base text-foreground tabular-nums outline-none md:text-[12px]"
                   />
                 )}
               </form.Field>
@@ -701,7 +696,7 @@ function TransactionModalBody({
           >
             <SelectTrigger
               size="default"
-              className="h-auto rounded-[10px] border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-[12.5px] text-foreground hover:bg-foreground/[0.05] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.05]"
+              className="h-auto rounded-[10px] border-foreground/5 bg-foreground/2.5 px-[11px] py-2 text-[12.5px] text-foreground hover:bg-foreground/5 dark:bg-foreground/2.5 dark:hover:bg-foreground/5"
             >
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -742,9 +737,9 @@ function TransactionModalBody({
                 variant="outline"
                 asChild
                 className={cn(
-                  "cursor-pointer border-foreground/[0.06] bg-foreground/[0.03] font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground/90",
+                  "cursor-pointer border-foreground/6 bg-foreground/3 font-medium text-foreground/75 transition-colors hover:bg-foreground/6 hover:text-foreground/90",
                   isActive &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/[0.16] hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
+                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/16 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
                   isMobile && "px-[13px] py-2"
                 )}
               >
@@ -764,9 +759,9 @@ function TransactionModalBody({
                 variant="outline"
                 asChild
                 className={cn(
-                  "cursor-pointer gap-1.5 border-foreground/[0.06] bg-foreground/[0.03] font-medium text-foreground/75 transition-colors hover:bg-foreground/[0.06] hover:text-foreground/90",
+                  "cursor-pointer gap-1.5 border-foreground/6 bg-foreground/3 font-medium text-foreground/75 transition-colors hover:bg-foreground/6 hover:text-foreground/90",
                   datePreset === "custom" &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/[0.16] hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
+                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/16 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
                   isMobile && "px-[13px] py-2"
                 )}
               >
@@ -794,7 +789,7 @@ function TransactionModalBody({
 
       <InputGroup
         className={cn(
-          "h-auto items-center rounded-[11px] border-foreground/[0.05] bg-foreground/[0.025] px-3 py-2.5",
+          "h-auto items-center rounded-[11px] border-foreground/5 bg-foreground/2.5 px-3 py-2.5",
           isMobile && "px-3 py-3"
         )}
       >
@@ -827,7 +822,7 @@ function TransactionModalBody({
                   }
                   className={cn(
                     values.unsettled &&
-                      "border-amber-400/50 bg-amber-400/[0.12] text-amber-400 hover:border-amber-400/50 hover:bg-amber-400/[0.16] hover:text-amber-400 dark:border-amber-400/50 dark:bg-amber-400/[0.12] dark:hover:bg-amber-400/[0.16]"
+                      "border-amber-400/50 bg-amber-400/12 text-amber-400 hover:border-amber-400/50 hover:bg-amber-400/16 hover:text-amber-400 dark:border-amber-400/50 dark:bg-amber-400/12 dark:hover:bg-amber-400/16"
                   )}
                 >
                   <IconAlertTriangle />

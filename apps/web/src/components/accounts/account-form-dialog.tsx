@@ -1,4 +1,9 @@
-import { IconAlertTriangle, IconCreditCard } from "@tabler/icons-react"
+import {
+  IconAlertTriangle,
+  IconCreditCard,
+  IconTrendingUp,
+  IconWallet,
+} from "@tabler/icons-react"
 import { useForm } from "@tanstack/react-form"
 import { CURRENCIES } from "@workspace/shared/currencies"
 import { Badge } from "@workspace/ui/components/badge"
@@ -37,7 +42,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
 import { cn } from "@workspace/ui/lib/utils"
@@ -47,10 +51,36 @@ import { paletteColor } from "@/lib/category-color"
 
 const currencyItems = CURRENCIES.map((c) => ({
   ...c,
-  label: `${c.code} — ${c.name}`,
+  label: `${c.code} · ${c.name}`,
 }))
 
 type AccountType = "bank" | "cash" | "brokerage"
+
+const ACCOUNT_TYPES: Array<{
+  id: AccountType
+  name: string
+  desc: string
+  Icon: typeof IconCreditCard
+}> = [
+  {
+    id: "bank",
+    name: "Bank",
+    desc: "Checking, savings, or card account",
+    Icon: IconCreditCard,
+  },
+  {
+    id: "cash",
+    name: "Cash",
+    desc: "Physical cash on hand or in a safe",
+    Icon: IconWallet,
+  },
+  {
+    id: "brokerage",
+    name: "Brokerage",
+    desc: "Stocks, ETFs, and other investments",
+    Icon: IconTrendingUp,
+  },
+]
 
 interface FormValues {
   name: string
@@ -247,6 +277,10 @@ function AccountModalBody({
         {(field) => {
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
+          const selected =
+            ACCOUNT_TYPES.find((t) => t.id === field.state.value) ??
+            ACCOUNT_TYPES[0]
+          const SelectedIcon = selected.Icon
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name} className={FORM_FIELD_LABEL}>
@@ -259,16 +293,49 @@ function AccountModalBody({
               >
                 <SelectTrigger
                   id={field.name}
-                  size="default"
+                  size="lg"
                   aria-invalid={isInvalid}
                   className={FORM_TRIGGER_ROW}
                 >
-                  <SelectValue />
+                  <span className="flex flex-1 items-center gap-2.5 text-left">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-foreground/4 text-muted-foreground">
+                      <SelectedIcon size={15} />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-[13.5px] font-medium text-foreground">
+                        {selected.name}
+                      </span>
+                      <span className="truncate text-[11.5px] text-muted-foreground">
+                        {selected.desc}
+                      </span>
+                    </span>
+                  </span>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bank">Bank</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="brokerage">Brokerage</SelectItem>
+                <SelectContent position="popper" align="start" sideOffset={6}>
+                  {ACCOUNT_TYPES.map((t) => {
+                    const ItemIcon = t.Icon
+                    return (
+                      <SelectItem
+                        key={t.id}
+                        value={t.id}
+                        className="py-2 pr-8 pl-2"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-foreground/4 text-muted-foreground">
+                            <ItemIcon size={15} />
+                          </span>
+                          <span className="flex flex-col gap-0.5">
+                            <span className="text-[13.5px] font-medium text-foreground">
+                              {t.name}
+                            </span>
+                            <span className="text-[11.5px] text-muted-foreground">
+                              {t.desc}
+                            </span>
+                          </span>
+                        </span>
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -315,12 +382,7 @@ function AccountModalBody({
           )}
         </form.Field>
       ) : (
-        <div
-          className={cn(
-            "grid gap-2.5",
-            isMobile ? "grid-cols-1" : "grid-cols-[1fr_140px]"
-          )}
-        >
+        <div className="grid grid-cols-[1fr_140px] gap-2.5">
           <form.Field name="currency">
             {(field) => {
               const isInvalid =
@@ -386,9 +448,9 @@ function AccountModalBody({
                         placeholder="0.00"
                         value={field.state.value}
                         onChange={(e) => {
-                          const v = e.target.value.replace(",", ".")
-                          if (v === "" || /^\d*\.?\d*$/.test(v))
-                            field.handleChange(v)
+                          const value = e.target.value.replace(",", ".")
+                          if (value === "" || /^\d{0,12}(\.\d{0,2})?$/.test(value))
+                            field.handleChange(value)
                         }}
                         className="text-right text-base tabular-nums md:text-[13px]"
                       />
@@ -552,10 +614,10 @@ function PreviewCard({
           <IconCreditCard size={16} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground lowercase">
-            <span>{type}</span>
+          <div className="flex h-4.5 items-center gap-1 text-[11px] text-muted-foreground lowercase">
+            <span className="capitalize">{type}</span>
             <span className="opacity-50">·</span>
-            <span>{currency}</span>
+            <span className="uppercase">{currency}</span>
             {isDefault && (
               <Badge
                 size="sm"
