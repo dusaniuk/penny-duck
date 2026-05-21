@@ -14,6 +14,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { generateInviteCodeService } from "@/modules/auth/service"
 import { listCategories } from "@/modules/categories/service"
 import { createTransaction } from "@/modules/transactions/service"
+import { quoteMock } from "@/test/yahoo-mock"
 import {
   closeTestApp,
   createTestApp,
@@ -429,5 +430,105 @@ describe("Accounts", () => {
       expect(userTwoList.find((x) => x.id === a.id)!.isDefault).toBe(false)
       expect(userTwoList.find((x) => x.id === b.id)!.isDefault).toBe(true)
     })
+  })
+})
+
+describe("Accounts — brokerage balance", () => {
+  beforeEach(() => {
+    quoteMock.mockReset()
+    quoteMock.mockResolvedValue([
+      {
+        symbol: "AAPL",
+        longName: "Apple Inc.",
+        fullExchangeName: "NasdaqGS",
+        currency: "USD",
+        regularMarketPrice: 200,
+      },
+    ])
+  })
+
+  async function postTrade(body: Record<string, unknown>) {
+    return honoApp.request("/trades", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  }
+
+  it("returns cash-only balance when brokerage has no trades", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 5000,
+    })
+    const list = await listAccountsHttp()
+    expect(list.find((a) => a.id === account.id)!.balance).toBeCloseTo(5000, 2)
+  })
+
+  it("rolls open-position market value into balance", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    const res = await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "buy",
+      quantity: 10,
+      price: 100,
+      date: "2026-01-01T00:00:00Z",
+    })
+    expect(res.status).toBe(201)
+    const list = await listAccountsHttp()
+    // Cash: 10_000 - (10 × 100) = 9000. Holdings: 10 × 200 (mock) = 2000.
+    expect(list.find((a) => a.id === account.id)!.balance).toBeCloseTo(
+      11_000,
+      2,
+    )
+  })
+
+  it("excludes fully-closed positions from balance", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "buy",
+      quantity: 10,
+      price: 100,
+      date: "2026-01-01T00:00:00Z",
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "sell",
+      quantity: 10,
+      price: 200,
+      date: "2026-02-01T00:00:00Z",
+    })
+    const list = await listAccountsHttp()
+    // Cash: 10_000 - 1000 + 2000 = 11_000. No open holdings.
+    expect(list.find((a) => a.id === account.id)!.balance).toBeCloseTo(
+      11_000,
+      2,
+    )
+  })
+
+  it("leaves non-brokerage balances untouched", async () => {
+    const bank = await createAccountHttp({
+      name: "PKO",
+      type: "bank",
+      currency: "USD",
+      balance: 1234,
+    })
+    const list = await listAccountsHttp()
+    expect(list.find((a) => a.id === bank.id)!.balance).toBeCloseTo(1234, 2)
   })
 })

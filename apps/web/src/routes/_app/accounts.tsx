@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
@@ -6,7 +6,6 @@ import { Button } from "@workspace/ui/components/button"
 import type { InferRequestType } from "hono/client"
 import type { AccountData } from "@/components/accounts/account-card"
 import type { AccountSubmitData } from "@/components/accounts/account-form-dialog"
-import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
@@ -35,33 +34,6 @@ function AccountsPage() {
     },
   })
   const accounts = data ?? []
-
-  const hasBrokerage = accounts.some((a) => a.type === "brokerage")
-  const { data: positionsData } = useQuery({
-    queryKey: ["positions"],
-    queryFn: async () => {
-      const res = await api.positions.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
-    enabled: hasBrokerage,
-  })
-  const holdingsByAccount = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const p of positionsData?.positions ?? []) {
-      map.set(p.accountId, (map.get(p.accountId) ?? 0) + p.currentValue)
-    }
-    return map
-  }, [positionsData])
-  const openPositionsByAccount = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const p of positionsData?.positions ?? []) {
-      if (p.quantity === 0) continue
-      map.set(p.accountId, (map.get(p.accountId) ?? 0) + 1)
-    }
-    return map
-  }, [positionsData])
-  const holdingsLoaded = positionsData !== undefined
 
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
@@ -99,15 +71,6 @@ function AccountsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
-  const setDefaultMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.accounts[":id"].default.$put({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
-  })
-
   function handleOpenCreate() {
     setEditAccount(null)
     setPendingType(null)
@@ -118,16 +81,6 @@ function AccountsPage() {
     setEditAccount(null)
     setPendingType(type)
     setFormOpen(true)
-  }
-
-  function handleEdit(account: AccountData) {
-    setEditAccount(account)
-    setPendingType(null)
-    setFormOpen(true)
-  }
-
-  function handleSetDefault(account: AccountData) {
-    setDefaultMutation.mutate(account.id)
   }
 
   async function handleOpenDelete(account: AccountData) {
@@ -179,7 +132,7 @@ function AccountsPage() {
     <div className="space-y-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.10em] text-primary uppercase">
+          <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest text-primary uppercase">
             <span className="size-1.5 rounded-full bg-primary" />
             Accounts
           </p>
@@ -198,13 +151,7 @@ function AccountsPage() {
         </Button>
       </div>
 
-      {!loading && !isEmpty && (
-        <AccountsNetWorthCard
-          accounts={accounts}
-          holdingsByAccount={holdingsByAccount}
-          holdingsLoaded={holdingsLoaded}
-        />
-      )}
+      {!loading && !isEmpty && <AccountsNetWorthCard accounts={accounts} />}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -220,26 +167,7 @@ function AccountsPage() {
           onAdd={handleOpenCreate}
           onAddWithType={handleQuickPick}
         />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((account) => (
-            <AccountCard
-              key={account.id}
-              account={account}
-              onEdit={handleEdit}
-              onDelete={handleOpenDelete}
-              onSetDefault={handleSetDefault}
-              onClick={() => {}}
-              holdings={
-                account.type === "brokerage" && holdingsLoaded
-                  ? (holdingsByAccount.get(account.id) ?? 0)
-                  : undefined
-              }
-            />
-          ))}
-          <AddAccountCard onClick={handleOpenCreate} />
-        </div>
-      )}
+      ) : null}
 
       <AccountFormDialog
         open={formOpen}
@@ -265,11 +193,7 @@ function AccountsPage() {
         }}
         account={deleteAccount}
         transactionCount={deleteTransactionCount}
-        openPositionCount={
-          deleteAccount
-            ? (openPositionsByAccount.get(deleteAccount.id) ?? 0)
-            : 0
-        }
+        openPositionCount={0}
         onConfirm={handleDelete}
       />
     </div>

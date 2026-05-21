@@ -262,7 +262,9 @@ describe("POST /trades", () => {
     const broker = accountsList.find(
       (a: { id: string }) => a.id === account.id
     )
-    expect(broker!.balance).toBeCloseTo(9004.25, 2)
+    // Cash impact: 10_000 - (10 × 100) + 4.25 = 9004.25.
+    // Plus market value of holdings: 10 × 200 (mock price) = 2000.
+    expect(broker!.balance).toBeCloseTo(11_004.25, 2)
   })
 
   it("serializes concurrent sells via advisory lock (no oversell)", async () => {

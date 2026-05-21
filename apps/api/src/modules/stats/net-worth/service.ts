@@ -127,10 +127,12 @@ export async function getNetWorth(
   userId: string,
 ): Promise<NetWorthResponse> {
   const accountRows = await listAccounts(organizationId, userId)
-  const cash = accountRows.reduce((acc, r) => acc + r.homeBalance, 0)
+  // listAccounts rolls brokerage holdings into homeBalance, so the sum is the
+  // full net worth. Derive cash by subtracting investments from total.
+  const total = accountRows.reduce((acc, r) => acc + r.homeBalance, 0)
   const summary = await getSummary(organizationId, userId)
   const investments = summary.totalValueHome
-  const total = cash + investments
+  const cash = total - investments
   const homeCurrency = await resolveHomeCurrency(userId)
 
   const topAccounts = [...accountRows]

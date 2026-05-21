@@ -1,4 +1,4 @@
-import { and, asc, count, eq, sql, sum } from "drizzle-orm"
+import { and, asc, count, eq, inArray, sql, sum } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
 import {
   accounts,
@@ -11,6 +11,14 @@ import { type Account, type AccountUsageItem } from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 import { countOpenPositionsFromTrades } from "@/modules/investments/helpers/count-open-positions"
+import {
+  findInstrumentsByIds,
+  refreshIfStale,
+} from "@/modules/investments/instruments/service"
+import {
+  replayPosition,
+  type ReplayTrade,
+} from "@/modules/investments/helpers/replay-position"
 
 export type AccountRow = typeof accounts.$inferSelect & {
   balance: number
@@ -111,7 +119,8 @@ async function getHomeCurrency(userId: string): Promise<string> {
   return rows[0]?.homeCurrency ?? DEFAULT_HOME_CURRENCY
 }
 
-function toResponse(row: AccountRow, rate: number): Account {
+function toResponse(row: AccountRow, rate: number, holdings = 0): Account {
+  const total = row.balance + holdings
   return {
     id: row.id,
     name: row.name,
@@ -119,10 +128,87 @@ function toResponse(row: AccountRow, rate: number): Account {
     currency: row.currency,
     color: row.color,
     icon: row.icon,
-    balance: row.balance,
-    homeBalance: row.balance * rate,
+    balance: total,
+    homeBalance: total * rate,
     isDefault: row.isDefault,
   }
+}
+
+// For brokerage accounts, value all open positions at current price and convert
+// to the account's own currency. Returned map's value is in account-currency
+// units; non-brokerage accounts should not be passed in.
+async function computeBrokerageHoldingsByAccount(
+  brokerageAccounts: Array<{ id: string; currency: string }>,
+): Promise<Map<string, number>> {
+  if (brokerageAccounts.length === 0) return new Map()
+
+  const accountIds = brokerageAccounts.map((a) => a.id)
+  const allTrades = await db
+    .select()
+    .from(trades)
+    .where(inArray(trades.accountId, accountIds))
+  if (allTrades.length === 0) return new Map()
+
+  const groups = new Map<
+    string,
+    { accountId: string; instrumentId: string; trades: ReplayTrade[] }
+  >()
+  for (const t of allTrades) {
+    const key = `${t.accountId}:${t.instrumentId}`
+    const replayTrade: ReplayTrade = {
+      type: t.type as ReplayTrade["type"],
+      quantity: t.quantity,
+      price: t.price,
+      fees: t.fees,
+      date: t.date,
+      createdAt: t.createdAt,
+    }
+    const existing = groups.get(key)
+    if (existing) existing.trades.push(replayTrade)
+    else
+      groups.set(key, {
+        accountId: t.accountId,
+        instrumentId: t.instrumentId,
+        trades: [replayTrade],
+      })
+  }
+
+  const instrumentIds = [...new Set(allTrades.map((t) => t.instrumentId))]
+  const instrumentRows = await findInstrumentsByIds(instrumentIds)
+  const { refreshed } = await refreshIfStale(instrumentRows)
+  const byInstrumentId = new Map(refreshed.map((r) => [r.id, r]))
+  const byAccountId = new Map(brokerageAccounts.map((a) => [a.id, a]))
+
+  const today = new Date()
+  const rateCache = new Map<string, number>()
+  async function rateFor(from: string, to: string): Promise<number> {
+    if (from === to) return 1
+    const key = `${from}->${to}`
+    const cached = rateCache.get(key)
+    if (cached !== undefined) return cached
+    const r = await getRate(from, to, today)
+    rateCache.set(key, r)
+    return r
+  }
+
+  const holdings = new Map<string, number>()
+  for (const group of groups.values()) {
+    const state = replayPosition(group.trades)
+    if (state.quantity <= 0) continue
+    const inst = byInstrumentId.get(group.instrumentId)
+    if (!inst) continue
+    const account = byAccountId.get(group.accountId)
+    if (!account) continue
+    const valueInstrumentCcy = state.quantity * inst.lastPrice
+    const fx = await rateFor(inst.currency, account.currency)
+    const valueAccountCcy = valueInstrumentCcy * fx
+    holdings.set(
+      group.accountId,
+      (holdings.get(group.accountId) ?? 0) + valueAccountCcy,
+    )
+  }
+
+  return holdings
 }
 
 export async function listAccounts(
@@ -134,6 +220,10 @@ export async function listAccounts(
     getHomeCurrency(userId),
   ])
 
+  const brokerageAccounts = rows.filter((r) => r.type === "brokerage")
+  const holdingsByAccount =
+    await computeBrokerageHoldingsByAccount(brokerageAccounts)
+
   const today = new Date()
   const currencies = [...new Set(rows.map((r) => r.currency))]
   const rates = new Map<string, number>()
@@ -144,7 +234,9 @@ export async function listAccounts(
     }),
   )
 
-  return rows.map((r) => toResponse(r, rates.get(r.currency) ?? 1))
+  return rows.map((r) =>
+    toResponse(r, rates.get(r.currency) ?? 1, holdingsByAccount.get(r.id) ?? 0),
+  )
 }
 
 // Count of transactions per account, scoped to the org. Used by the
@@ -178,7 +270,11 @@ export async function getAccount(
   if (!row) throw new HTTPException(404, { message: "Account not found" })
 
   const rate = await getRate(row.currency, homeCurrency, new Date())
-  return toResponse(row, rate)
+  const holdings =
+    row.type === "brokerage"
+      ? ((await computeBrokerageHoldingsByAccount([row])).get(row.id) ?? 0)
+      : 0
+  return toResponse(row, rate, holdings)
 }
 
 export interface CreateAccountInput {
@@ -286,7 +382,11 @@ export async function updateAccount(input: UpdateAccountInput): Promise<Account>
   if (!row) throw new HTTPException(404, { message: "Account not found" })
 
   const rate = await getRate(row.currency, homeCurrency, new Date())
-  return toResponse(row, rate)
+  const holdings =
+    row.type === "brokerage"
+      ? ((await computeBrokerageHoldingsByAccount([row])).get(row.id) ?? 0)
+      : 0
+  return toResponse(row, rate, holdings)
 }
 
 export async function deleteAccount(
@@ -359,7 +459,11 @@ export async function setDefaultAccount(
     getHomeCurrency(userId),
   ])
   const rate = await getRate(row!.currency, homeCurrency, new Date())
-  return toResponse(row!, rate)
+  const holdings =
+    row!.type === "brokerage"
+      ? ((await computeBrokerageHoldingsByAccount([row!])).get(row!.id) ?? 0)
+      : 0
+  return toResponse(row!, rate, holdings)
 }
 
 export async function clearDefaultAccount(

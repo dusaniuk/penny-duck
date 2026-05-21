@@ -34,18 +34,9 @@ function formatInt(n: number): string {
 
 type Props = {
   accounts: Array<Account>
-  holdingsByAccount: Map<string, number>
-  holdingsLoaded: boolean
 }
 
-export function AccountsNetWorthCard({
-  accounts,
-  holdingsByAccount,
-  holdingsLoaded,
-}: Props) {
-  const hasBrokerage = accounts.some((a) => a.type === "brokerage")
-  const brokerageReady = !hasBrokerage || holdingsLoaded
-
+export function AccountsNetWorthCard({ accounts }: Props) {
   const { total, byType, currencyCount } = useMemo(() => {
     const sums: Record<AccountType, number> = {
       bank: 0,
@@ -56,18 +47,13 @@ export function AccountsNetWorthCard({
     const currencies = new Set<string>()
     for (const a of accounts) {
       currencies.add(a.currency)
-      if (a.type === "brokerage" && !brokerageReady) continue
-      const value =
-        a.type === "brokerage"
-          ? a.homeBalance + (holdingsByAccount.get(a.id) ?? 0)
-          : a.homeBalance
-      running += value
+      running += a.homeBalance
       if (a.type === "bank" || a.type === "brokerage" || a.type === "cash") {
-        sums[a.type] += value
+        sums[a.type] += a.homeBalance
       }
     }
     return { total: running, byType: sums, currencyCount: currencies.size }
-  }, [accounts, holdingsByAccount, brokerageReady])
+  }, [accounts])
 
   const homeCurrency =
     queryClient.getQueryData<NetWorthResponse>(["stats", "net-worth"])?.current
@@ -75,11 +61,9 @@ export function AccountsNetWorthCard({
 
   const { whole, fraction } = formatAmount(total)
 
-  const rows = TYPE_ORDER.filter((t) => {
-    if (!accounts.some((a) => a.type === t)) return false
-    if (t === "brokerage" && !brokerageReady) return false
-    return true
-  }).map((t) => ({
+  const rows = TYPE_ORDER.filter((t) =>
+    accounts.some((a) => a.type === t),
+  ).map((t) => ({
     type: t,
     label: TYPE_LABEL[t],
     color: TYPE_COLOR[t],
