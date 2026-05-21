@@ -119,21 +119,24 @@ const editFormSchema = baseSchema.extend({
   currency: z.string(),
 })
 
+export interface AccountSubmitData {
+  id: string | null
+  name: string
+  type: string
+  currency: string
+  color: string
+  icon: string
+  balance: number
+  isDefault: boolean
+}
+
 interface AccountFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   account?: AccountData | null
   existingAccountColors?: ReadonlyArray<string | null>
   existingAccountIcons?: ReadonlyArray<string | null>
-  onSubmit: (data: {
-    name: string
-    type: string
-    currency?: string
-    color?: string
-    icon?: string
-    balance?: number
-    isDefault?: boolean
-  }) => Promise<void>
+  onSubmit: (data: AccountSubmitData) => Promise<void>
   onArchive?: (account: AccountData) => void
 }
 
@@ -196,16 +199,15 @@ function AccountModalBody({
     onSubmit: async ({ value, formApi }) => {
       try {
         const balanceNum =
-          !isEdit && value.balance !== ""
-            ? parseFloat(value.balance)
-            : undefined
+          !account && value.balance !== "" ? parseFloat(value.balance) : 0
         await onSubmitProp({
+          id: account?.id ?? null,
           name: value.name.trim(),
           type: value.type,
-          ...(isEdit ? {} : { currency: value.currency }),
+          currency: value.currency,
           color: value.color,
           icon: value.icon,
-          ...(balanceNum !== undefined ? { balance: balanceNum } : {}),
+          balance: balanceNum,
           isDefault: value.isDefault,
         })
         close()

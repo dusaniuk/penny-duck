@@ -1,11 +1,18 @@
 import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
+import type { InferRequestType } from "hono/client"
 import type { AccountData } from "@/components/accounts/account-card"
+import type { AccountSubmitData } from "@/components/accounts/account-form-dialog"
 import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { api, queryClient } from "@/lib/api"
+
+type CreateAccountBody = InferRequestType<typeof api.accounts.$post>["json"]
+type UpdateAccountBody = InferRequestType<
+  (typeof api.accounts)[":id"]["$patch"]
+>["json"]
 
 export const Route = createFileRoute("/_app/accounts")({
   staticData: { breadcrumb: "Accounts" },
@@ -56,14 +63,7 @@ function AccountsPage() {
   const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
 
   const createMutation = useMutation({
-    mutationFn: async (body: {
-      name: string
-      type: string
-      currency: string
-      color?: string
-      icon?: string
-      balance?: number
-    }) => {
+    mutationFn: async (body: CreateAccountBody) => {
       const res = await api.accounts.$post({ json: body })
       if (!res.ok) throw await res.json()
       return res.json()
@@ -72,10 +72,7 @@ function AccountsPage() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: async (vars: {
-      id: string
-      body: { name?: string; type?: string; color?: string; icon?: string }
-    }) => {
+    mutationFn: async (vars: { id: string; body: UpdateAccountBody }) => {
       const res = await api.accounts[":id"].$patch({
         param: { id: vars.id },
         json: vars.body,
@@ -131,41 +128,28 @@ function AccountsPage() {
     }
   }
 
-  async function handleFormSubmit(formData: {
-    name: string
-    type: string
-    currency?: string
-    color?: string
-    icon?: string
-    balance?: number
-    isDefault?: boolean
-  }) {
-    let savedId: string
-    const wasDefault = !!editAccount?.isDefault
-    if (editAccount) {
+  async function handleSubmit(input: AccountSubmitData) {
+    if (input.id) {
       await updateMutation.mutateAsync({
-        id: editAccount.id,
+        id: input.id,
         body: {
-          name: formData.name,
-          type: formData.type,
-          ...(formData.color ? { color: formData.color } : {}),
-          ...(formData.icon ? { icon: formData.icon } : {}),
+          name: input.name,
+          type: input.type,
+          color: input.color,
+          icon: input.icon,
+          isDefault: input.isDefault,
         },
       })
-      savedId = editAccount.id
     } else {
-      const created = await createMutation.mutateAsync({
-        name: formData.name,
-        type: formData.type,
-        currency: formData.currency!,
-        ...(formData.color ? { color: formData.color } : {}),
-        ...(formData.icon ? { icon: formData.icon } : {}),
-        balance: formData.balance,
+      await createMutation.mutateAsync({
+        name: input.name,
+        type: input.type,
+        currency: input.currency,
+        color: input.color,
+        icon: input.icon,
+        balance: input.balance,
+        isDefault: input.isDefault,
       })
-      savedId = created.id
-    }
-    if (formData.isDefault && !wasDefault) {
-      await setDefaultMutation.mutateAsync(savedId)
     }
   }
 
@@ -219,7 +203,7 @@ function AccountsPage() {
         account={editAccount}
         existingAccountColors={accounts.map((a) => a.color)}
         existingAccountIcons={accounts.map((a) => a.icon)}
-        onSubmit={handleFormSubmit}
+        onSubmit={handleSubmit}
         onArchive={handleOpenDelete}
       />
 

@@ -22,6 +22,7 @@ export const CreateAccountSchema = z.object({
   color: AccountColorSchema.optional(),
   icon: AccountIconSchema.optional(),
   balance: z.number().optional(),
+  isDefault: z.boolean().optional(),
 })
 
 export const UpdateAccountSchema = z.object({
@@ -29,6 +30,7 @@ export const UpdateAccountSchema = z.object({
   type: z.string().min(1).optional(),
   color: AccountColorSchema.optional(),
   icon: AccountIconSchema.optional(),
+  isDefault: z.boolean().optional(),
 })
 
 export const AccountUsageItemSchema = z.object({

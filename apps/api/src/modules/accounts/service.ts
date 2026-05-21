@@ -190,21 +190,38 @@ export interface CreateAccountInput {
   color?: string
   icon?: string
   balance?: number
+  isDefault?: boolean
 }
 
 export async function createAccount(input: CreateAccountInput): Promise<Account> {
-  const [inserted] = await db
-    .insert(accounts)
-    .values({
-      organizationId: input.organizationId,
-      name: input.name,
-      type: input.type,
-      currency: input.currency,
-      color: input.color ?? null,
-      icon: input.icon ?? null,
-      initialBalance: input.balance ?? 0,
-    })
-    .returning()
+  const inserted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(accounts)
+      .values({
+        organizationId: input.organizationId,
+        name: input.name,
+        type: input.type,
+        currency: input.currency,
+        color: input.color ?? null,
+        icon: input.icon ?? null,
+        initialBalance: input.balance ?? 0,
+      })
+      .returning()
+
+    if (input.isDefault) {
+      await tx
+        .update(organizationMembers)
+        .set({ defaultAccountId: row.id })
+        .where(
+          and(
+            eq(organizationMembers.userId, input.userId),
+            eq(organizationMembers.organizationId, input.organizationId),
+          ),
+        )
+    }
+
+    return row
+  })
 
   const homeCurrency = await getHomeCurrency(input.userId)
   const rate = await getRate(inserted.currency, homeCurrency, new Date())
@@ -212,7 +229,7 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
   const row: AccountRow = {
     ...inserted,
     balance: inserted.initialBalance,
-    isDefault: false,
+    isDefault: input.isDefault === true,
   }
   return toResponse(row, rate)
 }
@@ -225,27 +242,42 @@ export interface UpdateAccountInput {
   type?: string
   color?: string
   icon?: string
+  isDefault?: boolean
 }
 
 export async function updateAccount(input: UpdateAccountInput): Promise<Account> {
   const existing = await findById(input.id, input.organizationId, input.userId)
   if (!existing) throw new HTTPException(404, { message: "Account not found" })
 
-  await db
-    .update(accounts)
-    .set({
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.type !== undefined ? { type: input.type } : {}),
-      ...(input.color !== undefined ? { color: input.color } : {}),
-      ...(input.icon !== undefined ? { icon: input.icon } : {}),
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(accounts.id, input.id),
-        eq(accounts.organizationId, input.organizationId),
-      ),
-    )
+  await db.transaction(async (tx) => {
+    await tx
+      .update(accounts)
+      .set({
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.type !== undefined ? { type: input.type } : {}),
+        ...(input.color !== undefined ? { color: input.color } : {}),
+        ...(input.icon !== undefined ? { icon: input.icon } : {}),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(accounts.id, input.id),
+          eq(accounts.organizationId, input.organizationId),
+        ),
+      )
+
+    if (input.isDefault) {
+      await tx
+        .update(organizationMembers)
+        .set({ defaultAccountId: input.id })
+        .where(
+          and(
+            eq(organizationMembers.userId, input.userId),
+            eq(organizationMembers.organizationId, input.organizationId),
+          ),
+        )
+    }
+  })
 
   const [row, homeCurrency] = await Promise.all([
     findById(input.id, input.organizationId, input.userId),

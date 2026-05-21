@@ -43,6 +43,7 @@ export const accountsRoutes = new Hono<AuthedEnv>()
       color: body.color,
       icon: body.icon,
       balance: body.balance,
+      isDefault: body.isDefault,
     })
     return c.json(account, 201)
   })
@@ -68,6 +69,7 @@ export const accountsRoutes = new Hono<AuthedEnv>()
         type: body.type,
         color: body.color,
         icon: body.icon,
+        isDefault: body.isDefault,
       })
       return c.json(account)
     },
