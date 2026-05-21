@@ -1,4 +1,4 @@
-import { cn } from "@workspace/ui/lib/utils"
+import { SelectableSurface } from "@workspace/ui/components/selectable-surface"
 import type { Account } from "@workspace/api-contract"
 import { paletteColor } from "@/lib/palette"
 
@@ -32,9 +32,6 @@ function accountDotColor(account: Account): string {
 const SECTION_LABEL_CLASS =
   "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-foreground/40"
 
-const CHIP_BASE_CLASS =
-  "flex shrink-0 items-center gap-2 rounded-[11px] border border-foreground/[0.06] bg-card px-[11px] py-[9px] text-left transition-colors hover:bg-card/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
-
 interface TransactionAccountChipsProps {
   accounts: Array<Account>
   selectedId: string
@@ -55,20 +52,16 @@ export function TransactionAccountChips({
         {accounts.map((a) => {
           const active = a.id === selectedId
           return (
-            <button
+            <SelectableSurface
               key={a.id}
-              type="button"
-              onClick={() => onSelect(a.id)}
+              selected={active}
               aria-pressed={active}
-              className={cn(
-                CHIP_BASE_CLASS,
-                "max-w-[170px] min-w-[140px] sm:min-w-[150px] sm:px-3 sm:py-2.5",
-                active && "border-orange-500 bg-orange-500/[0.06]"
-              )}
+              onClick={() => onSelect(a.id)}
+              className="flex max-w-[170px] min-w-[140px] shrink-0 items-center gap-2 px-[11px] py-[9px] text-left sm:min-w-[150px] sm:px-3 sm:py-2.5"
             >
               <AccountDot color={accountDotColor(a)} />
               <AccountText account={a} />
-            </button>
+            </SelectableSurface>
           )
         })}
       </div>
@@ -86,17 +79,13 @@ export function TransactionAccountBlock({
   onClick,
 }: TransactionAccountBlockProps) {
   return (
-    <button
-      type="button"
+    <SelectableSurface
       onClick={onClick}
-      className={cn(
-        CHIP_BASE_CLASS,
-        "w-full max-w-none border-violet-500/40 sm:px-3 sm:py-2.5 dark:border-violet-300/35"
-      )}
+      className="flex w-full items-center gap-2 border-violet-500/40 px-[11px] py-[9px] text-left sm:px-3 sm:py-2.5 dark:border-violet-300/35"
     >
       <AccountDot color={accountDotColor(account)} />
       <AccountText account={account} />
-    </button>
+    </SelectableSurface>
   )
 }
 

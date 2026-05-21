@@ -715,7 +715,6 @@ function TransactionModalBody({
           selectedId={values.categoryId}
           onSelect={(id) => form.setFieldValue("categoryId", id)}
           onMore={() => setView("picker")}
-          onClearSelection={() => form.setFieldValue("categoryId", null)}
           variant={variant}
         />
       )}
@@ -732,13 +731,9 @@ function TransactionModalBody({
                 key={preset}
                 size="lg"
                 variant="outline"
+                selected={isActive}
                 asChild
-                className={cn(
-                  "cursor-pointer border-foreground/6 bg-foreground/3 font-medium text-foreground/75 transition-colors hover:bg-foreground/6 hover:text-foreground/90",
-                  isActive &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/16 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
-                  isMobile && "px-[13px] py-2"
-                )}
+                className={cn(isMobile && "px-[13px] py-2")}
               >
                 <button
                   type="button"
@@ -754,13 +749,9 @@ function TransactionModalBody({
               <Badge
                 size="lg"
                 variant="outline"
+                selected={datePreset === "custom"}
                 asChild
-                className={cn(
-                  "cursor-pointer gap-1.5 border-foreground/6 bg-foreground/3 font-medium text-foreground/75 transition-colors hover:bg-foreground/6 hover:text-foreground/90",
-                  datePreset === "custom" &&
-                    "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/16 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
-                  isMobile && "px-[13px] py-2"
-                )}
+                className={cn("gap-1.5", isMobile && "px-[13px] py-2")}
               >
                 <button type="button" aria-label="Pick date">
                   <IconCalendar size={13} />

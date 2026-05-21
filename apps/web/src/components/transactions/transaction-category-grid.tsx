@@ -1,5 +1,6 @@
 import { IconDots } from "@tabler/icons-react"
 import { useIsDark } from "@workspace/ui/hooks/use-is-dark"
+import { SelectableSurface } from "@workspace/ui/components/selectable-surface"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Category, CategoryUsageItem } from "@workspace/api-contract"
 import { paletteColor } from "@/lib/palette"
@@ -18,7 +19,6 @@ interface TransactionCategoryGridProps {
   selectedId: string | null
   onSelect: (id: string) => void
   onMore: () => void
-  onClearSelection: () => void
   variant?: "desktop" | "mobile"
 }
 
@@ -28,8 +28,8 @@ interface TransactionCategoryGridProps {
 const VISIBLE_CHILDREN_DESKTOP = 7
 const VISIBLE_CHILDREN_MOBILE = 8
 
-const CELL_CLASS =
-  "flex cursor-pointer flex-col items-center gap-1 rounded-[10px] border border-foreground/[0.05] bg-foreground/[0.025] px-1 pt-2.5 pb-2 text-center text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+const CELL_LAYOUT =
+  "flex flex-col items-center gap-1 px-1 pt-2.5 pb-2 text-center text-foreground/[0.78]"
 
 // Children inherit their visual color from their parent (top-level categories
 // hold the palette token; children carry null).
@@ -48,7 +48,6 @@ export function TransactionCategoryGrid({
   selectedId,
   onSelect,
   onMore,
-  onClearSelection,
   variant = "desktop",
 }: TransactionCategoryGridProps) {
   const isDark = useIsDark()
@@ -67,10 +66,6 @@ export function TransactionCategoryGrid({
   })
 
   const selectedCat = selectedId ? (byId.get(selectedId) ?? null) : null
-  const selectedParent =
-    selectedCat?.parentId !== null && selectedCat?.parentId !== undefined
-      ? (byId.get(selectedCat.parentId) ?? null)
-      : null
 
   const visibleCount =
     variant === "mobile" ? VISIBLE_CHILDREN_MOBILE : VISIBLE_CHILDREN_DESKTOP
@@ -93,16 +88,9 @@ export function TransactionCategoryGrid({
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-baseline justify-between">
-        <span className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-foreground/40 uppercase">
-          Category
-        </span>
-        {selectedCat && selectedParent && (
-          <span className="mb-2 text-[11px] font-medium text-foreground/50">
-            {selectedParent.name} ›
-          </span>
-        )}
-      </div>
+      <span className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-foreground/40 uppercase">
+        Category
+      </span>
       <div className={cn("grid", gridCols, gridGap)}>
         {visible.map((c) => {
           const active = c.id === selectedId
@@ -111,12 +99,12 @@ export function TransactionCategoryGrid({
           const bg = paletteColor(token, bgOpts)
           const icon = getIcon(c.icon)
           return (
-            <button
+            <SelectableSurface
               key={c.id}
-              type="button"
-              onClick={() => onSelect(c.id)}
-              className={CELL_CLASS}
+              selected={active}
               aria-pressed={active}
+              onClick={() => onSelect(c.id)}
+              className={CELL_LAYOUT}
               style={
                 active
                   ? { background: bg, color: fg, borderColor: fg }
@@ -132,15 +120,14 @@ export function TransactionCategoryGrid({
               <span className="max-w-full truncate text-[11px] leading-[1.15] font-medium">
                 {c.name}
               </span>
-            </button>
+            </SelectableSurface>
           )
         })}
         {showMore && (
-          <button
-            type="button"
+          <SelectableSurface
             onClick={onMore}
-            className={cn(CELL_CLASS, "border-dashed text-foreground/50")}
             aria-label="More categories"
+            className={cn(CELL_LAYOUT, "border-dashed text-foreground/50")}
           >
             <span className="grid size-[22px] shrink-0 place-items-center">
               <IconDots size={16} />
@@ -148,30 +135,9 @@ export function TransactionCategoryGrid({
             <span className="max-w-full truncate text-[11px] leading-[1.15] font-medium">
               More…
             </span>
-          </button>
+          </SelectableSurface>
         )}
       </div>
-      {selectedCat && selectedCat.parentId !== null && (
-        <div className="mt-2 flex items-center gap-[7px] rounded-[9px] border border-foreground/[0.06] bg-foreground/[0.025] px-[11px] py-[7px] text-[12px] font-medium text-foreground">
-          {(() => {
-            const icon = getIcon(selectedCat.icon)
-            const token = parentTokenFor(selectedCat, byId)
-            return (
-              <span style={{ color: paletteColor(token, fgOpts) }}>
-                {icon ? <icon.component size={13} /> : null}
-              </span>
-            )
-          })()}
-          <span>{selectedCat.name}</span>
-          <button
-            type="button"
-            className="ml-auto cursor-pointer border-0 bg-transparent p-0 text-[11px] text-foreground/40 hover:text-orange-400"
-            onClick={onClearSelection}
-          >
-            change
-          </button>
-        </div>
-      )}
     </div>
   )
 }
