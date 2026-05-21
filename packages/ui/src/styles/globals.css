@@ -183,6 +183,11 @@
     @apply font-sans;
   }
 
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
   @media (max-width: 767px) {
     input,
     textarea,
