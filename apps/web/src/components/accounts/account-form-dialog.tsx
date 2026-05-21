@@ -134,6 +134,7 @@ interface AccountFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   account?: AccountData | null
+  initialType?: AccountType
   existingAccountColors?: ReadonlyArray<string | null>
   existingAccountIcons?: ReadonlyArray<string | null>
   onSubmit: (data: AccountSubmitData) => Promise<void>
@@ -165,6 +166,7 @@ interface ModalBodyProps extends AccountFormDialogProps {
 
 function AccountModalBody({
   account,
+  initialType,
   existingAccountColors,
   existingAccountIcons,
   onSubmit: onSubmitProp,
@@ -178,7 +180,7 @@ function AccountModalBody({
 
   const [initialValues] = useState<FormValues>(() => ({
     name: account?.name ?? "",
-    type: (account?.type as AccountType) ?? "bank",
+    type: (account?.type as AccountType) ?? initialType ?? "bank",
     currency: account?.currency ?? "",
     balance: "",
     isDefault: account?.isDefault ?? false,
