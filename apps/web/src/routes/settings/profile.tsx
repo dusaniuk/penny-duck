@@ -3,27 +3,12 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Input } from "@workspace/ui/components/input"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@workspace/ui/components/combobox"
 import { Button } from "@workspace/ui/components/button"
 import { Separator } from "@workspace/ui/components/separator"
-import { CURRENCIES } from "@workspace/shared/currencies"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
+import { CurrencyPicker } from "@/components/currency-picker"
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog"
-
-const currencyItems = CURRENCIES.map((c) => ({
-  ...c,
-  label: `${c.code} — ${c.name}`,
-}))
-
-type CurrencyItem = (typeof currencyItems)[number]
 
 export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
@@ -35,9 +20,7 @@ function ProfilePage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const [currency, setCurrency] = useState<CurrencyItem | null>(
-    currencyItems.find((c) => c.code === user.homeCurrency) ?? null
-  )
+  const [currency, setCurrency] = useState<string>(user.homeCurrency)
 
   const updateMutation = useMutation({
     mutationFn: async (body: { name?: string; homeCurrency?: string }) => {
@@ -61,10 +44,10 @@ function ProfilePage() {
     }
   }
 
-  function handleCurrencyChange(item: CurrencyItem | null) {
-    setCurrency(item)
-    if (item && item.code !== user.homeCurrency) {
-      updateMutation.mutate({ homeCurrency: item.code })
+  function handleCurrencyChange(code: string) {
+    setCurrency(code)
+    if (code && code !== user.homeCurrency) {
+      updateMutation.mutate({ homeCurrency: code })
     }
   }
 
@@ -105,24 +88,10 @@ function ProfilePage() {
 
         <Field>
           <FieldLabel>Home Currency</FieldLabel>
-          <Combobox
-            items={currencyItems}
-            itemToStringValue={(item) => item.label}
+          <CurrencyPicker
             value={currency}
             onValueChange={handleCurrencyChange}
-          >
-            <ComboboxInput placeholder="Search currency..." />
-            <ComboboxContent>
-              <ComboboxEmpty>No currency found.</ComboboxEmpty>
-              <ComboboxList>
-                {(item) => (
-                  <ComboboxItem key={item.code} value={item}>
-                    {item.label}
-                  </ComboboxItem>
-                )}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
+          />
         </Field>
       </FieldGroup>
 

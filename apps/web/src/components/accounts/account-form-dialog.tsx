@@ -5,17 +5,8 @@ import {
   IconWallet,
 } from "@tabler/icons-react"
 import { useForm } from "@tanstack/react-form"
-import { CURRENCIES } from "@workspace/shared/currencies"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@workspace/ui/components/combobox"
 import {
   Field,
   FieldContent,
@@ -47,12 +38,8 @@ import { Switch } from "@workspace/ui/components/switch"
 import { cn } from "@workspace/ui/lib/utils"
 import * as z from "zod"
 import type { AccountData } from "@/components/accounts/account-card"
+import { CurrencyPicker } from "@/components/currency-picker"
 import { paletteColor } from "@/lib/category-color"
-
-const currencyItems = CURRENCIES.map((c) => ({
-  ...c,
-  label: `${c.code} · ${c.name}`,
-}))
 
 type AccountType = "bank" | "cash" | "brokerage"
 
@@ -351,33 +338,13 @@ function AccountModalBody({
               <FieldLabel htmlFor={field.name} className={FORM_FIELD_LABEL}>
                 Currency
               </FieldLabel>
-              <Combobox
-                items={currencyItems}
-                itemToStringValue={(item) => item.label}
-                value={
-                  currencyItems.find((c) => c.code === field.state.value) ??
-                  null
-                }
-                onValueChange={(item) => field.handleChange(item?.code ?? "")}
+              <CurrencyPicker
+                id={field.name}
+                value={field.state.value}
+                onValueChange={field.handleChange}
                 disabled
-              >
-                <ComboboxInput
-                  id={field.name}
-                  placeholder="Search currency..."
-                  disabled
-                  className="rounded-[11px] border-border bg-foreground/2.5 px-3 text-[13px] dark:bg-foreground/2.5"
-                />
-                <ComboboxContent container={portalContainer}>
-                  <ComboboxEmpty>No currency found.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item) => (
-                      <ComboboxItem key={item.code} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+                portalContainer={portalContainer}
+              />
             </Field>
           )}
         </form.Field>
@@ -392,37 +359,13 @@ function AccountModalBody({
                   <FieldLabel htmlFor={field.name} className={FORM_FIELD_LABEL}>
                     Currency
                   </FieldLabel>
-                  <Combobox
-                    items={currencyItems}
-                    itemToStringValue={(item) => item.label}
-                    value={
-                      currencyItems.find((c) => c.code === field.state.value) ??
-                      null
-                    }
-                    onValueChange={(item) =>
-                      field.handleChange(item?.code ?? "")
-                    }
-                  >
-                    <ComboboxInput
-                      id={field.name}
-                      aria-invalid={isInvalid}
-                      placeholder="Search currency..."
-                      className={cn(
-                        "rounded-[11px] border-border bg-foreground/2.5 px-3 text-[13px] dark:bg-foreground/2.5",
-                        isInvalid && "border-destructive/45"
-                      )}
-                    />
-                    <ComboboxContent container={portalContainer}>
-                      <ComboboxEmpty>No currency found.</ComboboxEmpty>
-                      <ComboboxList>
-                        {(item) => (
-                          <ComboboxItem key={item.code} value={item}>
-                            {item.label}
-                          </ComboboxItem>
-                        )}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
+                  <CurrencyPicker
+                    id={field.name}
+                    value={field.state.value}
+                    onValueChange={field.handleChange}
+                    invalid={isInvalid}
+                    portalContainer={portalContainer}
+                  />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
@@ -439,7 +382,7 @@ function AccountModalBody({
                     >
                       Initial balance
                     </FieldLabel>
-                    <InputGroup className="items-center rounded-[11px] border-border bg-foreground/2.5 px-3 dark:bg-foreground/2.5">
+                    <InputGroup className="h-10 items-center rounded-[11px] border-border bg-foreground/2.5 px-3 dark:bg-foreground/2.5">
                       <InputGroupInput
                         id={field.name}
                         name={field.name}
@@ -452,7 +395,7 @@ function AccountModalBody({
                           if (value === "" || /^\d{0,12}(\.\d{0,2})?$/.test(value))
                             field.handleChange(value)
                         }}
-                        className="text-right text-base tabular-nums md:text-[13px]"
+                        className="text-right text-base tabular-nums"
                       />
                       <InputGroupAddon
                         align="inline-end"

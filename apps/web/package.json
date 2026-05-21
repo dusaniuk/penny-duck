@@ -27,6 +27,7 @@
     "@workspace/shared": "workspace:^",
     "@workspace/ui": "workspace:*",
     "api": "workspace:*",
+    "country-flag-icons": "^1.6.17",
     "hono": "^4.12.18",
     "nitro": "latest",
     "react": "^19.2.4",
