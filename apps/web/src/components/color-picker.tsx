@@ -116,14 +116,14 @@ export function ColorPicker({
                 title={token}
                 onClick={() => handleSelect(token)}
                 className={cn(
-                  "relative h-7 cursor-pointer rounded-[7px] border-2 border-transparent outline outline-offset-[-1px] outline-foreground/10 transition-transform hover:scale-[1.06]",
+                  "relative h-7 cursor-pointer rounded-[7px] border-2 border-transparent outline -outline-offset-1 outline-foreground/10 transition-transform hover:scale-[1.06]",
                   active &&
                     "border-foreground/85 outline-transparent hover:scale-100"
                 )}
                 style={{ background: paletteColor(token, { l: 0.7, c: 0.16 }) }}
               >
                 {active && (
-                  <span className="absolute inset-0 grid place-items-center text-white drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.4)]">
+                  <span className="absolute inset-0 grid place-items-center text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.4)]">
                     <IconCheck size={13} strokeWidth={3} />
                   </span>
                 )}

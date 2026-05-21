@@ -242,34 +242,31 @@ function TransactionModalBody({
   const { shellClass, isMobile, close } = ctx
   const variant: "desktop" | "mobile" = isMobile ? "mobile" : "desktop"
 
-  // Body remounts on each dialog open because FormDialog wraps Radix <Dialog>,
-  // which unmounts DialogContent when closed. That gives us reset-on-open
-  // for free. Replacing the wrapper with one that keeps content mounted would
-  // silently break this — and field listeners would also refire across every
-  // field on form.reset().
+  const [initialValues] = useState<FormValues>(() => ({
+    type: isTransferEdit
+      ? "transfer"
+      : transaction
+        ? transaction.type
+        : defaultType,
+    amount: transaction ? transaction.amount.toString() : "",
+    accountId:
+      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
+    categoryId: transaction?.categoryId ?? null,
+    fromAccountId:
+      transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
+    toAccountId: pairedAccountId ?? "",
+    exchangeRate: transaction?.exchangeRate?.toString() ?? "",
+    receiveAmount: transaction?.originalAmount?.toString() ?? "",
+    date: transaction?.date
+      ? new Date(transaction.date).toISOString().split("T")[0]
+      : todayIso(),
+    note: transaction?.note ?? "",
+    unsettled: transaction ? !transaction.settled : false,
+    madeById: transaction?.madeBy?.id ?? currentUserId,
+  }))
+
   const form = useForm({
-    defaultValues: {
-      type: isTransferEdit
-        ? "transfer"
-        : transaction
-          ? transaction.type
-          : defaultType,
-      amount: transaction ? transaction.amount.toString() : "",
-      accountId:
-        transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
-      categoryId: transaction?.categoryId ?? null,
-      fromAccountId:
-        transaction?.accountId ?? defaultAccountId ?? accounts[0]?.id ?? "",
-      toAccountId: pairedAccountId ?? "",
-      exchangeRate: transaction?.exchangeRate?.toString() ?? "",
-      receiveAmount: transaction?.originalAmount?.toString() ?? "",
-      date: transaction?.date
-        ? new Date(transaction.date).toISOString().split("T")[0]
-        : todayIso(),
-      note: transaction?.note ?? "",
-      unsettled: transaction ? !transaction.settled : false,
-      madeById: transaction?.madeBy?.id ?? currentUserId,
-    } satisfies FormValues,
+    defaultValues: initialValues,
     onSubmit: async ({ value, formApi }) => {
       if (!isValid(value)) return
       try {

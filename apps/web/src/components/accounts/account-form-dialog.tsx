@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   IconAlertTriangle,
   IconCreditCard,
@@ -172,24 +173,22 @@ function AccountModalBody({
 
   const schema = isEdit ? editFormSchema : createFormSchema
 
-  const initialColor: string =
-    asPaletteColor(account?.color) ??
-    pickRandomUnusedColor(existingAccountColors ?? [])
-
-  const initialIcon: string =
-    asKnownIcon(account?.icon) ??
-    pickRandomUnusedIcon(existingAccountIcons ?? [])
+  const [initialValues] = useState<FormValues>(() => ({
+    name: account?.name ?? "",
+    type: (account?.type as AccountType) ?? "bank",
+    currency: account?.currency ?? "",
+    balance: "",
+    isDefault: account?.isDefault ?? false,
+    color:
+      asPaletteColor(account?.color) ??
+      pickRandomUnusedColor(existingAccountColors ?? []),
+    icon:
+      asKnownIcon(account?.icon) ??
+      pickRandomUnusedIcon(existingAccountIcons ?? []),
+  }))
 
   const form = useForm({
-    defaultValues: {
-      name: account?.name ?? "",
-      type: (account?.type as AccountType) ?? "bank",
-      currency: account?.currency ?? "",
-      balance: "",
-      isDefault: account?.isDefault ?? false,
-      color: initialColor,
-      icon: initialIcon,
-    } satisfies FormValues,
+    defaultValues: initialValues,
     validators: {
       onChange: schema,
       onSubmit: schema,
@@ -664,4 +663,3 @@ function PreviewCard({
     </div>
   )
 }
-
