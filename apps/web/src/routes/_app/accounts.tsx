@@ -10,6 +10,7 @@ import { AccountCard, AddAccountCard } from "@/components/accounts/account-card"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
+import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
 import { api, queryClient } from "@/lib/api"
 
 type AccountType = "bank" | "cash" | "brokerage"
@@ -196,6 +197,14 @@ function AccountsPage() {
           New account
         </Button>
       </div>
+
+      {!loading && !isEmpty && (
+        <AccountsNetWorthCard
+          accounts={accounts}
+          holdingsByAccount={holdingsByAccount}
+          holdingsLoaded={holdingsLoaded}
+        />
+      )}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
