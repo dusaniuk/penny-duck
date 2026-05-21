@@ -90,7 +90,7 @@ export function CurrencyPicker({
         id={id}
         aria-invalid={invalid || undefined}
         className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-[11px] border border-border bg-foreground/[0.025] px-2.5 text-left text-[13px] outline-none transition-colors hover:bg-foreground/[0.04] focus-visible:border-primary/45 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.04] aria-invalid:border-destructive/45 [&>svg:last-child]:ml-auto",
+          "flex h-10 w-full items-center gap-2.5 rounded-[11px] border border-border bg-card px-2.5 text-left text-[13px] outline-none transition-colors hover:bg-card/80 focus-visible:border-primary/45 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive/45 [&>svg:last-child]:ml-auto",
           className
         )}
       >

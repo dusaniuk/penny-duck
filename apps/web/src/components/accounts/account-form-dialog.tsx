@@ -75,6 +75,9 @@ interface FormValues {
   currency: string
   balance: string
   isDefault: boolean
+  // UI-only stub until the accounts schema gains a color field. Tints the
+  // preview card + placeholder swatches; not sent in the submit payload.
+  color: string
 }
 
 const baseSchema = z.object({
@@ -86,6 +89,7 @@ const baseSchema = z.object({
   type: z.enum(["bank", "cash", "brokerage"]),
   balance: z.string(),
   isDefault: z.boolean(),
+  color: z.string(),
 })
 
 const createFormSchema = baseSchema.extend({
@@ -151,6 +155,7 @@ function AccountModalBody({
       currency: account?.currency ?? "",
       balance: "",
       isDefault: account?.isDefault ?? false,
+      color: "orange",
     } satisfies FormValues,
     validators: {
       onChange: schema,
@@ -220,6 +225,7 @@ function AccountModalBody({
               isEdit ? (account?.balance ?? 0) : parseFloat(values.balance) || 0
             }
             isDefault={values.isDefault}
+            color={values.color}
           />
         )}
       </form.Subscribe>
@@ -235,13 +241,19 @@ function AccountModalBody({
               </FieldLabel>
               <div
                 className={cn(
-                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-foreground/2.5 px-1.5 py-1.5 focus-within:border-primary/45 dark:bg-foreground/2.5",
+                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/45",
                   isInvalid && "border-destructive/45"
                 )}
               >
                 {/* Placeholders until color/icon API fields land. */}
-                <ColorPlaceholder />
-                <IconPlaceholder />
+                <form.Subscribe selector={(s) => s.values.color}>
+                  {(color) => (
+                    <>
+                      <ColorPlaceholder color={color} />
+                      <IconPlaceholder color={color} />
+                    </>
+                  )}
+                </form.Subscribe>
                 <input
                   id={field.name}
                   name={field.name}
@@ -382,7 +394,7 @@ function AccountModalBody({
                     >
                       Initial balance
                     </FieldLabel>
-                    <InputGroup className="h-10 items-center rounded-[11px] border-border bg-foreground/2.5 px-3 dark:bg-foreground/2.5">
+                    <InputGroup className="h-10 items-center rounded-[11px] border-border bg-card px-3">
                       <InputGroupInput
                         id={field.name}
                         name={field.name}
@@ -530,6 +542,7 @@ interface PreviewCardProps {
   currency: string
   balance: number
   isDefault: boolean
+  color: string
 }
 
 function PreviewCard({
@@ -538,9 +551,11 @@ function PreviewCard({
   currency,
   balance,
   isDefault,
+  color,
 }: PreviewCardProps) {
-  const fg = paletteColor("neutral", { l: 0.78, c: 0.14 })
-  const tint = paletteColor("neutral", { l: 0.42, c: 0.1, a: 0.18 })
+  const fg = paletteColor(color, { l: 0.78, c: 0.14 })
+  const tint = paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 })
+  const halo = paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 })
   const displayName = name || "Account name"
   const formatted = balance.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -548,8 +563,13 @@ function PreviewCard({
   })
 
   return (
-    <div className="flex flex-col gap-3 rounded-[12px] border border-border bg-foreground/2 p-3.5 dark:bg-[#0c0d10]">
-      <div className="flex items-start gap-2.5">
+    <div className="relative flex flex-col gap-3 overflow-hidden rounded-[12px] border border-border bg-card p-3.5">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full"
+        style={{ background: halo, filter: "blur(44px)" }}
+      />
+      <div className="relative flex items-start gap-2.5">
         <span
           className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-foreground/4"
           style={{ color: fg, background: tint }}
@@ -581,7 +601,7 @@ function PreviewCard({
           </div>
         </div>
       </div>
-      <div className="flex items-baseline gap-1.5">
+      <div className="relative flex items-baseline gap-1.5">
         <span className="font-heading text-[22px] font-semibold tracking-tight text-foreground tabular-nums">
           {formatted}
         </span>
@@ -593,8 +613,8 @@ function PreviewCard({
   )
 }
 
-function ColorPlaceholder() {
-  const swatch = paletteColor("neutral", { l: 0.7, c: 0.16 })
+function ColorPlaceholder({ color }: { color: string }) {
+  const swatch = paletteColor(color, { l: 0.7, c: 0.16 })
   return (
     <div
       role="button"
@@ -615,9 +635,9 @@ function ColorPlaceholder() {
   )
 }
 
-function IconPlaceholder() {
-  const fg = paletteColor("neutral", { l: 0.78, c: 0.14 })
-  const tint = paletteColor("neutral", { l: 0.42, c: 0.1, a: 0.2 })
+function IconPlaceholder({ color }: { color: string }) {
+  const fg = paletteColor(color, { l: 0.78, c: 0.14 })
+  const tint = paletteColor(color, { l: 0.42, c: 0.1, a: 0.2 })
   return (
     <div
       role="button"

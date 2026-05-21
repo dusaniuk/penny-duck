@@ -11,7 +11,7 @@ import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
 import { cn } from "@workspace/ui/lib/utils"
 
 const SHELL_BASE =
-  "flex flex-col gap-[14px] bg-card text-foreground [font-family:Inter,system-ui,sans-serif] dark:bg-linear-to-b dark:from-[#131418] dark:to-[#0c0d10] dark:text-[#e8e8e8]"
+  "flex flex-col gap-[14px] bg-background text-foreground [font-family:Inter,system-ui,sans-serif]"
 const SHELL_DESKTOP =
   "w-[440px] rounded-[18px] border border-border p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.18)] dark:border-foreground/[0.06] dark:shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
 const SHELL_MOBILE =
@@ -21,7 +21,7 @@ export const FORM_FIELD_LABEL =
   "text-[11px] font-semibold tracking-[0.06em] uppercase text-muted-foreground"
 
 export const FORM_TRIGGER_ROW =
-  "w-full rounded-[11px] border-border bg-foreground/[0.025] px-3 text-[13px] hover:bg-foreground/[0.04] dark:bg-foreground/[0.025] dark:hover:bg-foreground/[0.04]"
+  "w-full rounded-[11px] border-border bg-card px-3 text-[13px] hover:bg-card/80"
 
 export const FORM_CANCEL_BUTTON =
   "h-auto rounded-[10px] border-foreground/10 bg-transparent px-[18px] py-[10px] text-[13px] text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground"

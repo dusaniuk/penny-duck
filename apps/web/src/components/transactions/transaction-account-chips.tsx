@@ -33,7 +33,7 @@ const SECTION_LABEL_CLASS =
   "mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-foreground/40"
 
 const CHIP_BASE_CLASS =
-  "flex shrink-0 items-center gap-2 rounded-[11px] border border-foreground/[0.06] bg-foreground/[0.025] px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/[0.05] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+  "flex shrink-0 items-center gap-2 rounded-[11px] border border-foreground/[0.06] bg-card px-[11px] py-[9px] text-left transition-colors hover:bg-card/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
 
 interface TransactionAccountChipsProps {
   accounts: Array<Account>

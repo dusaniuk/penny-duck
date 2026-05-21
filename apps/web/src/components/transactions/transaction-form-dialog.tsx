@@ -599,7 +599,7 @@ function TransactionModalBody({
                 ) : (
                   <button
                     type="button"
-                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-foreground/2.5 px-[11px] py-[9px] text-left transition-colors hover:bg-foreground/5 dark:border-violet-300/35"
+                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-card px-[11px] py-[9px] text-left transition-colors hover:bg-card/80 dark:border-violet-300/35"
                   >
                     <span className="size-2 shrink-0 rounded-full bg-muted-foreground/40" />
                     <div className="min-w-0 flex-1">
@@ -696,7 +696,7 @@ function TransactionModalBody({
           >
             <SelectTrigger
               size="default"
-              className="h-auto rounded-[10px] border-foreground/5 bg-foreground/2.5 px-[11px] py-2 text-[12.5px] text-foreground hover:bg-foreground/5 dark:bg-foreground/2.5 dark:hover:bg-foreground/5"
+              className="h-auto rounded-[10px] border-foreground/5 bg-card px-[11px] py-2 text-[12.5px] text-foreground hover:bg-card/80"
             >
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -789,7 +789,7 @@ function TransactionModalBody({
 
       <InputGroup
         className={cn(
-          "h-auto items-center rounded-[11px] border-foreground/5 bg-foreground/2.5 px-3 py-2.5",
+          "h-auto items-center rounded-[11px] border-foreground/5 bg-card px-3 py-2.5",
           isMobile && "px-3 py-3"
         )}
       >
