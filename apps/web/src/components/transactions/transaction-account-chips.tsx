@@ -1,6 +1,6 @@
 import { cn } from "@workspace/ui/lib/utils"
 import type { Account } from "@workspace/api-contract"
-import { paletteColor } from "@/lib/category-color"
+import { paletteColor } from "@/lib/palette"
 
 // Accounts don't yet carry a palette token on the server. Derive a stable
 // shade from the account id so each account gets a distinct dot color while
@@ -62,7 +62,7 @@ export function TransactionAccountChips({
               aria-pressed={active}
               className={cn(
                 CHIP_BASE_CLASS,
-                "min-w-[140px] max-w-[170px] sm:min-w-[150px] sm:px-3 sm:py-2.5",
+                "max-w-[170px] min-w-[140px] sm:min-w-[150px] sm:px-3 sm:py-2.5",
                 active && "border-orange-500 bg-orange-500/[0.06]"
               )}
             >
@@ -115,7 +115,7 @@ function AccountText({ account }: { account: Account }) {
       <div className="truncate text-[12.5px] font-medium text-foreground">
         {account.name}
       </div>
-      <div className="truncate text-[11px] tabular-nums text-foreground/45">
+      <div className="truncate text-[11px] text-foreground/45 tabular-nums">
         {account.balance.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,

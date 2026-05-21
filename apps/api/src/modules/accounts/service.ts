@@ -58,6 +58,8 @@ function selectAccountRow(userId: string) {
       name: accounts.name,
       type: accounts.type,
       currency: accounts.currency,
+      color: accounts.color,
+      icon: accounts.icon,
       initialBalance: accounts.initialBalance,
       externalAccountId: accounts.externalAccountId,
       createdAt: accounts.createdAt,
@@ -115,6 +117,8 @@ function toResponse(row: AccountRow, rate: number): Account {
     name: row.name,
     type: row.type,
     currency: row.currency,
+    color: row.color,
+    icon: row.icon,
     balance: row.balance,
     homeBalance: row.balance * rate,
     isDefault: row.isDefault,
@@ -183,6 +187,8 @@ export interface CreateAccountInput {
   name: string
   type: string
   currency: string
+  color?: string
+  icon?: string
   balance?: number
 }
 
@@ -194,6 +200,8 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
       name: input.name,
       type: input.type,
       currency: input.currency,
+      color: input.color ?? null,
+      icon: input.icon ?? null,
       initialBalance: input.balance ?? 0,
     })
     .returning()
@@ -215,6 +223,8 @@ export interface UpdateAccountInput {
   userId: string
   name?: string
   type?: string
+  color?: string
+  icon?: string
 }
 
 export async function updateAccount(input: UpdateAccountInput): Promise<Account> {
@@ -226,6 +236,8 @@ export async function updateAccount(input: UpdateAccountInput): Promise<Account>
     .set({
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.type !== undefined ? { type: input.type } : {}),
+      ...(input.color !== undefined ? { color: input.color } : {}),
+      ...(input.icon !== undefined ? { icon: input.icon } : {}),
       updatedAt: new Date(),
     })
     .where(

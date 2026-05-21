@@ -134,6 +134,20 @@
       "when": 1777301458679,
       "tag": "0018_add-category-color",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779358330458,
+      "tag": "0019_add-account-color",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1779360401160,
+      "tag": "0020_add-account-icon",
+      "breakpoints": true
     }
   ]
 }

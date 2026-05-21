@@ -60,6 +60,8 @@ function AccountsPage() {
       name: string
       type: string
       currency: string
+      color?: string
+      icon?: string
       balance?: number
     }) => {
       const res = await api.accounts.$post({ json: body })
@@ -72,7 +74,7 @@ function AccountsPage() {
   const updateMutation = useMutation({
     mutationFn: async (vars: {
       id: string
-      body: { name?: string; type?: string }
+      body: { name?: string; type?: string; color?: string; icon?: string }
     }) => {
       const res = await api.accounts[":id"].$patch({
         param: { id: vars.id },
@@ -133,6 +135,8 @@ function AccountsPage() {
     name: string
     type: string
     currency?: string
+    color?: string
+    icon?: string
     balance?: number
     isDefault?: boolean
   }) {
@@ -141,7 +145,12 @@ function AccountsPage() {
     if (editAccount) {
       await updateMutation.mutateAsync({
         id: editAccount.id,
-        body: { name: formData.name, type: formData.type },
+        body: {
+          name: formData.name,
+          type: formData.type,
+          ...(formData.color ? { color: formData.color } : {}),
+          ...(formData.icon ? { icon: formData.icon } : {}),
+        },
       })
       savedId = editAccount.id
     } else {
@@ -149,6 +158,8 @@ function AccountsPage() {
         name: formData.name,
         type: formData.type,
         currency: formData.currency!,
+        ...(formData.color ? { color: formData.color } : {}),
+        ...(formData.icon ? { icon: formData.icon } : {}),
         balance: formData.balance,
       })
       savedId = created.id
@@ -206,6 +217,8 @@ function AccountsPage() {
           if (!open) setEditAccount(null)
         }}
         account={editAccount}
+        existingAccountColors={accounts.map((a) => a.color)}
+        existingAccountIcons={accounts.map((a) => a.icon)}
         onSubmit={handleFormSubmit}
         onArchive={handleOpenDelete}
       />
@@ -218,7 +231,9 @@ function AccountsPage() {
         account={deleteAccount}
         transactionCount={deleteTransactionCount}
         openPositionCount={
-          deleteAccount ? (openPositionsByAccount.get(deleteAccount.id) ?? 0) : 0
+          deleteAccount
+            ? (openPositionsByAccount.get(deleteAccount.id) ?? 0)
+            : 0
         }
         onConfirm={handleDelete}
       />

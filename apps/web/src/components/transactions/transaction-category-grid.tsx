@@ -2,8 +2,8 @@ import { IconDots } from "@tabler/icons-react"
 import { useIsDark } from "@workspace/ui/hooks/use-is-dark"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Category, CategoryUsageItem } from "@workspace/api-contract"
-import { paletteColor } from "@/lib/category-color"
-import { getCategoryIcon } from "@/lib/category-icons"
+import { paletteColor } from "@/lib/palette"
+import { getIcon } from "@/lib/icons"
 
 // Lightness/chroma for category accents shifts per theme: pale colors read
 // on a dark surface, vivid darker colors read on a light surface.
@@ -94,7 +94,7 @@ export function TransactionCategoryGrid({
   return (
     <div className="flex flex-col">
       <div className="flex items-baseline justify-between">
-        <span className="mb-2 text-[11px] font-semibold tracking-[0.06em] uppercase text-foreground/40">
+        <span className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-foreground/40 uppercase">
           Category
         </span>
         {selectedCat && selectedParent && (
@@ -109,7 +109,7 @@ export function TransactionCategoryGrid({
           const token = parentTokenFor(c, byId)
           const fg = paletteColor(token, fgOpts)
           const bg = paletteColor(token, bgOpts)
-          const icon = getCategoryIcon(c.icon)
+          const icon = getIcon(c.icon)
           return (
             <button
               key={c.id}
@@ -129,7 +129,7 @@ export function TransactionCategoryGrid({
               >
                 {icon ? <icon.component size={16} /> : null}
               </span>
-              <span className="max-w-full truncate text-[11px] font-medium leading-[1.15]">
+              <span className="max-w-full truncate text-[11px] leading-[1.15] font-medium">
                 {c.name}
               </span>
             </button>
@@ -145,7 +145,7 @@ export function TransactionCategoryGrid({
             <span className="grid size-[22px] shrink-0 place-items-center">
               <IconDots size={16} />
             </span>
-            <span className="max-w-full truncate text-[11px] font-medium leading-[1.15]">
+            <span className="max-w-full truncate text-[11px] leading-[1.15] font-medium">
               More…
             </span>
           </button>
@@ -154,7 +154,7 @@ export function TransactionCategoryGrid({
       {selectedCat && selectedCat.parentId !== null && (
         <div className="mt-2 flex items-center gap-[7px] rounded-[9px] border border-foreground/[0.06] bg-foreground/[0.025] px-[11px] py-[7px] text-[12px] font-medium text-foreground">
           {(() => {
-            const icon = getCategoryIcon(selectedCat.icon)
+            const icon = getIcon(selectedCat.icon)
             const token = parentTokenFor(selectedCat, byId)
             return (
               <span style={{ color: paletteColor(token, fgOpts) }}>

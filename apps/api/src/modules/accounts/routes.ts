@@ -40,6 +40,8 @@ export const accountsRoutes = new Hono<AuthedEnv>()
       name: body.name,
       type: body.type,
       currency: body.currency,
+      color: body.color,
+      icon: body.icon,
       balance: body.balance,
     })
     return c.json(account, 201)
@@ -64,6 +66,8 @@ export const accountsRoutes = new Hono<AuthedEnv>()
         userId: user.sub,
         name: body.name,
         type: body.type,
+        color: body.color,
+        icon: body.icon,
       })
       return c.json(account)
     },

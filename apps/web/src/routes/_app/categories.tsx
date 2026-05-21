@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { CategoryDialogMode } from "@/components/categories/category-form-dialog"
-import type { CategoryColor } from "@/lib/category-color"
+import type { PaletteColor } from "@/lib/palette"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
 import { CategoryList } from "@/components/categories/category-list"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
@@ -66,7 +66,7 @@ function CategoriesPage() {
       icon?: string
       type?: CategoryType
       parentId?: string
-      color?: CategoryColor
+      color?: PaletteColor
     }) => {
       const res = await api.categories.$post({ json: body })
       if (!res.ok) throw await res.json()
@@ -82,7 +82,7 @@ function CategoriesPage() {
         icon?: string
         type?: CategoryType
         parentId?: string | null
-        color?: CategoryColor
+        color?: PaletteColor
       }
     }) => {
       const res = await api.categories[":id"].$patch({
@@ -120,7 +120,7 @@ function CategoriesPage() {
     icon?: string
     type?: CategoryType
     parentId?: string | null
-    color?: CategoryColor
+    color?: PaletteColor
   }) {
     if (!dialogMode) return
     switch (dialogMode.kind) {

@@ -19,8 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import type { Category } from "@workspace/api-contract"
-import { getCategoryIcon } from "@/lib/category-icons"
-import { categoryColor } from "@/lib/category-color"
+import { getIcon } from "@/lib/icons"
+import { categoryColor } from "@/lib/palette"
 
 interface CategoryRowProps {
   parent: Category
@@ -39,7 +39,7 @@ function CategoryIcon({
   all: ReadonlyArray<Category>
 }) {
   const bg = categoryColor(category, all)
-  const resolved = getCategoryIcon(category.icon)
+  const resolved = getIcon(category.icon)
   return (
     <div
       className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"

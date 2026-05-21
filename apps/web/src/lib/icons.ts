@@ -298,14 +298,14 @@ import {
 } from "@tabler/icons-react"
 import type { Icon } from "@tabler/icons-react"
 
-export interface CategoryIcon {
+export interface IconDef {
   name: string
   label: string
   component: Icon
   group: string
 }
 
-export const CATEGORY_ICONS: Array<CategoryIcon> = [
+export const ICONS: Array<IconDef> = [
   // Food
   { name: "meat", label: "Meat", component: IconMeat, group: "Food" },
   { name: "soup", label: "Soup", component: IconSoup, group: "Food" },
@@ -1607,9 +1607,520 @@ export const CATEGORY_ICONS: Array<CategoryIcon> = [
   { name: "link", label: "Link", component: IconLink, group: "Misc" },
 ]
 
-const iconMap = new Map(CATEGORY_ICONS.map((i) => [i.name, i]))
+const iconMap = new Map(ICONS.map((i) => [i.name, i]))
 
-export function getCategoryIcon(iconName: string | null): CategoryIcon | null {
+export const ICON_TOKENS: ReadonlyArray<string> = ICONS.map((i) => i.name)
+
+export function getIcon(iconName: string | null): IconDef | null {
   if (!iconName) return null
   return iconMap.get(iconName) ?? null
+}
+
+export function pickRandomUnusedIcon(
+  existing: ReadonlyArray<string | null>
+): string {
+  const used = new Set(existing.filter((c): c is string => c !== null))
+  const free = ICON_TOKENS.filter((t) => !used.has(t))
+  const pool = free.length > 0 ? free : ICON_TOKENS
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+// Semantic search synonyms: maps a user search term to icons that aren't
+// matched by literal name/label/group substring.
+const SEARCH_SYNONYMS: Record<string, ReadonlyArray<string>> = {
+  vacation: [
+    "plane",
+    "beach",
+    "umbrella",
+    "hotel-service",
+    "luggage",
+    "tent",
+    "campfire",
+    "mountain",
+    "sun",
+    "air-balloon",
+  ],
+  holiday: [
+    "plane",
+    "beach",
+    "umbrella",
+    "hotel-service",
+    "gift",
+    "tent",
+    "campfire",
+  ],
+  travel: [
+    "plane",
+    "luggage",
+    "map",
+    "map-pin",
+    "compass",
+    "world",
+    "world-pin",
+    "plane-departure",
+    "plane-arrival",
+    "building-airport",
+    "air-balloon",
+  ],
+  trip: ["plane", "luggage", "map", "map-pin", "compass", "mountain"],
+  flight: [
+    "plane",
+    "plane-arrival",
+    "plane-departure",
+    "building-airport",
+    "luggage",
+  ],
+  hotel: ["hotel-service", "bed", "key", "building"],
+  work: [
+    "briefcase",
+    "briefcase-2",
+    "building",
+    "building-factory",
+    "calculator",
+    "certificate",
+    "device-laptop",
+  ],
+  job: ["briefcase", "building", "certificate", "device-laptop"],
+  business: [
+    "briefcase",
+    "briefcase-2",
+    "building",
+    "building-factory-2",
+    "calculator",
+    "cash-register",
+    "building-bank",
+  ],
+  office: [
+    "briefcase",
+    "building",
+    "device-desktop",
+    "device-laptop",
+    "calculator",
+    "keyboard",
+    "mouse",
+  ],
+  salary: ["cash", "moneybag", "report-money", "trending-up"],
+  income: [
+    "trending-up",
+    "cash",
+    "moneybag",
+    "report-money",
+    "currency-dollar",
+  ],
+  money: [
+    "cash",
+    "wallet",
+    "credit-card",
+    "coin",
+    "pig-money",
+    "moneybag",
+    "currency-dollar",
+    "report-money",
+  ],
+  finance: [
+    "cash",
+    "credit-card",
+    "coin",
+    "wallet",
+    "building-bank",
+    "chart-line",
+    "report-money",
+    "pig-money",
+  ],
+  bank: [
+    "building-bank",
+    "credit-card",
+    "cards",
+    "cash",
+    "wallet",
+    "coin",
+    "lock-square",
+  ],
+  savings: ["pig-money", "moneybag", "wallet", "lock-square"],
+  saving: ["pig-money", "moneybag", "wallet", "lock-square"],
+  investment: [
+    "trending-up",
+    "briefcase-2",
+    "chart-line",
+    "chart-bar",
+    "chart-pie",
+    "chart-candle",
+    "chart-area",
+  ],
+  trading: [
+    "chart-candle",
+    "chart-line",
+    "trending-up",
+    "trending-down",
+    "exchange",
+  ],
+  stocks: [
+    "trending-up",
+    "trending-down",
+    "chart-line",
+    "chart-candle",
+    "briefcase-2",
+  ],
+  crypto: ["currency-bitcoin", "coin-bitcoin"],
+  bitcoin: ["currency-bitcoin", "coin-bitcoin"],
+  card: ["credit-card", "cards"],
+  payment: ["credit-card", "cards", "cash", "wallet", "receipt"],
+  food: [
+    "meat",
+    "soup",
+    "pizza",
+    "burger",
+    "salad",
+    "bowl",
+    "bowl-chopsticks",
+    "chef-hat",
+    "grill",
+    "sausage",
+    "bread",
+    "cheese",
+    "egg",
+    "fish",
+    "apple",
+    "carrot",
+    "mushroom",
+    "avocado",
+    "lemon",
+    "cherry",
+    "pepper",
+  ],
+  meal: [
+    "meat",
+    "soup",
+    "pizza",
+    "burger",
+    "salad",
+    "bowl",
+    "bowl-chopsticks",
+    "chef-hat",
+  ],
+  restaurant: [
+    "meat",
+    "soup",
+    "pizza",
+    "burger",
+    "chef-hat",
+    "grill",
+    "bowl-chopsticks",
+  ],
+  cafe: ["coffee", "mug", "cup", "cookie", "cake"],
+  dessert: ["cake", "cookie", "candy", "ice-cream", "lollipop"],
+  sweets: ["candy", "lollipop", "cookie", "cake", "ice-cream"],
+  drink: ["coffee", "beer", "mug", "cup", "bottle", "glass-full", "milk"],
+  beverage: ["coffee", "beer", "mug", "cup", "bottle", "glass-full"],
+  alcohol: ["beer", "glass-full", "bottle"],
+  bar: ["beer", "glass-full", "bottle"],
+  groceries: [
+    "shopping-cart",
+    "shopping-bag",
+    "basket",
+    "apple",
+    "carrot",
+    "bread",
+    "cheese",
+    "egg",
+    "fish",
+    "milk",
+  ],
+  shopping: [
+    "shopping-cart",
+    "shopping-bag",
+    "basket",
+    "building-store",
+    "tag",
+    "receipt",
+    "credit-card",
+  ],
+  store: ["building-store", "shopping-cart", "shopping-bag", "basket", "tag"],
+  clothes: ["shirt", "hanger", "shirt-sport", "jacket", "shoe", "backpack"],
+  clothing: ["shirt", "hanger", "jacket", "shirt-sport", "shoe", "backpack"],
+  fashion: [
+    "shirt",
+    "hanger",
+    "shoe",
+    "shirt-sport",
+    "jacket",
+    "crown",
+    "diamond",
+  ],
+  jewelry: ["diamond", "crown", "rosette"],
+  health: [
+    "heartbeat",
+    "pill",
+    "stethoscope",
+    "hospital",
+    "first-aid-kit",
+    "vaccine-bottle",
+    "bandage",
+    "nurse",
+    "dental",
+    "medical-cross",
+    "shield-check",
+    "activity",
+  ],
+  medical: [
+    "heartbeat",
+    "pill",
+    "stethoscope",
+    "hospital",
+    "first-aid-kit",
+    "medical-cross",
+    "vaccine-bottle",
+    "ambulance",
+  ],
+  doctor: ["stethoscope", "hospital", "medical-cross", "nurse"],
+  pharmacy: ["pill", "medicine-syrup", "first-aid-kit", "vaccine-bottle"],
+  fitness: [
+    "run",
+    "barbell",
+    "jump-rope",
+    "yoga",
+    "weight",
+    "swimming",
+    "bike",
+    "activity",
+  ],
+  exercise: ["run", "barbell", "jump-rope", "yoga", "weight", "activity"],
+  workout: ["barbell", "jump-rope", "weight", "run", "activity"],
+  sport: [
+    "ball-tennis",
+    "ball-football",
+    "ball-basketball",
+    "ball-volleyball",
+    "ball-baseball",
+    "barbell",
+    "run",
+    "swimming",
+    "bike",
+    "kayak",
+  ],
+  gym: ["barbell", "jump-rope", "weight", "run", "activity"],
+  home: [
+    "home",
+    "home-bolt",
+    "home-heart",
+    "home-cog",
+    "home-shield",
+    "building-cottage",
+    "building-community",
+    "sofa",
+    "bed",
+    "armchair",
+    "bath",
+    "fridge",
+    "cooker",
+  ],
+  house: [
+    "home",
+    "building-cottage",
+    "building-community",
+    "key",
+    "door",
+    "window",
+    "stairs",
+  ],
+  rent: ["home", "key", "building-community", "receipt"],
+  mortgage: ["home", "key", "building-bank", "receipt-2"],
+  utilities: ["bolt", "flame", "droplet", "bulb", "wifi", "home-bolt"],
+  electricity: ["bolt", "bulb", "home-bolt", "plug", "power", "charging-pile"],
+  water: ["droplet"],
+  heating: ["flame", "home-bolt", "air-conditioning"],
+  bills: ["receipt", "receipt-2", "receipt-tax", "report-money", "calendar"],
+  subscription: ["receipt-2", "calendar", "exchange"],
+  recurring: ["calendar", "exchange", "receipt-2"],
+  car: [
+    "car",
+    "car-suv",
+    "motorbike",
+    "scooter",
+    "truck",
+    "steering-wheel",
+    "gas-station",
+    "charging-pile",
+    "parking",
+  ],
+  auto: ["car", "car-suv", "steering-wheel", "gas-station", "parking"],
+  fuel: ["gas-station", "charging-pile"],
+  gas: ["gas-station", "flame"],
+  transport: [
+    "car",
+    "bus",
+    "bike",
+    "plane",
+    "train",
+    "ship",
+    "motorbike",
+    "scooter",
+    "truck",
+    "walk",
+    "ambulance",
+  ],
+  transportation: [
+    "car",
+    "bus",
+    "bike",
+    "plane",
+    "train",
+    "ship",
+    "motorbike",
+    "scooter",
+    "truck",
+    "walk",
+  ],
+  vehicle: ["car", "car-suv", "bus", "truck", "motorbike", "bike"],
+  ride: ["car", "bus", "bike", "scooter", "motorbike"],
+  taxi: ["car", "car-suv"],
+  uber: ["car", "car-suv"],
+  parking: ["parking", "car", "steering-wheel"],
+  commute: ["bus", "train", "car", "bus-stop", "bike", "walk"],
+  pet: ["paw", "cat", "dog", "horse", "butterfly"],
+  pets: ["paw", "cat", "dog", "horse"],
+  family: ["home-heart", "baby-carriage", "baby-bottle", "hearts", "users"],
+  baby: ["baby-bottle", "baby-carriage"],
+  kids: ["baby-carriage", "school", "lollipop", "cake"],
+  children: ["baby-carriage", "school", "lollipop"],
+  school: ["school", "book", "book2", "notebook", "certificate", "language"],
+  education: [
+    "school",
+    "book",
+    "book2",
+    "notebook",
+    "certificate",
+    "brain",
+    "language",
+  ],
+  learning: ["book", "book2", "notebook", "language", "brain"],
+  reading: ["book", "book2", "bookmark"],
+  music: [
+    "music",
+    "headphones",
+    "headset",
+    "piano",
+    "album",
+    "vinyl",
+    "microphone",
+  ],
+  movie: ["movie", "ticket", "theater", "masks-theater"],
+  cinema: ["movie", "ticket", "theater"],
+  entertainment: [
+    "movie",
+    "music",
+    "device-gamepad",
+    "ticket",
+    "theater",
+    "piano",
+  ],
+  game: ["device-gamepad", "chess", "chess-knight", "cards", "dice"],
+  gaming: ["device-gamepad", "chess"],
+  party: [
+    "confetti",
+    "cake",
+    "sparkles",
+    "gift",
+    "beer",
+    "air-balloon",
+    "music",
+  ],
+  celebration: ["confetti", "cake", "sparkles", "gift", "air-balloon"],
+  birthday: ["cake", "gift", "confetti", "air-balloon"],
+  wedding: ["heart", "hearts", "gift", "cake", "diamond"],
+  date: ["calendar", "calendar-event", "heart", "hearts"],
+  meeting: ["calendar", "calendar-event", "users", "briefcase"],
+  appointment: ["calendar", "calendar-event", "clock"],
+  email: ["mail", "message"],
+  call: ["phone", "device-mobile", "headset"],
+  internet: ["wifi", "router", "satellite", "world"],
+  wifi: ["wifi", "router"],
+  tax: ["receipt-tax", "calculator", "report-money"],
+  taxes: ["receipt-tax", "calculator", "report-money"],
+  insurance: ["shield", "shield-check", "home-shield", "heartbeat"],
+  garden: [
+    "leaf",
+    "leaf-2",
+    "tree",
+    "flower",
+    "plant",
+    "plant-2",
+    "cactus",
+    "windmill",
+  ],
+  nature: [
+    "leaf",
+    "leaf-2",
+    "tree",
+    "flower",
+    "plant",
+    "mountain",
+    "sun",
+    "rainbow",
+  ],
+  weather: [
+    "cloud",
+    "cloud-rain",
+    "cloud-snow",
+    "cloud-storm",
+    "sun",
+    "moon",
+    "rainbow",
+    "snowflake",
+    "wind",
+  ],
+  rain: ["cloud-rain", "umbrella", "droplet"],
+  snow: ["cloud-snow", "snowflake"],
+  charity: ["heart", "hearts", "gift"],
+  donation: ["heart", "hearts", "gift", "moneybag"],
+  emergency: ["ambulance", "first-aid-kit", "shield", "hospital"],
+  battery: ["battery", "battery-charging", "plug", "power"],
+  charge: ["battery-charging", "charging-pile", "plug", "power", "bolt"],
+  electric: ["bolt", "battery", "power", "plug", "home-bolt", "charging-pile"],
+  online: ["wifi", "world", "device-laptop", "cloud-upload"],
+  ai: ["robot", "brain", "sparkles", "cpu"],
+  software: ["device-laptop", "device-desktop", "cpu", "server"],
+  hardware: [
+    "cpu",
+    "server",
+    "device-desktop",
+    "keyboard",
+    "mouse",
+    "router",
+    "plug",
+  ],
+  art: ["palette", "brush", "theater"],
+  hobby: ["palette", "brush", "piano", "ball-tennis", "chess", "kayak"],
+}
+
+export function searchIcons(query: string): ReadonlyArray<IconDef> {
+  const q = query.trim().toLowerCase()
+  if (!q) return ICONS
+
+  const seen = new Set<string>()
+  const result: Array<IconDef> = []
+
+  for (const icon of ICONS) {
+    if (
+      icon.name.toLowerCase().includes(q) ||
+      icon.label.toLowerCase().includes(q) ||
+      icon.group.toLowerCase().includes(q)
+    ) {
+      seen.add(icon.name)
+      result.push(icon)
+    }
+  }
+
+  for (const [term, names] of Object.entries(SEARCH_SYNONYMS)) {
+    if (!term.includes(q) && !q.includes(term)) continue
+    for (const name of names) {
+      if (seen.has(name)) continue
+      const icon = iconMap.get(name)
+      if (!icon) continue
+      seen.add(name)
+      result.push(icon)
+    }
+  }
+
+  return result
 }

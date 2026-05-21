@@ -107,10 +107,7 @@ function InvestmentsIndexPage() {
       )}
 
       {summaryData && (
-        <PortfolioSummary
-          summary={summaryData}
-          homeCurrency={homeCurrency}
-        />
+        <PortfolioSummary summary={summaryData} homeCurrency={homeCurrency} />
       )}
 
       {isLoading ? (

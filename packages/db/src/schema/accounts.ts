@@ -13,6 +13,8 @@ export const accounts = appSchema.table(
     name: varchar("name", { length: 100 }).notNull(),
     type: varchar("type", { length: 20 }).notNull(),
     currency: varchar("currency", { length: 3 }).notNull(),
+    color: varchar("color", { length: 20 }),
+    icon: varchar("icon", { length: 50 }),
     initialBalance: money("initial_balance").notNull().default(0),
     externalAccountId: text("external_account_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

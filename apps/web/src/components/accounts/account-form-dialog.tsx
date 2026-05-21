@@ -38,8 +38,26 @@ import { Switch } from "@workspace/ui/components/switch"
 import { cn } from "@workspace/ui/lib/utils"
 import * as z from "zod"
 import type { AccountData } from "@/components/accounts/account-card"
+import type { PaletteColor } from "@/lib/palette"
+import { ColorPicker } from "@/components/color-picker"
 import { CurrencyPicker } from "@/components/currency-picker"
-import { paletteColor } from "@/lib/category-color"
+import { IconPicker } from "@/components/icon-picker"
+import { ICON_TOKENS, getIcon, pickRandomUnusedIcon } from "@/lib/icons"
+import {
+  PALETTE_TOKENS,
+  paletteColor,
+  pickRandomUnusedColor,
+} from "@/lib/palette"
+
+function asPaletteColor(s: string | null | undefined): PaletteColor | null {
+  return s != null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
+    ? (s as PaletteColor)
+    : null
+}
+
+function asKnownIcon(s: string | null | undefined): string | null {
+  return s != null && ICON_TOKENS.includes(s) ? s : null
+}
 
 type AccountType = "bank" | "cash" | "brokerage"
 
@@ -75,9 +93,8 @@ interface FormValues {
   currency: string
   balance: string
   isDefault: boolean
-  // UI-only stub until the accounts schema gains a color field. Tints the
-  // preview card + placeholder swatches; not sent in the submit payload.
   color: string
+  icon: string
 }
 
 const baseSchema = z.object({
@@ -89,7 +106,8 @@ const baseSchema = z.object({
   type: z.enum(["bank", "cash", "brokerage"]),
   balance: z.string(),
   isDefault: z.boolean(),
-  color: z.string(),
+  color: z.string().trim().min(1, "Pick a color").max(20),
+  icon: z.string().trim().min(1, "Pick an icon").max(50),
 })
 
 const createFormSchema = baseSchema.extend({
@@ -104,10 +122,14 @@ interface AccountFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   account?: AccountData | null
+  existingAccountColors?: ReadonlyArray<string | null>
+  existingAccountIcons?: ReadonlyArray<string | null>
   onSubmit: (data: {
     name: string
     type: string
     currency?: string
+    color?: string
+    icon?: string
     balance?: number
     isDefault?: boolean
   }) => Promise<void>
@@ -139,6 +161,8 @@ interface ModalBodyProps extends AccountFormDialogProps {
 
 function AccountModalBody({
   account,
+  existingAccountColors,
+  existingAccountIcons,
   onSubmit: onSubmitProp,
   onArchive,
   ctx,
@@ -148,6 +172,14 @@ function AccountModalBody({
 
   const schema = isEdit ? editFormSchema : createFormSchema
 
+  const initialColor: string =
+    asPaletteColor(account?.color) ??
+    pickRandomUnusedColor(existingAccountColors ?? [])
+
+  const initialIcon: string =
+    asKnownIcon(account?.icon) ??
+    pickRandomUnusedIcon(existingAccountIcons ?? [])
+
   const form = useForm({
     defaultValues: {
       name: account?.name ?? "",
@@ -155,7 +187,8 @@ function AccountModalBody({
       currency: account?.currency ?? "",
       balance: "",
       isDefault: account?.isDefault ?? false,
-      color: "orange",
+      color: initialColor,
+      icon: initialIcon,
     } satisfies FormValues,
     validators: {
       onChange: schema,
@@ -171,6 +204,8 @@ function AccountModalBody({
           name: value.name.trim(),
           type: value.type,
           ...(isEdit ? {} : { currency: value.currency }),
+          color: value.color,
+          icon: value.icon,
           ...(balanceNum !== undefined ? { balance: balanceNum } : {}),
           isDefault: value.isDefault,
         })
@@ -226,6 +261,7 @@ function AccountModalBody({
             }
             isDefault={values.isDefault}
             color={values.color}
+            icon={values.icon}
           />
         )}
       </form.Subscribe>
@@ -245,15 +281,24 @@ function AccountModalBody({
                   isInvalid && "border-destructive/45"
                 )}
               >
-                {/* Placeholders until color/icon API fields land. */}
-                <form.Subscribe selector={(s) => s.values.color}>
-                  {(color) => (
-                    <>
-                      <ColorPlaceholder color={color} />
-                      <IconPlaceholder color={color} />
-                    </>
+                <form.Field name="color">
+                  {(colorField) => (
+                    <ColorPicker
+                      value={asPaletteColor(colorField.state.value)}
+                      onChange={(v) => colorField.handleChange(v)}
+                      portalContainer={portalContainer}
+                    />
                   )}
-                </form.Subscribe>
+                </form.Field>
+                <form.Field name="icon">
+                  {(iconField) => (
+                    <IconPicker
+                      value={iconField.state.value}
+                      onChange={(v) => iconField.handleChange(v)}
+                      portalContainer={portalContainer}
+                    />
+                  )}
+                </form.Field>
                 <input
                   id={field.name}
                   name={field.name}
@@ -404,7 +449,10 @@ function AccountModalBody({
                         value={field.state.value}
                         onChange={(e) => {
                           const value = e.target.value.replace(",", ".")
-                          if (value === "" || /^\d{0,12}(\.\d{0,2})?$/.test(value))
+                          if (
+                            value === "" ||
+                            /^\d{0,12}(\.\d{0,2})?$/.test(value)
+                          )
                             field.handleChange(value)
                         }}
                         className="text-right text-base tabular-nums"
@@ -543,6 +591,7 @@ interface PreviewCardProps {
   balance: number
   isDefault: boolean
   color: string
+  icon: string
 }
 
 function PreviewCard({
@@ -552,11 +601,14 @@ function PreviewCard({
   balance,
   isDefault,
   color,
+  icon,
 }: PreviewCardProps) {
   const fg = paletteColor(color, { l: 0.78, c: 0.14 })
   const tint = paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 })
   const halo = paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 })
   const displayName = name || "Account name"
+  const resolved = getIcon(icon)
+  const IconComp = resolved?.component ?? IconCreditCard
   const formatted = balance.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -574,7 +626,7 @@ function PreviewCard({
           className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-foreground/4"
           style={{ color: fg, background: tint }}
         >
-          <IconCreditCard size={16} />
+          <IconComp size={16} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex h-4.5 items-center gap-1 text-[11px] text-muted-foreground lowercase">
@@ -613,41 +665,3 @@ function PreviewCard({
   )
 }
 
-function ColorPlaceholder({ color }: { color: string }) {
-  const swatch = paletteColor(color, { l: 0.7, c: 0.16 })
-  return (
-    <div
-      role="button"
-      aria-disabled="true"
-      tabIndex={-1}
-      aria-label="Color (coming soon)"
-      className="grid size-8 shrink-0 cursor-default place-items-center rounded-[9px] border border-border bg-transparent"
-    >
-      <span
-        className="size-[18px] rounded-full"
-        style={{
-          background: swatch,
-          outline: "1px solid rgb(0 0 0 / 0.1)",
-          outlineOffset: "-1px",
-        }}
-      />
-    </div>
-  )
-}
-
-function IconPlaceholder({ color }: { color: string }) {
-  const fg = paletteColor(color, { l: 0.78, c: 0.14 })
-  const tint = paletteColor(color, { l: 0.42, c: 0.1, a: 0.2 })
-  return (
-    <div
-      role="button"
-      aria-disabled="true"
-      tabIndex={-1}
-      aria-label="Icon (coming soon)"
-      className="grid size-8 shrink-0 cursor-default place-items-center rounded-[9px] border border-border"
-      style={{ color: fg, background: tint }}
-    >
-      <IconCreditCard size={16} />
-    </div>
-  )
-}

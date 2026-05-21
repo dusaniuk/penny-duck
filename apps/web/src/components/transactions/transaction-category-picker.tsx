@@ -16,8 +16,8 @@ import {
 import { useIsDark } from "@workspace/ui/hooks/use-is-dark"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Category } from "@workspace/api-contract"
-import { paletteColor } from "@/lib/category-color"
-import { getCategoryIcon } from "@/lib/category-icons"
+import { paletteColor } from "@/lib/palette"
+import { getIcon } from "@/lib/icons"
 
 // Lightness/chroma for category accents shifts per theme: pale colors read
 // on a dark surface, vivid darker colors read on a light surface.
@@ -77,8 +77,7 @@ export function TransactionCategoryPicker({
   }, [categories])
 
   const q = search.trim().toLowerCase()
-  const matches = (c: Category) =>
-    q === "" || c.name.toLowerCase().includes(q)
+  const matches = (c: Category) => q === "" || c.name.toLowerCase().includes(q)
 
   const gridCols = variant === "mobile" ? "grid-cols-2" : "grid-cols-3"
   const bodyMaxH = variant === "mobile" ? "max-h-[600px]" : "max-h-[540px]"
@@ -111,7 +110,7 @@ export function TransactionCategoryPicker({
         </Button>
       </div>
 
-      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pl-3 pr-3 [&_input]:text-base md:[&_input]:text-[13px] [&_input]:text-foreground [&_input]:placeholder:text-foreground/35">
+      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pr-3 pl-3 [&_input]:text-base [&_input]:text-foreground [&_input]:placeholder:text-foreground/35 md:[&_input]:text-[13px]">
         <InputGroupAddon align="inline-start" className="text-foreground/40">
           <IconSearch size={15} />
         </InputGroupAddon>
@@ -144,7 +143,7 @@ export function TransactionCategoryPicker({
         {q === "" && recentIds.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center">
-              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] uppercase text-foreground/45">
+              <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] text-foreground/45 uppercase">
                 <IconSparkles size={12} /> Recent
               </span>
             </div>
@@ -157,7 +156,7 @@ export function TransactionCategoryPicker({
                 const fg = paletteColor(c.color, fgOpts)
                 const bg = paletteColor(c.color, bgOpts)
                 const active = c.id === selectedId
-                const icon = getCategoryIcon(c.icon)
+                const icon = getIcon(c.icon)
                 return (
                   <button
                     key={c.id}
@@ -195,7 +194,7 @@ export function TransactionCategoryPicker({
             return null
           }
           const fg = paletteColor(parent.color, fgOpts)
-          const parentIcon = getCategoryIcon(parent.icon)
+          const parentIcon = getIcon(parent.icon)
           return (
             <div key={parent.id} className="flex flex-col gap-1.5">
               <div className="flex items-center">
@@ -224,13 +223,13 @@ export function TransactionCategoryPicker({
               {visibleChildren.length > 0 && (
                 <div
                   className={cn(
-                    "relative grid gap-1 pl-[22px] before:absolute before:left-[10px] before:top-1 before:bottom-1 before:w-px before:bg-foreground/[0.07] before:content-['']",
+                    "relative grid gap-1 pl-[22px] before:absolute before:top-1 before:bottom-1 before:left-[10px] before:w-px before:bg-foreground/[0.07] before:content-['']",
                     gridCols
                   )}
                 >
                   {visibleChildren.map((child) => {
                     const active = child.id === selectedId
-                    const childIcon = getCategoryIcon(child.icon)
+                    const childIcon = getIcon(child.icon)
                     const childFg = paletteColor(child.color, fgOpts)
                     const childBg = paletteColor(child.color, bgOpts)
                     return (

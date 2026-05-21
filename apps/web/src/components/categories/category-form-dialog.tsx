@@ -16,11 +16,11 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
-import { IconPicker } from "./icon-picker"
-import { ColorPicker } from "./color-picker"
 import type { Category, CategoryType } from "@workspace/api-contract"
-import type { CategoryColor } from "@/lib/category-color"
-import { PALETTE_TOKENS, pickRandomUnusedColor } from "@/lib/category-color"
+import type { PaletteColor } from "@/lib/palette"
+import { ColorPicker } from "@/components/color-picker"
+import { IconPicker } from "@/components/icon-picker"
+import { PALETTE_TOKENS, pickRandomUnusedColor } from "@/lib/palette"
 
 const TOP_LEVEL_VALUE = "TOP_LEVEL"
 
@@ -41,13 +41,13 @@ interface CategoryFormDialogProps {
     icon?: string
     type?: CategoryType
     parentId?: string | null
-    color?: CategoryColor
+    color?: PaletteColor
   }) => Promise<void>
 }
 
-function asKnownToken(s: string | null): CategoryColor | null {
+function asKnownToken(s: string | null): PaletteColor | null {
   return s !== null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
-    ? (s as CategoryColor)
+    ? (s as PaletteColor)
     : null
 }
 
@@ -67,7 +67,7 @@ export function CategoryFormDialog({
     useState<string>(TOP_LEVEL_VALUE)
   const [initialParentSelection, setInitialParentSelection] =
     useState<string>(TOP_LEVEL_VALUE)
-  const [color, setColor] = useState<CategoryColor | null>(null)
+  const [color, setColor] = useState<PaletteColor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -210,9 +210,7 @@ export function CategoryFormDialog({
 
             <Field>
               <FieldLabel>Icon</FieldLabel>
-              <div className="flex">
-                <IconPicker value={icon} onChange={setIcon} />
-              </div>
+              <IconPicker value={icon} onChange={setIcon} variant="row" />
             </Field>
 
             {showColorPicker && (
@@ -222,6 +220,7 @@ export function CategoryFormDialog({
                   value={color}
                   onChange={setColor}
                   disabled={loading}
+                  variant="row"
                 />
               </Field>
             )}

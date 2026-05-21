@@ -5,7 +5,7 @@ import {
   categoryColor,
   paletteColor,
   pickRandomUnusedColor,
-} from "./category-color"
+} from "./palette"
 import type { Category } from "@workspace/api-contract"
 
 const parent = (id: string, name: string, color: string | null): Category => ({

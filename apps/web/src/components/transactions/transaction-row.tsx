@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import type { Account, Category, Transaction } from "@workspace/api-contract"
-import { getCategoryIcon } from "@/lib/category-icons"
+import { getIcon } from "@/lib/icons"
 
 type AccountData = Account
 type CategoryData = Category
@@ -113,7 +113,7 @@ export function TransactionRow({
       <div className="flex items-center gap-2.5 overflow-hidden">
         <span className="flex size-5 shrink-0 items-center justify-center text-base">
           {(() => {
-            const resolved = getCategoryIcon(category?.icon ?? null)
+            const resolved = getIcon(category?.icon ?? null)
             if (resolved) return <resolved.component className="size-4" />
             return category?.icon ?? "📁"
           })()}

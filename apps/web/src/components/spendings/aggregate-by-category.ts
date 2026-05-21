@@ -1,5 +1,5 @@
 import type { Category, Transaction } from "@workspace/api-contract"
-import { NEUTRAL_COLOR, categoryColor } from "@/lib/category-color"
+import { NEUTRAL_COLOR, categoryColor } from "@/lib/palette"
 
 export interface CategorySpending {
   categoryId: string

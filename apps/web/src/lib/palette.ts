@@ -1,6 +1,6 @@
 import type { Category } from "@workspace/api-contract"
 
-export type CategoryColor =
+export type PaletteColor =
   | "red"
   | "coral"
   | "orange"
@@ -32,7 +32,7 @@ export type CategoryColor =
   | "neutral"
   | "stone"
 
-export const PALETTE_TOKENS: ReadonlyArray<CategoryColor> = [
+export const PALETTE_TOKENS: ReadonlyArray<PaletteColor> = [
   "red",
   "coral",
   "orange",
@@ -67,7 +67,7 @@ export const PALETTE_TOKENS: ReadonlyArray<CategoryColor> = [
 
 type Oklch = { l: number; c: number; h: number }
 
-const PALETTE: Record<CategoryColor, Oklch> = {
+const PALETTE: Record<PaletteColor, Oklch> = {
   red: { l: 0.65, c: 0.2, h: 25 },
   coral: { l: 0.7, c: 0.18, h: 15 },
   orange: { l: 0.7, c: 0.17, h: 50 },
@@ -113,7 +113,7 @@ function oklchCss({ l, c, h }: Oklch, a?: number): string {
     : `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h.toFixed(1)})`
 }
 
-function isKnownToken(s: string | null | undefined): s is CategoryColor {
+function isKnownToken(s: string | null | undefined): s is PaletteColor {
   return (
     s !== null &&
     s !== undefined &&
@@ -168,7 +168,7 @@ export function categoryColor(
 
 export function pickRandomUnusedColor(
   existing: ReadonlyArray<string | null>
-): CategoryColor {
+): PaletteColor {
   const used = new Set(existing.filter((c): c is string => c !== null))
   const free = PALETTE_TOKENS.filter((t) => !used.has(t))
   const pool = free.length > 0 ? free : PALETTE_TOKENS

@@ -1,10 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@workspace/ui/components/card"
+import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   ChartContainer,
   ChartTooltip,
@@ -59,7 +55,7 @@ export function NetWorthCard() {
   return (
     <Card className="h-full">
       <CardHeader className="hidden md:flex md:flex-row md:items-center md:pb-2">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs tracking-wider text-muted-foreground uppercase">
           Net worth · {current.homeCurrency}
           {current.pricesStale && (
             <span className="ml-2 text-[10px] text-muted-foreground">
@@ -71,20 +67,20 @@ export function NetWorthCard() {
 
       {/* Mobile header */}
       <CardHeader className="md:hidden">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs tracking-wider text-muted-foreground uppercase">
           Net worth
         </span>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <div>
-          <p className="font-mono text-5xl font-bold tabular-nums tracking-tight md:text-6xl">
+          <p className="font-mono text-5xl font-bold tracking-tight tabular-nums md:text-6xl">
             <span>{whole}</span>
             <span className="text-muted-foreground/50">.{fraction}</span>
           </p>
 
           {/* Mobile sub-line: total across N accounts */}
-          <p className="mt-2 text-xs uppercase tracking-wider text-muted-foreground md:hidden">
+          <p className="mt-2 text-xs tracking-wider text-muted-foreground uppercase md:hidden">
             {current.homeCurrency} · total across {current.accountsCount}{" "}
             account{current.accountsCount === 1 ? "" : "s"}
           </p>
@@ -98,13 +94,7 @@ export function NetWorthCard() {
           >
             <AreaChart accessibilityLayer data={history.points}>
               <defs>
-                <linearGradient
-                  id="net-worth-fill"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
+                <linearGradient id="net-worth-fill" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="0%"
                     stopColor="var(--color-total)"
@@ -158,14 +148,14 @@ export function NetWorthCard() {
                   key={a.id}
                   className="rounded-md border border-border/50 p-3"
                 >
-                  <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <p className="truncate text-[10px] tracking-wider text-muted-foreground uppercase">
                     {a.name}
                   </p>
                   <p className="font-mono text-base font-semibold tabular-nums">
                     {formatInt(a.homeBalance)}
                   </p>
                 </div>
-              ),
+              )
             )}
           </div>
         )}

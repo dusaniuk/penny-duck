@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { aggregateByCategory } from "./aggregate-by-category"
 import type { Category, Transaction } from "@workspace/api-contract"
-import { NEUTRAL_COLOR, categoryColor } from "@/lib/category-color"
+import { NEUTRAL_COLOR, categoryColor } from "@/lib/palette"
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {

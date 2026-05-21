@@ -35,11 +35,13 @@ const FLAG_COMPONENTS = Flags as unknown as Record<
 
 const POPULAR_CODE_SET = new Set<string>(POPULAR_CURRENCY_CODES)
 
-const POPULAR_ITEMS: Array<CurrencyInfo> = POPULAR_CURRENCY_CODES.map((code) => {
-  const item = CURRENCIES.find((c) => c.code === code)
-  if (!item) throw new Error(`Popular currency ${code} not in CURRENCIES`)
-  return item
-})
+const POPULAR_ITEMS: Array<CurrencyInfo> = POPULAR_CURRENCY_CODES.map(
+  (code) => {
+    const item = CURRENCIES.find((c) => c.code === code)
+    if (!item) throw new Error(`Popular currency ${code} not in CURRENCIES`)
+    return item
+  }
+)
 
 const REST_ITEMS: Array<CurrencyInfo> = CURRENCIES.filter(
   (c) => !POPULAR_CODE_SET.has(c.code)
@@ -90,7 +92,7 @@ export function CurrencyPicker({
         id={id}
         aria-invalid={invalid || undefined}
         className={cn(
-          "flex h-10 w-full items-center gap-2.5 rounded-[11px] border border-border bg-card px-2.5 text-left text-[13px] outline-none transition-colors hover:bg-card/80 focus-visible:border-primary/45 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive/45 [&>svg:last-child]:ml-auto",
+          "flex h-10 w-full items-center gap-2.5 rounded-[11px] border border-border bg-card px-2.5 text-left text-[13px] transition-colors outline-none hover:bg-card/80 focus-visible:border-primary/45 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive/45 [&>svg:last-child]:ml-auto",
           className
         )}
       >
@@ -173,7 +175,7 @@ function CurrencyFlag({ country, code }: CurrencyFlagProps) {
     return (
       <span
         aria-hidden="true"
-        className="block h-[18px] w-[26px] shrink-0 rounded-[4px] bg-foreground/8 ring-1 ring-inset ring-foreground/10"
+        className="block h-[18px] w-[26px] shrink-0 rounded-[4px] bg-foreground/8 ring-1 ring-foreground/10 ring-inset"
       />
     )
   }
@@ -181,13 +183,9 @@ function CurrencyFlag({ country, code }: CurrencyFlagProps) {
   return (
     <span
       aria-hidden="true"
-      className="block h-[18px] w-[26px] shrink-0 overflow-hidden rounded-[4px] ring-1 ring-inset ring-foreground/10"
+      className="block h-[18px] w-[26px] shrink-0 overflow-hidden rounded-[4px] ring-1 ring-foreground/10 ring-inset"
     >
-      <FlagComponent
-        title={code}
-        className="block size-full object-cover"
-      />
+      <FlagComponent title={code} className="block size-full object-cover" />
     </span>
   )
 }
-

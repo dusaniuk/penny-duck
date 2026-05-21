@@ -1,0 +1,1 @@
+ALTER TABLE "app"."accounts" ADD COLUMN "icon" varchar(50);
