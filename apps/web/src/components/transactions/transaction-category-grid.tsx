@@ -10,8 +10,6 @@ import { getIcon } from "@/lib/icons"
 // on a dark surface, vivid darker colors read on a light surface.
 const FG_OPTS_DARK = { l: 0.78, c: 0.14 } as const
 const FG_OPTS_LIGHT = { l: 0.5, c: 0.18 } as const
-const BG_OPTS_DARK = { l: 0.42, c: 0.1, a: 0.4 } as const
-const BG_OPTS_LIGHT = { l: 0.62, c: 0.16, a: 0.18 } as const
 
 interface TransactionCategoryGridProps {
   categories: Array<Category>
@@ -52,7 +50,6 @@ export function TransactionCategoryGrid({
 }: TransactionCategoryGridProps) {
   const isDark = useIsDark()
   const fgOpts = isDark ? FG_OPTS_DARK : FG_OPTS_LIGHT
-  const bgOpts = isDark ? BG_OPTS_DARK : BG_OPTS_LIGHT
 
   const byId = new Map(categories.map((c) => [c.id, c]))
   const children = categories.filter((c) => c.parentId !== null)
@@ -96,20 +93,14 @@ export function TransactionCategoryGrid({
           const active = c.id === selectedId
           const token = parentTokenFor(c, byId)
           const fg = paletteColor(token, fgOpts)
-          const bg = paletteColor(token, bgOpts)
           const icon = getIcon(c.icon)
           return (
             <SelectableSurface
               key={c.id}
-              selected={active}
               aria-pressed={active}
               onClick={() => onSelect(c.id)}
               className={CELL_LAYOUT}
-              style={
-                active
-                  ? { background: bg, color: fg, borderColor: fg }
-                  : undefined
-              }
+              style={active ? { color: fg, borderColor: fg } : undefined}
             >
               <span
                 className="grid size-[22px] shrink-0 place-items-center"
