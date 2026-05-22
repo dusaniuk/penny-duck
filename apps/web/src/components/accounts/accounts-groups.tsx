@@ -20,6 +20,7 @@ function formatInt(n: number): string {
 type Props = {
   accounts: Array<Account>
   homeCurrency: string
+  seriesByAccount: Map<string, Array<number>>
   onEdit: (a: AccountData) => void
   onSetDefault: (a: AccountData) => void
 }
@@ -27,6 +28,7 @@ type Props = {
 export function AccountsGroups({
   accounts,
   homeCurrency,
+  seriesByAccount,
   onEdit,
   onSetDefault,
 }: Props) {
@@ -85,6 +87,7 @@ export function AccountsGroups({
               <AccountCard
                 key={a.id}
                 account={a}
+                series={seriesByAccount.get(a.id)}
                 onEdit={onEdit}
                 onSetDefault={onSetDefault}
               />

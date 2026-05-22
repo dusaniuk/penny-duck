@@ -1,10 +1,10 @@
 import { HTTPException } from "hono/http-exception"
-import { eq, inArray, sql } from "drizzle-orm"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import { type Instrument } from "@workspace/api-contract"
-import { instruments } from "@workspace/db"
+import { instrumentPrices, instruments } from "@workspace/db"
 import { db } from "@/db"
 import { type InstrumentRow } from "../helpers/mappers"
-import { fetchQuotes, RateLimitedError, searchYahoo } from "./yahoo"
+import { fetchHistorical, fetchQuotes, RateLimitedError, searchYahoo } from "./yahoo"
 
 const STALENESS_MS = 15 * 60 * 1000
 
@@ -204,6 +204,89 @@ export async function getInstrument(symbol: string): Promise<Instrument> {
   const inst = await ensureInstrumentBySymbol(symbol)
   const { refreshed } = await refreshIfStale([inst])
   return toInstrumentResponse(refreshed[0] ?? inst)
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+function todayUTC(): Date {
+  const now = new Date()
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  )
+}
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+async function getLatestStoredDate(
+  instrumentId: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({ date: instrumentPrices.date })
+    .from(instrumentPrices)
+    .where(eq(instrumentPrices.instrumentId, instrumentId))
+    .orderBy(desc(instrumentPrices.date))
+    .limit(1)
+  return rows[0]?.date ?? null
+}
+
+async function backfillOne(
+  inst: InstrumentRow,
+  days: number,
+  today: Date,
+): Promise<void> {
+  const windowStart = new Date(today.getTime() - (days - 1) * ONE_DAY_MS)
+  const latest = await getLatestStoredDate(inst.id)
+  // Fresh enough: stored date is today or yesterday. Skip.
+  if (latest) {
+    const yesterday = isoDate(new Date(today.getTime() - ONE_DAY_MS))
+    if (latest >= yesterday) return
+  }
+
+  // Fetch from max(stored+1day, windowStart) to today.
+  const fromDate = latest
+    ? new Date(new Date(latest).getTime() + ONE_DAY_MS)
+    : windowStart
+  const period1 = fromDate < windowStart ? windowStart : fromDate
+  // Yahoo's period2 is exclusive of the day; add one day to include today.
+  const period2 = new Date(today.getTime() + ONE_DAY_MS)
+
+  try {
+    const points = await fetchHistorical(inst.symbol, period1, period2)
+    if (points.length === 0) return
+    await db
+      .insert(instrumentPrices)
+      .values(
+        points.map((p) => ({
+          instrumentId: inst.id,
+          date: p.date,
+          close: p.close,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [instrumentPrices.instrumentId, instrumentPrices.date],
+        set: { close: sql`excluded.close` },
+      })
+  } catch (err) {
+    if (err instanceof RateLimitedError) {
+      console.warn(`Yahoo rate-limited fetching history for ${inst.symbol}`)
+    } else {
+      console.warn(
+        `Yahoo chart failed for ${inst.symbol}: ${(err as Error).message}`,
+      )
+    }
+  }
+}
+
+export async function ensureHistoricalPrices(
+  instrumentIds: string[],
+  days: number,
+): Promise<void> {
+  if (instrumentIds.length === 0) return
+  const rows = await findInstrumentsByIds(instrumentIds)
+  const today = todayUTC()
+  await Promise.all(rows.map((row) => backfillOne(row, days, today)))
 }
 
 export async function refreshAllPricesForOrg(

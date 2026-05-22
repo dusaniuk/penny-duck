@@ -1,11 +1,11 @@
-import {  useMemo } from "react"
 import { IconChevronRight, IconCreditCard } from "@tabler/icons-react"
 import { useNavigate } from "@tanstack/react-router"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import { cn } from "@workspace/ui/lib/utils"
-import type {CSSProperties} from "react";
+import { useId } from "react"
+import type { CSSProperties } from "react"
 import type { Account } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
 import { paletteColor } from "@/lib/palette"
@@ -14,6 +14,7 @@ export type AccountData = Account
 
 interface AccountCardProps {
   account: AccountData
+  series: Array<number> | undefined
   onEdit: (account: AccountData) => void
   onSetDefault: (account: AccountData) => void
 }
@@ -25,41 +26,24 @@ function fmtMoney(n: number) {
   })
 }
 
-// TODO: replace seeded mock trend with real 30-day balance data once the
-// backend source is wired up (see plan in docs/superpowers).
-function fakeTrend(seed: string, points = 12): Array<number> {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
-  const out: Array<number> = []
-  let v = 0.5
-  for (let i = 0; i < points; i++) {
-    h = (h * 1103515245 + 12345) & 0x7fffffff
-    const drift = ((h % 1000) / 1000 - 0.5) * 0.22
-    v = Math.max(0.05, Math.min(0.95, v + drift))
-    out.push(v)
-  }
-  return out
-}
-
 function BalanceSparkline({
   color,
-  seed,
+  values,
   height = 32,
   className,
 }: {
   color: string
-  seed: string
+  values: Array<number>
   height?: number
   className?: string
 }) {
-  const pts = useMemo(() => fakeTrend(seed), [seed])
   const width = 200
-  const max = Math.max(...pts)
-  const min = Math.min(...pts)
+  const max = Math.max(...values)
+  const min = Math.min(...values)
   const span = Math.max(0.01, max - min)
-  const step = width / (pts.length - 1)
+  const step = width / Math.max(1, values.length - 1)
   const y = (v: number) => height - 2 - ((v - min) / span) * (height - 4)
-  const d = pts
+  const d = values
     .map(
       (v, i) =>
         `${i === 0 ? "M" : "L"} ${(i * step).toFixed(1)} ${y(v).toFixed(1)}`
@@ -67,9 +51,8 @@ function BalanceSparkline({
     .join(" ")
 
   const area = `${d} L ${width} ${height} L 0 ${height} Z`
-  const lastIdx = pts.length - 1
-  const lastY = y(pts[lastIdx])
-  const gradientId = `spk-${seed}`
+  const reactId = useId()
+  const gradientId = `spk-${reactId}`
 
   return (
     <svg
@@ -98,7 +81,6 @@ function BalanceSparkline({
         vectorEffect="non-scaling-stroke"
         aria-hidden
       />
-      <circle cx={lastIdx * step} cy={lastY} r="2.2" fill={color} aria-hidden />
     </svg>
   )
 }
@@ -119,7 +101,7 @@ function AccountIconChip({
 
   return (
     <span
-      className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-foreground/5 bg-[var(--chip-bg-l)] text-[var(--chip-fg-l)] dark:bg-[var(--chip-bg-d)] dark:text-[var(--chip-fg-d)]"
+      className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-foreground/5 bg-(--chip-bg-l) text-(--chip-fg-l) dark:bg-(--chip-bg-d) dark:text-(--chip-fg-d)"
       style={
         {
           "--chip-fg-l": fgLight,
@@ -136,6 +118,7 @@ function AccountIconChip({
 
 export function AccountCard({
   account,
+  series,
   onEdit,
   onSetDefault,
 }: AccountCardProps) {
@@ -218,7 +201,11 @@ export function AccountCard({
           </span>
         </p>
         <div className="space-y-1 transition-opacity duration-150 group-focus-within:opacity-15 group-hover:opacity-15">
-          <BalanceSparkline color={sparkColor} seed={account.id} />
+          {series && series.length > 1 ? (
+            <BalanceSparkline color={sparkColor} values={series} />
+          ) : (
+            <div className="h-8 w-full animate-pulse rounded bg-muted/60" />
+          )}
           <p className="font-mono text-[9.5px] tracking-widest text-muted-foreground/70 uppercase">
             last 30 days
           </p>

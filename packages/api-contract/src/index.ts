@@ -20,8 +20,12 @@ export {
   AccountUsageResponseSchema,
   CreateAccountSchema,
   UpdateAccountSchema,
+  AccountSeriesPointSchema,
+  AccountSeriesItemSchema,
+  AccountSeriesResponseSchema,
+  AccountSeriesQuerySchema,
 } from "./schemas/accounts"
-export type { Account, AccountUsageItem } from "./schemas/accounts"
+export type { Account, AccountUsageItem, AccountSeriesItem } from "./schemas/accounts"
 
 export {
   CategorySchema,

@@ -79,3 +79,32 @@ export async function searchYahoo(query: string): Promise<YahooSearchResult[]> {
     throw err
   }
 }
+
+export interface YahooHistoricalPoint {
+  date: string // YYYY-MM-DD
+  close: number
+}
+
+export async function fetchHistorical(
+  symbol: string,
+  from: Date,
+  to: Date,
+): Promise<YahooHistoricalPoint[]> {
+  try {
+    const result = (await yahoo.chart(symbol, {
+      period1: from,
+      period2: to,
+      interval: "1d",
+    })) as { quotes?: Array<{ date: Date; close: number | null }> }
+    const quotes = result.quotes ?? []
+    return quotes
+      .filter((q): q is { date: Date; close: number } => q.close != null)
+      .map((q) => ({
+        date: q.date.toISOString().slice(0, 10),
+        close: q.close,
+      }))
+  } catch (err: unknown) {
+    if (isRateLimited(err)) throw new RateLimitedError()
+    throw err
+  }
+}

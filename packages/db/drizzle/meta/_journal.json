@@ -148,6 +148,13 @@
       "when": 1779360401160,
       "tag": "0020_add-account-icon",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779434521770,
+      "tag": "0021_add-instrument-prices",
+      "breakpoints": true
     }
   ]
 }

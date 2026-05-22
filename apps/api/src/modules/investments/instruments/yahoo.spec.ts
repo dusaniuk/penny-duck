@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from "bun:test"
-import { quoteMock, searchMock } from "@/test/yahoo-mock"
-import { fetchQuotes, searchYahoo, RateLimitedError } from "./yahoo"
+import { chartMock, quoteMock, searchMock } from "@/test/yahoo-mock"
+import { fetchHistorical, fetchQuotes, searchYahoo, RateLimitedError } from "./yahoo"
 
 beforeEach(() => {
   quoteMock.mockReset()
   searchMock.mockReset()
+  chartMock.mockReset()
 })
 
 describe("fetchQuotes", () => {
@@ -92,5 +93,60 @@ describe("searchYahoo", () => {
       Object.assign(new Error("Too many"), { response: { status: 429 } })
     )
     await expect(searchYahoo("xyz")).rejects.toBeInstanceOf(RateLimitedError)
+  })
+})
+
+describe("fetchHistorical", () => {
+  it("maps chart quotes to {date, close}, skipping null closes", async () => {
+    chartMock.mockResolvedValue({
+      quotes: [
+        { date: new Date("2026-05-01T20:00:00Z"), close: 100.5 },
+        { date: new Date("2026-05-02T20:00:00Z"), close: null },
+        { date: new Date("2026-05-03T20:00:00Z"), close: 101.25 },
+      ],
+    })
+    const result = await fetchHistorical(
+      "AAPL",
+      new Date("2026-05-01"),
+      new Date("2026-05-04"),
+    )
+    expect(result).toEqual([
+      { date: "2026-05-01", close: 100.5 },
+      { date: "2026-05-03", close: 101.25 },
+    ])
+  })
+
+  it("returns empty array when chart returns no quotes", async () => {
+    chartMock.mockResolvedValue({ quotes: [] })
+    const result = await fetchHistorical(
+      "AAPL",
+      new Date("2026-05-01"),
+      new Date("2026-05-04"),
+    )
+    expect(result).toEqual([])
+  })
+
+  it("translates 429 into RateLimitedError", async () => {
+    chartMock.mockRejectedValue(
+      Object.assign(new Error("Too many"), { response: { status: 429 } }),
+    )
+    await expect(
+      fetchHistorical(
+        "AAPL",
+        new Date("2026-05-01"),
+        new Date("2026-05-04"),
+      ),
+    ).rejects.toBeInstanceOf(RateLimitedError)
+  })
+
+  it("rethrows other errors", async () => {
+    chartMock.mockRejectedValue(new Error("network"))
+    await expect(
+      fetchHistorical(
+        "AAPL",
+        new Date("2026-05-01"),
+        new Date("2026-05-04"),
+      ),
+    ).rejects.toThrow("network")
   })
 })

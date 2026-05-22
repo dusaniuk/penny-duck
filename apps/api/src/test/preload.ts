@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { resolve } from "node:path"
 import { mock } from "bun:test"
-import { quoteMock, searchMock } from "./yahoo-mock"
+import { quoteMock, searchMock, chartMock } from "./yahoo-mock"
 
 process.env.NODE_ENV ??= "test"
 
@@ -24,6 +24,9 @@ mock.module("yahoo-finance2", () => ({
     }
     search(...args: unknown[]) {
       return searchMock(...args)
+    }
+    chart(...args: unknown[]) {
+      return chartMock(...args)
     }
   },
 }))

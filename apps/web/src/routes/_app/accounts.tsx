@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
 import { createFileRoute, getRouteApi } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
@@ -38,6 +38,23 @@ function AccountsPage() {
     },
   })
   const accounts = data ?? []
+
+  const { data: seriesData } = useQuery({
+    queryKey: ["accounts", "series", 30],
+    queryFn: async () => {
+      const res = await api.accounts.series.$get({ query: { days: "30" } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+
+  const seriesByAccount = useMemo(() => {
+    const map = new Map<string, Array<number>>()
+    for (const item of seriesData ?? []) {
+      map.set(item.accountId, item.points.map((p) => p.balance))
+    }
+    return map
+  }, [seriesData])
 
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
@@ -194,6 +211,7 @@ function AccountsPage() {
         <AccountsGroups
           accounts={accounts}
           homeCurrency={user.homeCurrency}
+          seriesByAccount={seriesByAccount}
           onEdit={handleEdit}
           onSetDefault={handleSetDefault}
         />

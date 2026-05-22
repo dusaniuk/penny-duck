@@ -40,5 +40,23 @@ export const AccountUsageItemSchema = z.object({
 
 export const AccountUsageResponseSchema = z.array(AccountUsageItemSchema)
 
+export const AccountSeriesPointSchema = z.object({
+  date: z.string(),
+  balance: z.number(),
+})
+
+export const AccountSeriesItemSchema = z.object({
+  accountId: z.uuid(),
+  currency: z.string(),
+  points: z.array(AccountSeriesPointSchema),
+})
+
+export const AccountSeriesResponseSchema = z.array(AccountSeriesItemSchema)
+
+export const AccountSeriesQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(90).default(30),
+})
+
 export type Account = z.infer<typeof AccountSchema>
 export type AccountUsageItem = z.infer<typeof AccountUsageItemSchema>
+export type AccountSeriesItem = z.infer<typeof AccountSeriesItemSchema>

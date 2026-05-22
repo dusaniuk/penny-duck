@@ -2,6 +2,7 @@ import { Hono } from "hono"
 import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import {
+  AccountSeriesQuerySchema,
   CreateAccountSchema,
   UpdateAccountSchema,
 } from "@workspace/api-contract"
@@ -16,6 +17,7 @@ import {
   setDefaultAccount,
   updateAccount,
 } from "./service"
+import { computeAccountSeries } from "./series"
 
 const IdParamSchema = z.object({ id: z.uuid() })
 
@@ -29,6 +31,16 @@ export const accountsRoutes = new Hono<AuthedEnv>()
   .get("/usage", async (c) => {
     const user = c.get("user")
     const result = await getAccountUsage(user.organizationId)
+    return c.json(result)
+  })
+  .get("/series", zValidator("query", AccountSeriesQuerySchema), async (c) => {
+    const user = c.get("user")
+    const { days } = c.req.valid("query")
+    const result = await computeAccountSeries(
+      user.organizationId,
+      user.sub,
+      days,
+    )
     return c.json(result)
   })
   .post("/", zValidator("json", CreateAccountSchema), async (c) => {
