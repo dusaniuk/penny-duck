@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, getRouteApi } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/button"
 import type { InferRequestType } from "hono/client"
@@ -9,6 +9,7 @@ import type { AccountSubmitData } from "@/components/accounts/account-form-dialo
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
+import { AccountsGroups } from "@/components/accounts/accounts-groups"
 import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
 import { api, queryClient } from "@/lib/api"
 
@@ -24,7 +25,10 @@ export const Route = createFileRoute("/_app/accounts")({
   component: AccountsPage,
 })
 
+const appRouteApi = getRouteApi("/_app")
+
 function AccountsPage() {
+  const { user } = appRouteApi.useRouteContext()
   const { data, isLoading: loading } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
@@ -71,6 +75,15 @@ function AccountsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
+  const setDefaultMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.accounts[":id"].default.$put({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
+
   function handleOpenCreate() {
     setEditAccount(null)
     setPendingType(null)
@@ -81,6 +94,16 @@ function AccountsPage() {
     setEditAccount(null)
     setPendingType(type)
     setFormOpen(true)
+  }
+
+  function handleEdit(account: AccountData) {
+    setPendingType(null)
+    setEditAccount(account)
+    setFormOpen(true)
+  }
+
+  async function handleSetDefault(account: AccountData) {
+    await setDefaultMutation.mutateAsync(account.id)
   }
 
   async function handleOpenDelete(account: AccountData) {
@@ -167,7 +190,14 @@ function AccountsPage() {
           onAdd={handleOpenCreate}
           onAddWithType={handleQuickPick}
         />
-      ) : null}
+      ) : (
+        <AccountsGroups
+          accounts={accounts}
+          homeCurrency={user.homeCurrency}
+          onEdit={handleEdit}
+          onSetDefault={handleSetDefault}
+        />
+      )}
 
       <AccountFormDialog
         open={formOpen}
