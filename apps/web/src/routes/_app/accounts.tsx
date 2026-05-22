@@ -51,7 +51,10 @@ function AccountsPage() {
   const seriesByAccount = useMemo(() => {
     const map = new Map<string, Array<number>>()
     for (const item of seriesData ?? []) {
-      map.set(item.accountId, item.points.map((p) => p.balance))
+      map.set(
+        item.accountId,
+        item.points.map((p) => p.balance)
+      )
     }
     return map
   }, [seriesData])
@@ -182,8 +185,7 @@ function AccountsPage() {
         </div>
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          variant={isEmpty ? "outline" : "default"}
           onClick={handleOpenCreate}
         >
           <IconPlus />
