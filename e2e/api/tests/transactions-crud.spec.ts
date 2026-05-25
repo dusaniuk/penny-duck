@@ -11,10 +11,10 @@ async function setupAccountAndCategory(request: any) {
   })
   const account = await accRes.json()
 
-  const catRes = await request.get("/categories")
-  const categories = await catRes.json()
-  // Use first available category (auto-seeded on signup)
-  const category = categories[0]
+  const catRes = await request.post("/categories", {
+    data: { name: "Groceries", color: "red" },
+  })
+  const category = await catRes.json()
 
   return { account, category }
 }
@@ -36,25 +36,9 @@ async function waitForBalance(
   return body.balance
 }
 
-async function waitForCategories(
-  request: any,
-  expectedCount: number,
-  maxRetries = 10,
-): Promise<any[]> {
-  for (let i = 0; i < maxRetries; i++) {
-    const res = await request.get("/categories")
-    const body = await res.json()
-    if (body.length >= expectedCount) return body
-    await new Promise((r) => setTimeout(r, 200))
-  }
-  const res = await request.get("/categories")
-  return res.json()
-}
-
 test.describe("Transactions CRUD", () => {
   test.beforeEach(async ({ request }) => {
     await signupAndLogin(request)
-    await waitForCategories(request, 1)
   })
 
   test("creates an expense transaction", async ({ request }) => {
@@ -353,7 +337,6 @@ test.describe("Transactions CRUD", () => {
 test.describe("Transfers", () => {
   test.beforeEach(async ({ request }) => {
     await signupAndLogin(request)
-    await waitForCategories(request, 1)
   })
 
   test("creates a same-currency transfer", async ({ request }) => {

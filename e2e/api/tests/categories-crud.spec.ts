@@ -1,18 +1,12 @@
 import { test, expect } from "@playwright/test"
 import { signupAndLogin } from "../../shared/factories"
 
-async function waitForCategories(
+async function createCategory(
   request: any,
-  expectedCount: number,
-  maxRetries = 10,
-): Promise<any[]> {
-  for (let i = 0; i < maxRetries; i++) {
-    const res = await request.get("/categories")
-    const body = await res.json()
-    if (body.length >= expectedCount) return body
-    await new Promise((r) => setTimeout(r, 200))
-  }
-  const res = await request.get("/categories")
+  data: Record<string, unknown>,
+): Promise<any> {
+  const res = await request.post("/categories", { data })
+  expect(res.status()).toBe(201)
   return res.json()
 }
 
@@ -21,30 +15,10 @@ test.describe("Categories CRUD", () => {
     await signupAndLogin(request)
   })
 
-  test("lists default seeded categories after signup", async ({ request }) => {
-    // Wait for async seeding to complete
-    const categories = await waitForCategories(request, 28)
-    expect(categories.length).toBe(28)
-  })
-
-  test("seeded categories have correct hierarchy", async ({ request }) => {
-    const categories = await waitForCategories(request, 28)
-
-    const parents = categories.filter(
-      (c: { parentId: string | null }) => c.parentId === null
-    )
-    const children = categories.filter(
-      (c: { parentId: string | null }) => c.parentId !== null
-    )
-
-    expect(parents.length).toBe(7)
-    expect(children.length).toBe(21)
-
-    // Every child's parentId should be a valid parent
-    const parentIds = new Set(parents.map((p: { id: string }) => p.id))
-    for (const child of children) {
-      expect(parentIds.has(child.parentId)).toBe(true)
-    }
+  test("starts with no categories after signup", async ({ request }) => {
+    const res = await request.get("/categories")
+    const categories = await res.json()
+    expect(categories.length).toBe(0)
   })
 
   test("creates a top-level category", async ({ request }) => {
@@ -60,10 +34,10 @@ test.describe("Categories CRUD", () => {
   })
 
   test("creates a subcategory", async ({ request }) => {
-    const categories = await waitForCategories(request, 28)
-    const parent = categories.find(
-      (c: { parentId: string | null }) => c.parentId === null
-    )
+    const parent = await createCategory(request, {
+      name: "Parent",
+      color: "red",
+    })
 
     const res = await request.post("/categories", {
       data: { name: "My Subcategory", parentId: parent.id },
@@ -77,13 +51,17 @@ test.describe("Categories CRUD", () => {
   test("rejects subcategory under a subcategory (max depth)", async ({
     request,
   }) => {
-    const categories = await waitForCategories(request, 28)
-    const subcategory = categories.find(
-      (c: { parentId: string | null }) => c.parentId !== null
-    )
+    const parent = await createCategory(request, {
+      name: "Parent",
+      color: "red",
+    })
+    const child = await createCategory(request, {
+      name: "Child",
+      parentId: parent.id,
+    })
 
     const res = await request.post("/categories", {
-      data: { name: "Too Deep", parentId: subcategory.id },
+      data: { name: "Too Deep", parentId: child.id },
     })
 
     expect(res.status()).toBe(400)
@@ -101,9 +79,10 @@ test.describe("Categories CRUD", () => {
   })
 
   test("updates a category name", async ({ request }) => {
-    const listRes = await request.get("/categories")
-    const categories = await listRes.json()
-    const category = categories[0]
+    const category = await createCategory(request, {
+      name: "Original",
+      color: "red",
+    })
 
     const res = await request.patch(`/categories/${category.id}`, {
       data: { name: "Renamed" },
@@ -115,9 +94,10 @@ test.describe("Categories CRUD", () => {
   })
 
   test("updates a category icon", async ({ request }) => {
-    const listRes = await request.get("/categories")
-    const categories = await listRes.json()
-    const category = categories[0]
+    const category = await createCategory(request, {
+      name: "WithIcon",
+      color: "red",
+    })
 
     const res = await request.patch(`/categories/${category.id}`, {
       data: { icon: "star" },
@@ -139,9 +119,6 @@ test.describe("Categories CRUD", () => {
   })
 
   test("deleting parent cascades subcategories", async ({ request }) => {
-    // Wait for seeding to complete first
-    await waitForCategories(request, 28)
-
     // Create parent
     const parentRes = await request.post("/categories", {
       data: { name: "Parent To Delete", color: "red" },

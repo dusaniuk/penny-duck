@@ -105,21 +105,17 @@ test.describe("Accounts CRUD", () => {
     })
     const acc = await accRes.json()
 
-    // Wait for seeded categories
-    let cats: Array<{ id: string }> = []
-    for (let i = 0; i < 10; i++) {
-      const catRes = await request.get("/categories")
-      cats = await catRes.json()
-      if (cats.length > 0) break
-      await new Promise((r) => setTimeout(r, 200))
-    }
+    const catRes = await request.post("/categories", {
+      data: { name: "Groceries", color: "red" },
+    })
+    const category = await catRes.json()
 
     await request.post("/transactions", {
       data: {
         accountId: acc.id,
         type: "expense",
         amount: 50,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       },
     })

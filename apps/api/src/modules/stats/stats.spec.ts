@@ -12,7 +12,7 @@ import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
 import { createTransaction } from "@/modules/transactions/service"
-import { listCategories } from "@/modules/categories/service"
+import { createCategory } from "@/modules/categories/service"
 import {
   closeTestApp,
   createTestApp,
@@ -100,8 +100,15 @@ describe("GET /stats/monthly-summary", () => {
       currency: "UAH",
       balance: 10000,
     })
-    const categories = await listCategories(organizationId)
-    const categoryId = categories[0].id
+    const category = await createCategory({
+      organizationId,
+      name: "Groceries",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
+    const categoryId = category.id
 
     await createTransaction({
       organizationId,

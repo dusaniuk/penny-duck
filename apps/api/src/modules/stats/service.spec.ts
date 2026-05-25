@@ -18,7 +18,7 @@ import {
   createTransaction,
   createTransfer,
 } from "@/modules/transactions/service"
-import { listCategories } from "@/modules/categories/service"
+import { createCategory } from "@/modules/categories/service"
 import { getMonthlySummary } from "./service"
 
 let organizationId: string
@@ -59,8 +59,15 @@ describe("getMonthlySummary", () => {
       currency: "UAH",
       balance: 10000,
     })
-    const categories = await listCategories(organizationId)
-    const categoryId = categories[0].id
+    const category = await createCategory({
+      organizationId,
+      name: "Groceries",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
+    const categoryId = category.id
 
     await createTransaction({
       organizationId,

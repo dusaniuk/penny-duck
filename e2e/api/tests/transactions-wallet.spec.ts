@@ -6,18 +6,13 @@ import { createAccountData, signupAndLogin } from "../../shared/factories"
 // pocket is created, transactions and transfers against it behave exactly like
 // against a standalone account — these tests pin that down end-to-end.
 
-async function waitForCategories(
+async function createCategory(
   request: APIRequestContext,
-  expectedCount: number,
-  maxRetries = 10,
-): Promise<Array<{ id: string }>> {
-  for (let i = 0; i < maxRetries; i++) {
-    const res = await request.get("/categories")
-    const body = await res.json()
-    if (body.length >= expectedCount) return body
-    await new Promise((r) => setTimeout(r, 200))
-  }
-  const res = await request.get("/categories")
+): Promise<{ id: string }> {
+  const res = await request.post("/categories", {
+    data: { name: "Groceries", color: "red" },
+  })
+  expect(res.status()).toBe(201)
   return res.json()
 }
 
@@ -54,7 +49,6 @@ function pocketByCurrency(
 test.describe("Transactions against wallet pockets", () => {
   test.beforeEach(async ({ request }) => {
     await signupAndLogin(request)
-    await waitForCategories(request, 1)
   })
 
   test("records an expense against a pocket and updates that pocket's balance", async ({
@@ -65,14 +59,14 @@ test.describe("Transactions against wallet pockets", () => {
       { currency: "EUR", balance: 200 },
     ])
     const usdPocket = pocketByCurrency(wallet, "USD")
-    const cats = await waitForCategories(request, 1)
+    const category = await createCategory(request)
 
     const txRes = await request.post("/transactions", {
       data: {
         accountId: usdPocket.accountId,
         type: "expense",
         amount: 75,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       },
     })
@@ -91,14 +85,14 @@ test.describe("Transactions against wallet pockets", () => {
       { currency: "USD", balance: 100 },
     ])
     const usdPocket = pocketByCurrency(wallet, "USD")
-    const cats = await waitForCategories(request, 1)
+    const category = await createCategory(request)
 
     const txRes = await request.post("/transactions", {
       data: {
         accountId: usdPocket.accountId,
         type: "income",
         amount: 250,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       },
     })
@@ -115,14 +109,14 @@ test.describe("Transactions against wallet pockets", () => {
       { currency: "USD", balance: 500 },
     ])
     const usdPocket = pocketByCurrency(wallet, "USD")
-    const cats = await waitForCategories(request, 1)
+    const category = await createCategory(request)
 
     const txRes = await request.post("/transactions", {
       data: {
         accountId: usdPocket.accountId,
         type: "expense",
         amount: 100,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       },
     })
@@ -142,7 +136,6 @@ test.describe("Transactions against wallet pockets", () => {
 test.describe("Transfers involving wallet pockets", () => {
   test.beforeEach(async ({ request }) => {
     await signupAndLogin(request)
-    await waitForCategories(request, 1)
   })
 
   test("transfers from a pocket to a standalone account (same currency)", async ({

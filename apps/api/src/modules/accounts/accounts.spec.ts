@@ -14,7 +14,7 @@ import { db } from "@/db"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { generateInviteCodeService } from "@/modules/auth/service"
-import { listCategories } from "@/modules/categories/service"
+import { createCategory } from "@/modules/categories/service"
 import { createTransaction } from "@/modules/transactions/service"
 import { quoteMock } from "@/test/yahoo-mock"
 import {
@@ -256,14 +256,21 @@ describe("Accounts", () => {
       balance: 1000,
     })
 
-    const categories = await listCategories(organizationId)
+    const category = await createCategory({
+      organizationId,
+      name: "Groceries",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
 
     await createTransaction({
       organizationId,
       accountId: account.id,
       type: "expense",
       amount: 50,
-      categoryId: categories[0].id,
+      categoryId: category.id,
       date: new Date(),
       madeById: userId,
     })

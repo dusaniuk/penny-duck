@@ -85,13 +85,13 @@ describe("Auth", () => {
     expect(result.message).toBe("Account created successfully")
   })
 
-  it("signup seeds default categories", async () => {
+  it("signup does not seed any categories", async () => {
     const result = await signupUser()
     const { listCategories } = await import(
       "@/modules/categories/service"
     )
     const categories = await listCategories(result.accessToken.organizationId)
-    expect(categories.length).toBeGreaterThan(0)
+    expect(categories.length).toBe(0)
   })
 
   it("signs up then logs in with correct credentials", async () => {

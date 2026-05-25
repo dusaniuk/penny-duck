@@ -21,7 +21,6 @@ import {
   rotateRefreshToken,
   signup,
 } from "./core/auth"
-import { seedDefaultCategories } from "@/modules/categories/service"
 
 export interface SignupInput {
   name: string
@@ -34,7 +33,7 @@ export async function signupService(
   input: SignupInput,
 ): Promise<{ message: string }> {
   try {
-    const result = await signup(input, {
+    await signup(input, {
       findUserByEmail: async (email) => {
         const rows = await db
           .select({ id: users.id })
@@ -82,9 +81,6 @@ export async function signupService(
       },
     })
 
-    if (result) {
-      await seedDefaultCategories(result.organizationId)
-    }
     return { message: "Account created successfully" }
   } catch (err) {
     if (err instanceof WeakPasswordError) {

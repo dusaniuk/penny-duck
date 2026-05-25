@@ -91,9 +91,9 @@ describe("Categories — auth", () => {
 })
 
 describe("Categories", () => {
-  it("seeds default categories on signup", async () => {
+  it("starts with no categories after signup", async () => {
     const categories = await listCategoriesHttp()
-    expect(categories.length).toBeGreaterThan(0)
+    expect(categories.length).toBe(0)
   })
 
   it("creates a custom top-level category with a color", async () => {

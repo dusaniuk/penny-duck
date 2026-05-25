@@ -16,7 +16,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
 import { createWallet } from "@/modules/wallets/service"
 import { createTransaction } from "@/modules/transactions/service"
-import { listCategories } from "@/modules/categories/service"
+import { createCategory } from "@/modules/categories/service"
 import {
   closeTestApp,
   createTestApp,
@@ -178,8 +178,15 @@ describe("GET /stats/net-worth", () => {
       currency: "UAH",
       balance: 1000,
     })
-    const categories = await listCategories(organizationId)
-    const categoryId = categories[0].id
+    const category = await createCategory({
+      organizationId,
+      name: "Groceries",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
+    const categoryId = category.id
 
     // Add a 500 income this month → current cash = 1500.
     await createTransaction({

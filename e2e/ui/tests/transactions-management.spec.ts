@@ -34,20 +34,19 @@ async function getFirstCategory(
   page: any,
   type: "expense" | "income" = "expense",
 ) {
-  // Only return leaf categories: parents render in the picker as section
-  // headers and aren't clickable as a transaction category.
-  const isLeaf = (c: { type: string; parentId: string | null }) =>
-    c.type === type && c.parentId !== null
-  for (let i = 0; i < 10; i++) {
-    const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
-    const categories = await res.json()
-    const match = categories.find(isLeaf)
-    if (match) return match
-    await new Promise((r) => setTimeout(r, 300))
-  }
-  const res = await page.request.get(`${env.WEB_BASE_URL}/api/categories`)
-  const all = await res.json()
-  return all.find(isLeaf) ?? all[0]
+  // Only leaf categories are selectable as a transaction category; parents
+  // render in the picker as section headers. Create a parent + child of the
+  // requested type and return the leaf.
+  const parentRes = await page.request.post(
+    `${env.WEB_BASE_URL}/api/categories`,
+    { data: { name: `${type} parent`, type, color: "red" } },
+  )
+  const parent = await parentRes.json()
+  const childRes = await page.request.post(
+    `${env.WEB_BASE_URL}/api/categories`,
+    { data: { name: `${type} leaf`, parentId: parent.id, icon: "cart" } },
+  )
+  return childRes.json()
 }
 
 test.describe("Transactions management", () => {

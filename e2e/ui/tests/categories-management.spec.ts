@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test"
+import { env } from "../../shared/env"
 import { signupAndLoginViaPage } from "../../shared/factories"
 
 function expensesSection(page: Page) {
@@ -24,21 +25,24 @@ test.describe("Categories management", () => {
     ).toBeVisible()
   })
 
-  test("shows seeded default categories after signup", async ({ page }) => {
+  test("shows empty categories page after signup", async ({ page }) => {
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
 
-    await expect(page.getByText("Food & Drinks")).toBeVisible({
-      timeout: 10_000,
-    })
+    // No categories are seeded; the user starts from an empty list.
+    await expect(
+      page.getByRole("heading", { name: "Expenses" })
+    ).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole("heading", { name: "Income" })).toBeVisible()
+    await expect(page.getByText("Food & Drinks")).toHaveCount(0)
   })
 
   test("creates a new parent category", async ({ page }) => {
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
-    await expect(page.getByText("Food & Drinks")).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(
+      page.getByRole("heading", { name: "Expenses" })
+    ).toBeVisible({ timeout: 10_000 })
 
     await expensesSection(page)
       .getByRole("button", { name: "Add Category" })
@@ -53,6 +57,11 @@ test.describe("Categories management", () => {
   })
 
   test("creates a subcategory via inline add", async ({ page }) => {
+    // Seed a parent to add a subcategory under (no categories exist by default).
+    await page.request.post(`${env.WEB_BASE_URL}/api/categories`, {
+      data: { name: "Food & Drinks", type: "expense", color: "red" },
+    })
+
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
     await expect(page.getByText("Food & Drinks")).toBeVisible({
@@ -80,9 +89,9 @@ test.describe("Categories management", () => {
   test("edits a parent category", async ({ page }) => {
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
-    await expect(page.getByText("Food & Drinks")).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(
+      page.getByRole("heading", { name: "Expenses" })
+    ).toBeVisible({ timeout: 10_000 })
 
     // Create a custom category to edit
     await expensesSection(page)
@@ -112,9 +121,9 @@ test.describe("Categories management", () => {
   test("deletes a parent category", async ({ page }) => {
     await page.goto("/categories")
     await page.waitForLoadState("networkidle")
-    await expect(page.getByText("Food & Drinks")).toBeVisible({
-      timeout: 10_000,
-    })
+    await expect(
+      page.getByRole("heading", { name: "Expenses" })
+    ).toBeVisible({ timeout: 10_000 })
 
     // Create a custom category to delete
     await expensesSection(page)

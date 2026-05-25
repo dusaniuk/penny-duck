@@ -11,7 +11,7 @@ import type { Account, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import { listCategories } from "@/modules/categories/service"
+import { createCategory } from "@/modules/categories/service"
 import {
   createAccount,
   getAccount,
@@ -67,8 +67,15 @@ beforeEach(async () => {
   })
   accountId = account.id
 
-  const categories = await listCategories(organizationId)
-  categoryId = categories[0].id
+  const category = await createCategory({
+    organizationId,
+    name: "Groceries",
+    parentId: null,
+    icon: "cart",
+    type: "expense",
+    color: "red",
+  })
+  categoryId = category.id
 })
 
 interface CreateTxBody {

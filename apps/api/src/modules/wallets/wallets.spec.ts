@@ -47,6 +47,20 @@ function createWalletHttp(body: {
   })
 }
 
+async function createCategoryHttp() {
+  const res = await honoApp.request("/categories", {
+    method: "POST",
+    headers: { cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      name: "Groceries",
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    }),
+  })
+  return res.json()
+}
+
 beforeAll(async () => {
   await createTestApp()
 })
@@ -178,10 +192,7 @@ describe("DELETE /accounts/:id (wallet)", () => {
       })
     ).json()
     const pocket = created.pockets[0]
-    const catsRes = await honoApp.request("/categories", {
-      headers: { cookie },
-    })
-    const cats = await catsRes.json()
+    const category = await createCategoryHttp()
 
     await honoApp.request("/transactions", {
       method: "POST",
@@ -190,7 +201,7 @@ describe("DELETE /accounts/:id (wallet)", () => {
         accountId: pocket.accountId,
         type: "expense",
         amount: 10,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       }),
     })
@@ -275,10 +286,7 @@ describe("DELETE /accounts/:id/pockets/:currency", () => {
       })
     ).json()
     const pocket = created.pockets[0]
-    const catsRes = await honoApp.request("/categories", {
-      headers: { cookie },
-    })
-    const cats = await catsRes.json()
+    const category = await createCategoryHttp()
     await honoApp.request("/transactions", {
       method: "POST",
       headers: { cookie, "content-type": "application/json" },
@@ -286,7 +294,7 @@ describe("DELETE /accounts/:id/pockets/:currency", () => {
         accountId: pocket.accountId,
         type: "expense",
         amount: 10,
-        categoryId: cats[0].id,
+        categoryId: category.id,
         date: new Date().toISOString(),
       }),
     })
