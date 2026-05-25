@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { PageHeader } from "@/components/page-header"
 
 export const Route = createFileRoute("/_app/categories")({
   staticData: { breadcrumb: "Categories" },
@@ -8,9 +9,11 @@ export const Route = createFileRoute("/_app/categories")({
 function CategoriesPage() {
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-semibold">Categories</h1>
-      </div>
+      <PageHeader
+        eyebrow="Categories"
+        title="Tag your money"
+        description="Group transactions under the labels that mean something to you."
+      />
     </div>
   )
 }

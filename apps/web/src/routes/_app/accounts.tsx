@@ -16,6 +16,7 @@ import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { AccountsGroups } from "@/components/accounts/accounts-groups"
 import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
+import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
 import { leafAccountsOf, walletsOf } from "@/lib/accounts"
 
@@ -315,25 +316,20 @@ function AccountsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest text-primary uppercase">
-            <span className="size-1.5 rounded-full bg-primary" />
-            Accounts
-          </p>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
-            Where your money lives
-          </h1>
-        </div>
-        <Button
-          type="button"
-          variant={isEmpty ? "outline" : "default"}
-          onClick={handleOpenCreate}
-        >
-          <IconPlus />
-          New account
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Accounts"
+        title="Where your money lives"
+        action={
+          <Button
+            type="button"
+            variant={isEmpty ? "outline" : "default"}
+            onClick={handleOpenCreate}
+          >
+            <IconPlus />
+            New account
+          </Button>
+        }
+      />
 
       {hasContent && (
         <AccountsNetWorthCard accounts={standaloneAccounts} wallets={wallets} />
