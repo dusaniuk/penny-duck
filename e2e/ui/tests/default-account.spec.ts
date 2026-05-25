@@ -38,10 +38,16 @@ test.describe("Default account", () => {
     const card = page
       .locator("[data-slot=card]")
       .filter({ hasText: target.name })
-    await card.getByRole("button").first().click()
-    await page.getByRole("menuitem", { name: "Set as default" }).click()
+    // "Set default" is a hover-revealed action on the card (desktop).
+    await card.scrollIntoViewIfNeeded()
+    await card.hover()
+    await card.getByRole("button", { name: "Set default", exact: true }).click()
 
-    await expect(card.getByText("Default", { exact: true })).toBeVisible()
+    // The card renders the badge in both mobile and desktop layouts; only the
+    // desktop one is visible at this viewport.
+    await expect(
+      card.getByText("Default", { exact: true }).filter({ visible: true })
+    ).toBeVisible()
 
     await page.goto("/transactions")
     await page.waitForLoadState("networkidle")
