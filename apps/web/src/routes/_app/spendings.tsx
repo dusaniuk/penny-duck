@@ -1,15 +1,15 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconX } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
-  Account,
   Category,
   Member,
   Transaction,
 } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
+import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { MonthNavigator } from "@/components/spendings/month-navigator"
 import { SpendingsDonutChart } from "@/components/spendings/spendings-donut-chart"
 import { aggregateByCategory } from "@/components/spendings/aggregate-by-category"
@@ -58,7 +58,8 @@ function SpendingsPage() {
       return res.json()
     },
   })
-  const accounts: Array<Account> = accountsData ?? []
+  const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
+  const wallets = walletsOf(accountsData)
 
   const { data: meData } = useQuery({
     queryKey: ["users", "me"],
@@ -298,6 +299,7 @@ function SpendingsPage() {
         }}
         transaction={editTransaction}
         accounts={accounts}
+        wallets={wallets}
         categories={categories}
         members={members}
         currentUserId={currentUserId}

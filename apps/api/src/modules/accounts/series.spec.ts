@@ -13,9 +13,9 @@ import {
   truncateAll,
 } from "@/test/setup"
 import { db } from "@/db"
-import { accounts, exchangeRates, instrumentPrices, instruments, trades, transactions } from "@workspace/db"
+import { accounts, exchangeRates, instrumentPrices, instruments, trades, transactions, wallets } from "@workspace/db"
 import { chartMock } from "@/test/yahoo-mock"
-import { computeAccountSeries } from "./series"
+import { carryForwardRates, computeAccountSeries } from "./series"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
@@ -46,7 +46,7 @@ function daysAgo(n: number): Date {
 
 async function insertAccount(opts: {
   name: string
-  type: "bank" | "cash" | "brokerage"
+  type: "bank" | "brokerage" | "wallet"
   currency: string
   initialBalance: number
 }) {
@@ -87,7 +87,7 @@ describe("computeAccountSeries — cash", () => {
 
     const result = await computeAccountSeries(organizationId, userId, 30)
 
-    const series = result.find((s) => s.accountId === acc.id)
+    const series = result.accounts.find((s) => s.accountId === acc.id)
     expect(series).toBeDefined()
     expect(series!.points.length).toBe(30)
     expect(series!.points.every((p) => p.balance === 1000)).toBe(true)
@@ -107,7 +107,7 @@ describe("computeAccountSeries — cash", () => {
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
     const last = series.points[series.points.length - 1]
     const five = series.points[series.points.length - 6] // index from end: today is last (idx 29), -5 is idx 24
     const six = series.points[series.points.length - 7]
@@ -131,7 +131,7 @@ describe("computeAccountSeries — cash", () => {
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
     expect(series.points[0].balance).toBe(200) // day -29
     expect(series.points[series.points.length - 1].balance).toBe(170) // today
   })
@@ -139,13 +139,13 @@ describe("computeAccountSeries — cash", () => {
   it("orders points oldest-first with ISO date keys", async () => {
     const acc = await insertAccount({
       name: "Main",
-      type: "cash",
+      type: "bank",
       currency: "USD",
       initialBalance: 0,
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const points = result.find((s) => s.accountId === acc.id)!.points
+    const points = result.accounts.find((s) => s.accountId === acc.id)!.points
 
     for (let i = 1; i < points.length; i++) {
       expect(points[i].date > points[i - 1].date).toBe(true)
@@ -168,7 +168,7 @@ describe("computeAccountSeries — cash", () => {
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
     // Day -29 balance must already include the pre-window deposit
     expect(series.points[0].balance).toBe(350)
   })
@@ -264,7 +264,7 @@ describe("computeAccountSeries — brokerage", () => {
     await seedPrice(inst.id, todayStr, 100)
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
 
     // Day -29: pre-window, no trades yet, no holdings. Cash = 1000.
     expect(series.points[0].balance).toBe(1000)
@@ -304,7 +304,7 @@ describe("computeAccountSeries — brokerage", () => {
     await seedPrice(inst.id, d20, 50)
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
     // Today: cash = -50, holdings = 1 * 50 = 50. Total 0.
     expect(series.points[series.points.length - 1].balance).toBeCloseTo(0)
   })
@@ -332,7 +332,7 @@ describe("computeAccountSeries — brokerage", () => {
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
     // Cash impact only: today = -100, no holdings valuation possible.
     expect(series.points[series.points.length - 1].balance).toBeCloseTo(-100)
   })
@@ -372,12 +372,128 @@ describe("computeAccountSeries — brokerage", () => {
     })
 
     const result = await computeAccountSeries(organizationId, userId, 30)
-    const series = result.find((s) => s.accountId === acc.id)!
+    const series = result.accounts.find((s) => s.accountId === acc.id)!
 
     // Cash impact: trade amount is in account currency by convention, so -100 EUR.
     // Holdings: 1 share * $100 USD * 0.9 (USD->EUR) = 90 EUR.
     // Total today: -100 + 90 = -10 EUR.
     expect(series.points[series.points.length - 1].balance).toBeCloseTo(-10)
+  })
+})
+
+async function insertWallet(name: string): Promise<string> {
+  const [row] = await db
+    .insert(wallets)
+    .values({ organizationId, name })
+    .returning()
+  return row.id
+}
+
+async function insertPocket(opts: {
+  walletId: string
+  currency: string
+  initialBalance: number
+}) {
+  const [row] = await db
+    .insert(accounts)
+    .values({
+      organizationId,
+      walletId: opts.walletId,
+      name: "pocket",
+      type: "wallet",
+      currency: opts.currency,
+      initialBalance: opts.initialBalance,
+    })
+    .returning()
+  return row
+}
+
+describe("computeAccountSeries — wallets", () => {
+  it("excludes pocket accounts from accounts[] and groups them under wallets[]", async () => {
+    const standalone = await insertAccount({
+      name: "Checking",
+      type: "bank",
+      currency: "UAH",
+      initialBalance: 500,
+    })
+    const walletId = await insertWallet("Cash")
+    await insertPocket({ walletId, currency: "UAH", initialBalance: 1000 })
+
+    const result = await computeAccountSeries(organizationId, userId, 30)
+
+    expect(result.accounts.map((s) => s.accountId)).toEqual([standalone.id])
+    expect(result.wallets.length).toBe(1)
+    expect(result.wallets[0].walletId).toBe(walletId)
+  })
+
+  it("returns a constant home-currency series for a single home-currency pocket", async () => {
+    // Home currency is UAH by default. Pocket also UAH → no FX needed.
+    const walletId = await insertWallet("Cash")
+    await insertPocket({ walletId, currency: "UAH", initialBalance: 1500 })
+
+    const result = await computeAccountSeries(organizationId, userId, 30)
+    const ws = result.wallets[0]
+    expect(ws.currency).toBe("UAH")
+    expect(ws.points.length).toBe(30)
+    expect(ws.points.every((p) => p.balance === 1500)).toBe(true)
+  })
+
+  it("FX-converts each pocket to home currency on today's series point", async () => {
+    // Home is UAH. Pockets: 1000 USD + 200 EUR.
+    const walletId = await insertWallet("Cash")
+    await insertPocket({ walletId, currency: "USD", initialBalance: 1000 })
+    await insertPocket({ walletId, currency: "EUR", initialBalance: 200 })
+
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const todayStr = today.toISOString().slice(0, 10)
+    await db.insert(exchangeRates).values([
+      { date: todayStr, base: "USD", target: "UAH", rate: 40 },
+      { date: todayStr, base: "EUR", target: "UAH", rate: 44 },
+    ])
+
+    const result = await computeAccountSeries(organizationId, userId, 30)
+    const ws = result.wallets[0]
+    // 1000 * 40 + 200 * 44 = 40000 + 8800 = 48800
+    expect(ws.points[ws.points.length - 1].balance).toBeCloseTo(48800)
+  })
+
+  it("reflects mid-window pocket transactions in wallet series", async () => {
+    const walletId = await insertWallet("Cash")
+    const pocket = await insertPocket({
+      walletId,
+      currency: "UAH",
+      initialBalance: 1000,
+    })
+    await insertTransaction({
+      accountId: pocket.id,
+      amount: 500,
+      date: daysAgo(5),
+    })
+
+    const result = await computeAccountSeries(organizationId, userId, 30)
+    const ws = result.wallets[0]
+    expect(ws.points[ws.points.length - 7].balance).toBe(1000) // day before deposit
+    expect(ws.points[ws.points.length - 6].balance).toBe(1500) // deposit day
+    expect(ws.points[ws.points.length - 1].balance).toBe(1500) // today
+  })
+})
+
+describe("carryForwardRates", () => {
+  it("carries the prior rate into a middle gap (1 = missing)", () => {
+    expect(carryForwardRates([40, 1, 42])).toEqual([40, 40, 42])
+  })
+
+  it("fills leading gaps with the first known rate", () => {
+    expect(carryForwardRates([1, 1, 42, 1])).toEqual([42, 42, 42, 42])
+  })
+
+  it("leaves an all-missing series untouched (no rate to carry)", () => {
+    expect(carryForwardRates([1, 1, 1])).toEqual([1, 1, 1])
+  })
+
+  it("does not alter a fully-populated series", () => {
+    expect(carryForwardRates([40, 41, 42])).toEqual([40, 41, 42])
   })
 })
 
@@ -396,7 +512,7 @@ describe("GET /accounts/series", () => {
     expect(res.status).toBe(401)
   })
 
-  it("returns the series for every account in the org", async () => {
+  it("returns the series for every account in the org under accounts[]", async () => {
     const acc = await insertAccount({
       name: "Main",
       type: "bank",
@@ -412,15 +528,19 @@ describe("GET /accounts/series", () => {
       headers: { cookie },
     })
     expect(res.status).toBe(200)
-    const body = (await res.json()) as Array<{
-      accountId: string
-      currency: string
-      points: Array<{ date: string; balance: number }>
-    }>
-    expect(body.length).toBe(1)
-    expect(body[0].accountId).toBe(acc.id)
-    expect(body[0].currency).toBe("USD")
-    expect(body[0].points.length).toBe(30)
+    const body = (await res.json()) as {
+      accounts: Array<{
+        accountId: string
+        currency: string
+        points: Array<{ date: string; balance: number }>
+      }>
+      wallets: Array<unknown>
+    }
+    expect(body.accounts.length).toBe(1)
+    expect(body.wallets).toEqual([])
+    expect(body.accounts[0].accountId).toBe(acc.id)
+    expect(body.accounts[0].currency).toBe("USD")
+    expect(body.accounts[0].points.length).toBe(30)
   })
 
   it("defaults to 30 days when no query param", async () => {
@@ -439,10 +559,10 @@ describe("GET /accounts/series", () => {
       headers: { cookie },
     })
     expect(res.status).toBe(200)
-    const body = (await res.json()) as Array<{
-      points: Array<{ date: string; balance: number }>
-    }>
-    expect(body[0].points.length).toBe(30)
+    const body = (await res.json()) as {
+      accounts: Array<{ points: Array<unknown> }>
+    }
+    expect(body.accounts[0].points.length).toBe(30)
   })
 
   it("rejects days=0", async () => {

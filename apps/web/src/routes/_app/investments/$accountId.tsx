@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { leafAccountsOf } from "@/lib/accounts"
 import { PositionsTable } from "@/components/investments/positions-table"
 
 export const Route = createFileRoute("/_app/investments/$accountId")({
@@ -32,7 +33,7 @@ function AccountInvestmentsPage() {
       return res.json()
     },
   })
-  const account = (accountsData ?? []).find((a) => a.id === accountId)
+  const account = leafAccountsOf(accountsData).find((a) => a.id === accountId)
 
   return (
     <div className="space-y-6">

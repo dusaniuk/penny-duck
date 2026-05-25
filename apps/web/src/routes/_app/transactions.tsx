@@ -1,16 +1,16 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter, IconPlus } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
-  Account,
   Category,
   Member,
   Transaction,
 } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
+import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
 import { TransactionFilterSheet } from "@/components/transactions/transaction-filters"
@@ -123,7 +123,8 @@ function TransactionsPage() {
       return res.json()
     },
   })
-  const accounts: Array<Account> = accountsData ?? []
+  const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
+  const wallets = walletsOf(accountsData)
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -529,6 +530,7 @@ function TransactionsPage() {
         }}
         transaction={editTransaction}
         accounts={accounts}
+        wallets={wallets}
         categories={categories}
         members={members}
         currentUserId={currentUserId}

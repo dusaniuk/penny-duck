@@ -6,11 +6,16 @@ import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import { cn } from "@workspace/ui/lib/utils"
 import { useId } from "react"
 import type { CSSProperties } from "react"
-import type { Account } from "@workspace/api-contract"
+import type { Account, WalletPocket } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
 import { paletteColor } from "@/lib/palette"
 
-export type AccountData = Account
+// AccountCard handles bank/brokerage (single currency) and wallet (multiple
+// currency pockets) entries with the same visual frame. When `pockets` is
+// set, the balance line renders one `amount currency` pair per pocket and
+// the "Set default" action is hidden (wallets can't be the default account).
+// The sparkline for wallets is in home currency, summed from pocket series.
+export type AccountData = Account & { pockets?: ReadonlyArray<WalletPocket> }
 
 interface AccountCardProps {
   account: AccountData
@@ -124,6 +129,7 @@ export function AccountCard({
 }: AccountCardProps) {
   const navigate = useNavigate()
   const isBrokerage = account.type === "brokerage"
+  const isWallet = !!account.pockets
   const sparkColor = paletteColor(account.color, { l: 0.78, c: 0.14 })
 
   return (
@@ -155,16 +161,39 @@ export function AccountCard({
             )}
           </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground lowercase">
-            {account.type} · {account.currency}
+            {isWallet
+              ? `${account.type} · ${account.pockets!.length} ${account.pockets!.length === 1 ? "currency" : "currencies"}`
+              : `${account.type} · ${account.currency}`}
           </p>
         </div>
         <div className="shrink-0 text-right tabular-nums">
-          <p className="font-heading text-lg font-semibold tracking-tight">
-            {fmtMoney(account.balance)}
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            {account.currency}
-          </p>
+          {isWallet ? (
+            <div className="flex flex-col items-end gap-0.5 text-[13px] font-semibold leading-tight">
+              {account.pockets!.length === 0 ? (
+                <span className="text-[11px] font-normal text-muted-foreground">
+                  empty
+                </span>
+              ) : (
+                account.pockets!.map((p) => (
+                  <span key={p.currency}>
+                    {fmtMoney(p.balance)}{" "}
+                    <span className="text-[10px] font-normal text-muted-foreground">
+                      {p.currency}
+                    </span>
+                  </span>
+                ))
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="font-heading text-lg font-semibold tracking-tight">
+                {fmtMoney(account.balance)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {account.currency}
+              </p>
+            </>
+          )}
         </div>
         <IconChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </button>
@@ -175,8 +204,21 @@ export function AccountCard({
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground lowercase">
             <span>{account.type}</span>
-            <span className="opacity-50">·</span>
-            <span>{account.currency}</span>
+            {!isWallet && (
+              <>
+                <span className="opacity-50">·</span>
+                <span>{account.currency}</span>
+              </>
+            )}
+            {isWallet && (
+              <>
+                <span className="opacity-50">·</span>
+                <span>
+                  {account.pockets!.length}{" "}
+                  {account.pockets!.length === 1 ? "currency" : "currencies"}
+                </span>
+              </>
+            )}
             {account.isDefault && (
               <Badge
                 variant="secondary"
@@ -192,14 +234,38 @@ export function AccountCard({
         </div>
       </CardHeader>
       <CardContent className="hidden space-y-3 p-0 sm:block">
-        <p className="flex items-baseline gap-1.5 tabular-nums">
-          <span className="font-heading text-[22px] font-semibold tracking-tight">
-            {fmtMoney(account.balance)}
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            {account.currency}
-          </span>
-        </p>
+        {isWallet ? (
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
+            {account.pockets!.length === 0 ? (
+              <span className="text-[12px] text-muted-foreground/70">
+                No currencies yet — edit to add one.
+              </span>
+            ) : (
+              account.pockets!.map((p) => (
+                <span
+                  key={p.currency}
+                  className="flex items-baseline gap-1"
+                >
+                  <span className="font-heading text-[18px] font-semibold tracking-tight">
+                    {fmtMoney(p.balance)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground uppercase">
+                    {p.currency}
+                  </span>
+                </span>
+              ))
+            )}
+          </div>
+        ) : (
+          <p className="flex items-baseline gap-1.5 tabular-nums">
+            <span className="font-heading text-[22px] font-semibold tracking-tight">
+              {fmtMoney(account.balance)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {account.currency}
+            </span>
+          </p>
+        )}
         <div className="space-y-1 transition-opacity duration-150 group-focus-within:opacity-15 group-hover:opacity-15">
           {series && series.length > 1 ? (
             <BalanceSparkline color={sparkColor} values={series} />
@@ -223,7 +289,7 @@ export function AccountCard({
         >
           Edit
         </Button>
-        {!account.isDefault && (
+        {!account.isDefault && !isWallet && (
           <Button
             type="button"
             size="xs"

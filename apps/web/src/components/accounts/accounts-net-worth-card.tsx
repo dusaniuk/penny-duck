@@ -1,22 +1,20 @@
 import { useMemo } from "react"
 import { Card, CardContent } from "@workspace/ui/components/card"
-import type { Account, NetWorthResponse } from "@workspace/api-contract"
+import { buildNetWorthBreakdown } from "./net-worth-breakdown"
+import type { NetWorthGroup } from "./net-worth-breakdown"
+import type { Account, NetWorthResponse, Wallet } from "@workspace/api-contract"
 import { queryClient } from "@/lib/api"
 
-type AccountType = "bank" | "brokerage" | "cash"
-
-const TYPE_ORDER: Array<AccountType> = ["bank", "brokerage", "cash"]
-
-const TYPE_LABEL: Record<AccountType, string> = {
+const TYPE_LABEL: Record<NetWorthGroup, string> = {
   bank: "Bank",
   brokerage: "Brokerage",
-  cash: "Cash",
+  wallet: "Wallet",
 }
 
-const TYPE_COLOR: Record<AccountType, string> = {
+const TYPE_COLOR: Record<NetWorthGroup, string> = {
   bank: "oklch(0.72 0.15 50)",
   brokerage: "oklch(0.65 0.18 290)",
-  cash: "oklch(0.72 0.18 145)",
+  wallet: "oklch(0.72 0.18 145)",
 }
 
 function formatAmount(n: number): { whole: string; fraction: string } {
@@ -34,26 +32,14 @@ function formatInt(n: number): string {
 
 type Props = {
   accounts: Array<Account>
+  wallets: Array<Wallet>
 }
 
-export function AccountsNetWorthCard({ accounts }: Props) {
-  const { total, byType, currencyCount } = useMemo(() => {
-    const sums: Record<AccountType, number> = {
-      bank: 0,
-      brokerage: 0,
-      cash: 0,
-    }
-    let running = 0
-    const currencies = new Set<string>()
-    for (const a of accounts) {
-      currencies.add(a.currency)
-      running += a.homeBalance
-      if (a.type === "bank" || a.type === "brokerage" || a.type === "cash") {
-        sums[a.type] += a.homeBalance
-      }
-    }
-    return { total: running, byType: sums, currencyCount: currencies.size }
-  }, [accounts])
+export function AccountsNetWorthCard({ accounts, wallets }: Props) {
+  const { total, currencyCount, totalEntities, rows } = useMemo(
+    () => buildNetWorthBreakdown(accounts, wallets),
+    [accounts, wallets]
+  )
 
   const homeCurrency =
     queryClient.getQueryData<NetWorthResponse>(["stats", "net-worth"])?.current
@@ -61,14 +47,10 @@ export function AccountsNetWorthCard({ accounts }: Props) {
 
   const { whole, fraction } = formatAmount(total)
 
-  const rows = TYPE_ORDER.filter((t) =>
-    accounts.some((a) => a.type === t),
-  ).map((t) => ({
-    type: t,
-    label: TYPE_LABEL[t],
-    color: TYPE_COLOR[t],
-    value: byType[t],
-    pct: total > 0 ? (byType[t] / total) * 100 : 0,
+  const displayRows = rows.map((r) => ({
+    ...r,
+    label: TYPE_LABEL[r.type],
+    color: TYPE_COLOR[r.type],
   }))
 
   return (
@@ -91,9 +73,8 @@ export function AccountsNetWorthCard({ accounts }: Props) {
             )}
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80">
-            across {accounts.length} account
-            {accounts.length === 1 ? "" : "s"} in {currencyCount} currenc
-            {currencyCount === 1 ? "y" : "ies"}
+            across {totalEntities} account{totalEntities === 1 ? "" : "s"} in{" "}
+            {currencyCount} currenc{currencyCount === 1 ? "y" : "ies"}
           </p>
         </div>
 
@@ -104,7 +85,7 @@ export function AccountsNetWorthCard({ accounts }: Props) {
         <div className="space-y-4 sm:h-full sm:space-y-0">
           {/* Desktop: per-type bars */}
           <div className="hidden h-full flex-col justify-center gap-3 sm:flex">
-            {rows.map((r) => (
+            {displayRows.map((r) => (
               <div
                 key={r.type}
                 className="grid grid-cols-[110px_1fr_auto] items-center gap-3.5"
@@ -151,7 +132,7 @@ export function AccountsNetWorthCard({ accounts }: Props) {
           {/* Mobile: stacked single bar + legend */}
           <div className="sm:hidden">
             <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted">
-              {rows.map((r) =>
+              {displayRows.map((r) =>
                 r.pct > 0 ? (
                   <span
                     key={r.type}
@@ -163,7 +144,7 @@ export function AccountsNetWorthCard({ accounts }: Props) {
               )}
             </div>
             <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px]">
-              {rows.map((r) => (
+              {displayRows.map((r) => (
                 <span key={r.type} className="inline-flex items-center gap-1.5">
                   <span
                     aria-hidden

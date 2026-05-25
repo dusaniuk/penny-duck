@@ -76,12 +76,12 @@ test.describe("Accounts CRUD", () => {
     const { id } = await createRes.json()
 
     const res = await request.patch(`/accounts/${id}`, {
-      data: { type: "cash" },
+      data: { type: "brokerage" },
     })
 
     expect(res.status()).toBe(200)
     const body = await res.json()
-    expect(body.type).toBe("cash")
+    expect(body.type).toBe("brokerage")
   })
 
   test("deletes an account", async ({ request }) => {

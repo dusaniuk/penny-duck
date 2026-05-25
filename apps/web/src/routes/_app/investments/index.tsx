@@ -4,6 +4,7 @@ import { Button } from "@workspace/ui/components/button"
 import { useQuery } from "@tanstack/react-query"
 import type { Account } from "@workspace/api-contract"
 import { api } from "@/lib/api"
+import { leafAccountsOf } from "@/lib/accounts"
 import { PortfolioSummary } from "@/components/investments/portfolio-summary"
 import { PositionsTable } from "@/components/investments/positions-table"
 import { TradeFormDialog } from "@/components/investments/trade-form-dialog"
@@ -57,7 +58,7 @@ function InvestmentsIndexPage() {
       return res.json()
     },
   })
-  const brokerages: Array<Account> = (accountsData ?? []).filter(
+  const brokerages: Array<Account> = leafAccountsOf(accountsData).filter(
     (a) => a.type === "brokerage"
   )
 

@@ -1,41 +1,101 @@
 import { useMemo } from "react"
-import type { Account } from "@workspace/api-contract"
+import type { Account, Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard } from "@/components/accounts/account-card"
 
-type AccountType = "bank" | "brokerage" | "cash"
+type StandaloneType = "bank" | "brokerage"
 
-const TYPE_ORDER: Array<AccountType> = ["bank", "brokerage", "cash"]
+type GroupKey = "wallet" | StandaloneType
 
-const TYPE_LABEL: Record<AccountType, string> = {
+const GROUP_ORDER: Array<GroupKey> = ["wallet", "bank", "brokerage"]
+
+const GROUP_LABEL: Record<GroupKey, string> = {
+  wallet: "Wallet",
   bank: "Bank",
   brokerage: "Brokerage",
-  cash: "Cash",
 }
 
 function formatInt(n: number): string {
   return Math.round(n).toLocaleString("en-US")
 }
 
+// Synthesize an AccountData entry from a Wallet so the AccountCard can render
+// it. The card branches on `pockets` to render the multi-currency balance.
+function walletToAccountData(w: Wallet, homeCurrency: string): AccountData {
+  return {
+    id: w.id,
+    name: w.name,
+    type: "wallet",
+    currency: homeCurrency,
+    color: w.color,
+    icon: w.icon,
+    balance: w.totalHomeBalance,
+    homeBalance: w.totalHomeBalance,
+    isDefault: false,
+    walletId: null,
+    pockets: w.pockets,
+  }
+}
+
 type Props = {
   accounts: Array<Account>
+  wallets: Array<Wallet>
   homeCurrency: string
   seriesByAccount: Map<string, Array<number>>
   onEdit: (a: AccountData) => void
   onSetDefault: (a: AccountData) => void
+  onEditWallet: (w: Wallet) => void
 }
 
 export function AccountsGroups({
   accounts,
+  wallets,
   homeCurrency,
   seriesByAccount,
   onEdit,
   onSetDefault,
+  onEditWallet,
 }: Props) {
-  const groups = useMemo(() => {
-    return TYPE_ORDER.flatMap((type) => {
+  const walletEntries = useMemo(
+    () => wallets.map((w) => walletToAccountData(w, homeCurrency)),
+    [wallets, homeCurrency]
+  )
+  const walletsById = useMemo(
+    () => new Map(wallets.map((w) => [w.id, w])),
+    [wallets]
+  )
+
+  type Group = {
+    key: GroupKey
+    label: string
+    items: Array<AccountData>
+    subtotal: number
+    isApprox: boolean
+  }
+
+  const groups = useMemo<Array<Group>>(() => {
+    return GROUP_ORDER.flatMap<Group>((key) => {
+      if (key === "wallet") {
+        if (walletEntries.length === 0) return []
+        const subtotal = walletEntries.reduce(
+          (sum, a) => sum + a.homeBalance,
+          0
+        )
+        const isApprox = wallets.some((w) =>
+          w.pockets.some((p) => p.currency !== homeCurrency)
+        )
+        return [
+          {
+            key,
+            label: GROUP_LABEL[key],
+            items: walletEntries,
+            subtotal,
+            isApprox,
+          },
+        ]
+      }
       const items = accounts
-        .filter((a) => a.type === type)
+        .filter((a) => a.type === key)
         .sort((a, b) => {
           if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1
           return b.balance - a.balance
@@ -45,27 +105,43 @@ export function AccountsGroups({
       const isApprox = items.some((a) => a.currency !== homeCurrency)
       return [
         {
-          type,
-          label: TYPE_LABEL[type],
-          items,
+          key,
+          label: GROUP_LABEL[key],
+          items: items as Array<AccountData>,
           subtotal,
           isApprox,
         },
       ]
     })
-  }, [accounts, homeCurrency])
+  }, [accounts, walletEntries, wallets, homeCurrency])
+
+  function handleCardEdit(a: AccountData) {
+    if (a.pockets) {
+      const wallet = walletsById.get(a.id)
+      if (wallet) onEditWallet(wallet)
+      return
+    }
+    onEdit(a)
+  }
 
   return (
     <section className="space-y-8">
       {groups.map((g) => (
-        <div key={g.type} className="space-y-3.5">
+        <div key={g.key} className="space-y-3.5">
           <header className="flex items-baseline justify-between gap-2 px-1">
             <div className="flex items-baseline gap-2.5">
               <h2 className="font-heading text-[15px] font-semibold">
                 {g.label}
               </h2>
               <span className="font-mono text-[11px] text-muted-foreground">
-                {g.items.length} {g.items.length === 1 ? "account" : "accounts"}
+                {g.items.length}{" "}
+                {g.key === "wallet"
+                  ? g.items.length === 1
+                    ? "wallet"
+                    : "wallets"
+                  : g.items.length === 1
+                    ? "account"
+                    : "accounts"}
               </span>
             </div>
             <div className="flex items-baseline gap-1.5 tabular-nums">
@@ -88,7 +164,7 @@ export function AccountsGroups({
                 key={a.id}
                 account={a}
                 series={seriesByAccount.get(a.id)}
-                onEdit={onEdit}
+                onEdit={handleCardEdit}
                 onSetDefault={onSetDefault}
               />
             ))}

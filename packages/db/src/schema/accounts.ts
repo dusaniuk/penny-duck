@@ -1,7 +1,9 @@
-import { index, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+import { index, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { organizations } from "./organizations"
 import { money } from "./custom-types"
+import { wallets } from "./wallets"
 
 export const accounts = appSchema.table(
   "accounts",
@@ -10,6 +12,7 @@ export const accounts = appSchema.table(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    walletId: uuid("wallet_id").references(() => wallets.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 100 }).notNull(),
     type: varchar("type", { length: 20 }).notNull(),
     currency: varchar("currency", { length: 3 }).notNull(),
@@ -20,5 +23,10 @@ export const accounts = appSchema.table(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("accounts_org_idx").on(table.organizationId)]
+  (table) => [
+    index("accounts_org_idx").on(table.organizationId),
+    uniqueIndex("accounts_wallet_currency_uq")
+      .on(table.walletId, table.currency)
+      .where(sql`wallet_id is not null`),
+  ]
 )

@@ -18,7 +18,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import {
   createAccount,
   deleteAccount,
-  listAccounts,
+  listAccountsFlat,
 } from "@/modules/accounts/service"
 import {
   closeTestApp,
@@ -258,7 +258,7 @@ describe("POST /trades", () => {
       amount: 4.25,
       date: "2026-02-01T00:00:00Z",
     })
-    const accountsList = await listAccounts(organizationId, userId)
+    const accountsList = await listAccountsFlat(organizationId, userId)
     const broker = accountsList.find(
       (a: { id: string }) => a.id === account.id
     )
@@ -594,6 +594,6 @@ describe("Cross-module: DeleteAccount uses inlined trade query", () => {
     })
     await expect(
       deleteAccount(account.id, organizationId, userId),
-    ).rejects.toThrow(/position/i)
+    ).rejects.toThrow(/trade history/i)
   })
 })

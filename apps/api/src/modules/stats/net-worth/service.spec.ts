@@ -7,13 +7,14 @@ import {
   beforeEach,
 } from "bun:test"
 import { eq } from "drizzle-orm"
-import { users } from "@workspace/db"
+import { exchangeRates, users } from "@workspace/db"
 import { env } from "@workspace/env/api"
 import { db } from "@/db"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
+import { createWallet } from "@/modules/wallets/service"
 import { createTransaction } from "@/modules/transactions/service"
 import { listCategories } from "@/modules/categories/service"
 import {
@@ -123,6 +124,48 @@ describe("GET /stats/net-worth", () => {
     expect(body.current.accountsCount).toBe(4)
     expect(body.current.topAccounts).toHaveLength(3)
     expect(body.current.topAccounts[0].name).toBe("PKO")
+  })
+
+  it("counts each wallet once and merges its pockets into a single top-accounts entry", async () => {
+    const { cookie, organizationId, userId } = await authed()
+    const today = new Date().toISOString().split("T")[0]
+    await db.insert(exchangeRates).values([
+      { date: today, base: "USD", target: "UAH", rate: 40 },
+      { date: today, base: "EUR", target: "UAH", rate: 44 },
+    ])
+    await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 1000,
+    })
+    await createWallet({
+      organizationId,
+      userId,
+      name: "Cash",
+      pockets: [
+        { currency: "USD", balance: 100 },
+        { currency: "EUR", balance: 50 },
+      ],
+    })
+
+    const res = await honoApp.request("/stats/net-worth", {
+      headers: { cookie },
+    })
+    const body = await res.json()
+
+    // 1 bank + 1 wallet — pockets must not each count as an account.
+    expect(body.current.accountsCount).toBe(2)
+    const cashEntries = body.current.topAccounts.filter(
+      (a: { name: string }) => a.name === "Cash",
+    )
+    expect(cashEntries).toHaveLength(1)
+    // 100 * 40 + 50 * 44 = 6200 in home currency.
+    expect(cashEntries[0].homeBalance).toBeCloseTo(6200, 2)
+    // Total still sums every pocket once: 1000 + 6200.
+    expect(body.current.total).toBeCloseTo(7200, 2)
   })
 
   it("walks back history using monthly transaction deltas", async () => {

@@ -57,6 +57,7 @@ import type {
   CategoryUsageItem,
   Member,
   Transaction,
+  Wallet,
 } from "@workspace/api-contract"
 
 type TransactionType = "expense" | "income" | "transfer"
@@ -68,6 +69,7 @@ interface TransactionFormDialogProps {
   transaction?: Transaction | null
   defaultType?: TransactionType
   accounts: Array<Account>
+  wallets?: Array<Wallet>
   categories: Array<Category>
   members: Array<Member>
   currentUserId: string
@@ -222,6 +224,7 @@ function TransactionModalBody({
   transaction,
   defaultType = "expense",
   accounts,
+  wallets = [],
   categories,
   members,
   currentUserId,
@@ -377,6 +380,11 @@ function TransactionModalBody({
     !!fromAccount && !!toAccount && fromAccount.currency !== toAccount.currency
   const showTransferExchangeRate = currenciesDiffer
 
+  const isConvert =
+    values.type === "transfer" &&
+    !!fromAccount?.walletId &&
+    fromAccount.walletId === toAccount?.walletId
+
   const palette = TYPE_PALETTE[activeType]
   const currency =
     activeType === "transfer"
@@ -457,7 +465,8 @@ function TransactionModalBody({
             className="size-1.5 rounded-full"
             style={{ background: palette.ink }}
           />
-          {isEdit ? "Edit" : "New"} {activeType}
+          {isEdit ? "Edit" : "New"}{" "}
+          {isConvert ? "conversion" : activeType}
         </Badge>
       </FormDialogHeader>
 
@@ -551,9 +560,11 @@ function TransactionModalBody({
       {activeType !== "transfer" ? (
         <TransactionAccountChips
           accounts={sortedAccounts}
+          wallets={wallets}
           selectedId={values.accountId}
           onSelect={(id) => form.setFieldValue("accountId", id)}
           label={activeType === "income" ? "Into account" : "From account"}
+          accountUsage={accountUsage}
         />
       ) : (
         <div className="flex flex-col">
@@ -575,11 +586,28 @@ function TransactionModalBody({
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-label="From account"
                     >
-                      {sortedAccounts.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name} — {a.balance.toFixed(2)} {a.currency}
-                        </option>
-                      ))}
+                      {wallets
+                        .filter((w) =>
+                          sortedAccounts.some((a) => a.walletId === w.id),
+                        )
+                        .map((w) => (
+                          <optgroup key={w.id} label={w.name}>
+                            {sortedAccounts
+                              .filter((a) => a.walletId === w.id)
+                              .map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.currency} — {a.balance.toFixed(2)}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
+                      {sortedAccounts
+                        .filter((a) => a.walletId === null)
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name} — {a.balance.toFixed(2)} {a.currency}
+                          </option>
+                        ))}
                     </select>
                   )}
                 </form.Field>
@@ -621,8 +649,35 @@ function TransactionModalBody({
                       aria-label="To account"
                     >
                       <option value="">Pick account</option>
+                      {wallets
+                        .filter((w) =>
+                          sortedAccounts.some(
+                            (a) =>
+                              a.walletId === w.id &&
+                              a.id !== values.fromAccountId,
+                          ),
+                        )
+                        .map((w) => (
+                          <optgroup key={w.id} label={w.name}>
+                            {sortedAccounts
+                              .filter(
+                                (a) =>
+                                  a.walletId === w.id &&
+                                  a.id !== values.fromAccountId,
+                              )
+                              .map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.currency} — {a.balance.toFixed(2)}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
                       {sortedAccounts
-                        .filter((a) => a.id !== values.fromAccountId)
+                        .filter(
+                          (a) =>
+                            a.walletId === null &&
+                            a.id !== values.fromAccountId,
+                        )
                         .map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name} — {a.balance.toFixed(2)} {a.currency}

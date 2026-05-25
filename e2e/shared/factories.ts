@@ -87,7 +87,7 @@ export function createAccountData(
 ) {
   return {
     name: overrides.name ?? `${faker.finance.accountName()} ${faker.string.alphanumeric(4)}`,
-    type: overrides.type ?? faker.helpers.arrayElement(["bank", "cash"]),
+    type: overrides.type ?? faker.helpers.arrayElement(["bank", "brokerage"]),
     currency: overrides.currency ?? faker.helpers.arrayElement(["UAH", "PLN", "USD", "EUR"]),
     ...("balance" in overrides ? { balance: overrides.balance } : {}),
   }

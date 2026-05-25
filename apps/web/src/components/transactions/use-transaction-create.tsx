@@ -1,13 +1,13 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type {
-  Account,
   AccountUsageItem,
   Category,
   CategoryUsageItem,
   Member,
 } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
+import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 
 interface UseTransactionCreateOptions {
@@ -25,8 +25,12 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       return res.json()
     },
   })
-  const accounts: Array<Account> = accountsData ?? []
-  const defaultAccountId = accounts.find((a) => a.isDefault)?.id
+  const accountsForForm = useMemo(
+    () => flattenAccounts(accountsData),
+    [accountsData]
+  )
+  const wallets = walletsOf(accountsData)
+  const defaultAccountId = accountsForForm.find((a) => a.isDefault)?.id
 
   const { data: accountUsageData } = useQuery({
     queryKey: ["accounts", "usage"],
@@ -165,7 +169,8 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
     <TransactionFormDialog
       open={open}
       onOpenChange={setOpen}
-      accounts={accounts}
+      accounts={accountsForForm}
+      wallets={wallets}
       categories={categories}
       members={members}
       currentUserId={currentUserId}

@@ -94,7 +94,7 @@ describe("GET /exchange-rates/latest", () => {
       organizationId,
       userId,
       name: "USD Cash",
-      type: "cash",
+      type: "bank",
       currency: "USD",
     })
 

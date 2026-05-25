@@ -6,11 +6,16 @@ import {
   trades,
   transactions,
   users,
+  wallets,
 } from "@workspace/db"
-import { type Account, type AccountUsageItem } from "@workspace/api-contract"
+import {
+  type Account,
+  type AccountsResponse,
+  type AccountUsageItem,
+  type Wallet,
+} from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
-import { countOpenPositionsFromTrades } from "@/modules/investments/helpers/count-open-positions"
 import {
   findInstrumentsByIds,
   refreshIfStale,
@@ -70,6 +75,7 @@ function selectAccountRow(userId: string) {
       icon: accounts.icon,
       initialBalance: accounts.initialBalance,
       externalAccountId: accounts.externalAccountId,
+      walletId: accounts.walletId,
       createdAt: accounts.createdAt,
       updatedAt: accounts.updatedAt,
       balance: sql<number>`(${accounts.initialBalance} + coalesce(${balanceSq.total}, 0) + coalesce(${tradesSq.total}, 0))::float / 100`,
@@ -131,6 +137,7 @@ function toResponse(row: AccountRow, rate: number, holdings = 0): Account {
     balance: total,
     homeBalance: total * rate,
     isDefault: row.isDefault,
+    walletId: row.walletId,
   }
 }
 
@@ -211,7 +218,11 @@ async function computeBrokerageHoldingsByAccount(
   return holdings
 }
 
-export async function listAccounts(
+// Flat list of every account row in the org (including wallet pockets), with
+// balances + holdings + FX resolved. Internal helper used by both the grouped
+// /accounts response and the wallets service (which filters to one wallet's
+// pockets).
+export async function listAccountsFlat(
   organizationId: string,
   userId: string,
 ): Promise<Account[]> {
@@ -237,6 +248,53 @@ export async function listAccounts(
   return rows.map((r) =>
     toResponse(r, rates.get(r.currency) ?? 1, holdingsByAccount.get(r.id) ?? 0),
   )
+}
+
+// Public /accounts response: a flat list of accounts where a wallet is one
+// entry carrying its pockets, and leaf accounts (bank/brokerage) stand alone.
+// Pocket rows are folded into their wallet, never surfaced individually.
+export async function listAccounts(
+  organizationId: string,
+  userId: string,
+): Promise<AccountsResponse> {
+  const [flat, walletRows] = await Promise.all([
+    listAccountsFlat(organizationId, userId),
+    db
+      .select()
+      .from(wallets)
+      .where(eq(wallets.organizationId, organizationId)),
+  ])
+
+  const standalone = flat.filter((a) => a.walletId === null)
+  const pocketsByWalletId = new Map<string, Account[]>()
+  for (const a of flat) {
+    if (a.walletId) {
+      const list = pocketsByWalletId.get(a.walletId) ?? []
+      list.push(a)
+      pocketsByWalletId.set(a.walletId, list)
+    }
+  }
+
+  const walletItems: Wallet[] = walletRows.map((w) => {
+    const pocketAccounts = pocketsByWalletId.get(w.id) ?? []
+    const pockets = pocketAccounts.map((p) => ({
+      accountId: p.id,
+      currency: p.currency,
+      balance: p.balance,
+      homeBalance: p.homeBalance,
+    }))
+    return {
+      id: w.id,
+      type: "wallet",
+      name: w.name,
+      color: w.color ?? null,
+      icon: w.icon ?? null,
+      totalHomeBalance: pockets.reduce((sum, p) => sum + p.homeBalance, 0),
+      pockets,
+    }
+  })
+
+  return [...walletItems, ...standalone]
 }
 
 // Count of transactions per account, scoped to the org. Used by the
@@ -397,25 +455,16 @@ export async function deleteAccount(
   const account = await findById(id, organizationId, userId)
   if (!account) throw new HTTPException(404, { message: "Account not found" })
 
-  const tradeRows = await db
-    .select()
+  // Any trade history blocks deletion (the trades FK is onDelete: restrict, and
+  // dropping trades would lose financial history). Mirrors the transaction guard
+  // below; open vs closed positions don't matter — both leave trade rows behind.
+  const [{ value: tradeCount }] = await db
+    .select({ value: count() })
     .from(trades)
     .where(eq(trades.accountId, id))
-    .orderBy(asc(trades.date), asc(trades.createdAt))
-  const openCount = countOpenPositionsFromTrades(
-    tradeRows.map((t) => ({
-      instrumentId: t.instrumentId,
-      type: t.type as "buy" | "sell" | "dividend",
-      quantity: t.quantity,
-      price: t.price,
-      fees: t.fees,
-      date: t.date,
-      createdAt: t.createdAt,
-    })),
-  )
-  if (openCount > 0) {
+  if (tradeCount > 0) {
     throw new HTTPException(409, {
-      message: `Account has ${openCount} position${openCount !== 1 ? "s" : ""} and cannot be deleted`,
+      message: "Account has trade history and cannot be deleted",
     })
   }
 

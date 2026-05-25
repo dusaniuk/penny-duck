@@ -12,7 +12,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import type { PaletteColor } from "@/lib/palette"
 import { paletteColor } from "@/lib/palette"
 
-type AccountType = "bank" | "cash" | "brokerage"
+type AccountType = "bank" | "wallet" | "brokerage"
 
 interface AccountEmptyStateProps {
   onAdd: () => void
@@ -36,9 +36,9 @@ const PICKS: ReadonlyArray<Pick> = [
     color: "orange",
   },
   {
-    type: "cash",
-    title: "Cash",
-    sub: "Wallet, envelopes, jars",
+    type: "wallet",
+    title: "Wallet",
+    sub: "Physical cash, multiple currencies",
     Icon: IconWallet,
     color: "green",
   },

@@ -16,16 +16,35 @@ export type { Member } from "./schemas/users"
 
 export {
   AccountSchema,
+  WalletSchema,
+  WalletPocketSchema,
+  AccountListItemSchema,
+  AccountsResponseSchema,
   AccountUsageItemSchema,
   AccountUsageResponseSchema,
   CreateAccountSchema,
+  CreateStandaloneAccountSchema,
+  CreateWalletAccountSchema,
+  CreatePocketInputSchema,
+  AddPocketSchema,
   UpdateAccountSchema,
   AccountSeriesPointSchema,
   AccountSeriesItemSchema,
+  WalletSeriesItemSchema,
   AccountSeriesResponseSchema,
   AccountSeriesQuerySchema,
 } from "./schemas/accounts"
-export type { Account, AccountUsageItem, AccountSeriesItem } from "./schemas/accounts"
+export type {
+  Account,
+  Wallet,
+  WalletPocket,
+  AccountListItem,
+  AccountsResponse,
+  AccountUsageItem,
+  AccountSeriesItem,
+  WalletSeriesItem,
+  AccountSeriesResponse,
+} from "./schemas/accounts"
 
 export {
   CategorySchema,

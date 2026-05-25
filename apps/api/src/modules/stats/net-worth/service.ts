@@ -126,19 +126,26 @@ export async function getNetWorth(
   organizationId: string,
   userId: string,
 ): Promise<NetWorthResponse> {
-  const accountRows = await listAccounts(organizationId, userId)
-  // listAccounts rolls brokerage holdings into homeBalance, so the sum is the
-  // full net worth. Derive cash by subtracting investments from total.
-  const total = accountRows.reduce((acc, r) => acc + r.homeBalance, 0)
+  const list = await listAccounts(organizationId, userId)
+  // A wallet is one entity (its pockets summed into totalHomeBalance), so the
+  // count and top-accounts list treat it as one — matching the accounts page —
+  // rather than one row per pocket. Brokerage holdings are already rolled into
+  // homeBalance, so the sum is the full net worth; cash is total − investments.
+  const entities = list.map((item) =>
+    "pockets" in item
+      ? { id: item.id, name: item.name, homeBalance: item.totalHomeBalance }
+      : { id: item.id, name: item.name, homeBalance: item.homeBalance },
+  )
+
+  const total = entities.reduce((acc, e) => acc + e.homeBalance, 0)
   const summary = await getSummary(organizationId, userId)
   const investments = summary.totalValueHome
   const cash = total - investments
   const homeCurrency = await resolveHomeCurrency(userId)
 
-  const topAccounts = [...accountRows]
+  const topAccounts = [...entities]
     .sort((a, b) => b.homeBalance - a.homeBalance)
     .slice(0, 3)
-    .map((a) => ({ id: a.id, name: a.name, homeBalance: a.homeBalance }))
 
   const monthlyDeltas = await getMonthlyDeltasHome(
     organizationId,
@@ -164,7 +171,7 @@ export async function getNetWorth(
       investments,
       homeCurrency,
       pricesStale: summary.pricesStale,
-      accountsCount: accountRows.length,
+      accountsCount: entities.length,
       topAccounts,
     },
     history: { points },

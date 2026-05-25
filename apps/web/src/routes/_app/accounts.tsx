@@ -2,18 +2,36 @@ import { useMemo, useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
 import { createFileRoute, getRouteApi } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { Button } from "@workspace/ui/components/button"
 import type { InferRequestType } from "hono/client"
+import type { Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
-import type { AccountSubmitData } from "@/components/accounts/account-form-dialog"
+import type {
+  AccountSubmitData,
+  WalletSubmitData,
+} from "@/components/accounts/account-form-dialog"
 import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
 import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { AccountsGroups } from "@/components/accounts/accounts-groups"
 import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
 import { api, queryClient } from "@/lib/api"
+import { leafAccountsOf, walletsOf } from "@/lib/accounts"
 
-type AccountType = "bank" | "cash" | "brokerage"
+type AccountType = "bank" | "wallet" | "brokerage"
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (
+    err &&
+    typeof err === "object" &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    return (err as { message: string }).message
+  }
+  return fallback
+}
 
 type CreateAccountBody = InferRequestType<typeof api.accounts.$post>["json"]
 type UpdateAccountBody = InferRequestType<
@@ -27,8 +45,14 @@ export const Route = createFileRoute("/_app/accounts")({
 
 const appRouteApi = getRouteApi("/_app")
 
+function invalidateAccounts() {
+  return queryClient.invalidateQueries({ queryKey: ["accounts"] })
+}
+
 function AccountsPage() {
   const { user } = appRouteApi.useRouteContext()
+
+  // ── Accounts query (flat list of leaf accounts + wallets) ─────────────────
   const { data, isLoading: loading } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
@@ -37,8 +61,26 @@ function AccountsPage() {
       return res.json()
     },
   })
-  const accounts = data ?? []
+  const wallets = useMemo(() => walletsOf(data), [data])
+  const standaloneAccounts = useMemo(() => leafAccountsOf(data), [data])
 
+  // Transaction counts per account, used to disable deleting a pocket that has
+  // transactions in the wallet-edit dialog.
+  const { data: usageData } = useQuery({
+    queryKey: ["accounts", "usage"],
+    queryFn: async () => {
+      const res = await api.accounts.usage.$get()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+  })
+  const pocketTransactionCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const u of usageData ?? []) counts[u.accountId] = u.count
+    return counts
+  }, [usageData])
+
+  // ── Series query ──────────────────────────────────────────────────────────
   const { data: seriesData } = useQuery({
     queryKey: ["accounts", "series", 30],
     queryFn: async () => {
@@ -50,21 +92,30 @@ function AccountsPage() {
 
   const seriesByAccount = useMemo(() => {
     const map = new Map<string, Array<number>>()
-    for (const item of seriesData ?? []) {
+    for (const item of seriesData?.accounts ?? []) {
       map.set(
         item.accountId,
+        item.points.map((p) => p.balance)
+      )
+    }
+    for (const item of seriesData?.wallets ?? []) {
+      map.set(
+        item.walletId,
         item.points.map((p) => p.balance)
       )
     }
     return map
   }, [seriesData])
 
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
+  const [editWallet, setEditWallet] = useState<Wallet | null>(null)
   const [pendingType, setPendingType] = useState<AccountType | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<AccountData | null>(null)
   const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
 
+  // ── Account mutations ─────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: async (body: CreateAccountBody) => {
       const res = await api.accounts.$post({ json: body })
@@ -104,14 +155,45 @@ function AccountsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
+  // ── Pocket mutations (wallet create/update/delete reuse the account ones) ──
+  const addPocketMutation = useMutation({
+    mutationFn: async (vars: {
+      walletId: string
+      currency: string
+      balance: number
+    }) => {
+      const res = await api.accounts[":id"].pockets.$post({
+        param: { id: vars.walletId },
+        json: { currency: vars.currency, balance: vars.balance },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: () => invalidateAccounts(),
+  })
+
+  const deletePocketMutation = useMutation({
+    mutationFn: async (vars: { walletId: string; currency: string }) => {
+      const res = await api.accounts[":id"].pockets[":currency"].$delete({
+        param: { id: vars.walletId, currency: vars.currency },
+      })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: () => invalidateAccounts(),
+  })
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
   function handleOpenCreate() {
     setEditAccount(null)
+    setEditWallet(null)
     setPendingType(null)
     setFormOpen(true)
   }
 
   function handleQuickPick(type: AccountType) {
     setEditAccount(null)
+    setEditWallet(null)
     setPendingType(type)
     setFormOpen(true)
   }
@@ -119,6 +201,14 @@ function AccountsPage() {
   function handleEdit(account: AccountData) {
     setPendingType(null)
     setEditAccount(account)
+    setEditWallet(null)
+    setFormOpen(true)
+  }
+
+  function handleEditWallet(wallet: Wallet) {
+    setPendingType(null)
+    setEditAccount(null)
+    setEditWallet(wallet)
     setFormOpen(true)
   }
 
@@ -152,9 +242,10 @@ function AccountsPage() {
         },
       })
     } else {
+      // handleSubmit only runs for leaf accounts; wallets go via onSubmitWallet.
       await createMutation.mutateAsync({
+        type: input.type as "bank" | "brokerage",
         name: input.name,
-        type: input.type,
         currency: input.currency,
         color: input.color,
         icon: input.icon,
@@ -164,12 +255,63 @@ function AccountsPage() {
     }
   }
 
+  async function handleSubmitWallet(input: WalletSubmitData) {
+    if (input.id) {
+      await updateMutation.mutateAsync({
+        id: input.id,
+        body: { name: input.name, color: input.color, icon: input.icon },
+      })
+    } else {
+      await createMutation.mutateAsync({
+        type: "wallet",
+        name: input.name,
+        color: input.color,
+        icon: input.icon,
+        pockets: input.pockets,
+      })
+    }
+  }
+
+  // The mutation returns the refreshed wallet, so we set it straight onto the
+  // open dialog rather than re-reading the (possibly not-yet-refetched) cache.
+  // Add errors propagate to the dialog, which renders them inline.
+  async function handleAddPocket(
+    walletId: string,
+    currency: string,
+    balance: number
+  ) {
+    const updated = await addPocketMutation.mutateAsync({
+      walletId,
+      currency,
+      balance,
+    })
+    setEditWallet(updated)
+  }
+
+  async function handleDeletePocket(walletId: string, currency: string) {
+    try {
+      const updated = await deletePocketMutation.mutateAsync({
+        walletId,
+        currency,
+      })
+      setEditWallet(updated)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't delete the pocket"))
+    }
+  }
+
+  async function handleDeleteWallet(wallet: Wallet) {
+    await deleteMutation.mutateAsync(wallet.id)
+  }
+
   async function handleDelete() {
     if (!deleteAccount) return
     await deleteMutation.mutateAsync(deleteAccount.id)
   }
 
-  const isEmpty = !loading && accounts.length === 0
+  const totalCount = standaloneAccounts.length + wallets.length
+  const hasContent = !loading && totalCount > 0
+  const isEmpty = !loading && totalCount === 0
 
   return (
     <div className="space-y-8">
@@ -193,7 +335,9 @@ function AccountsPage() {
         </Button>
       </div>
 
-      {!loading && !isEmpty && <AccountsNetWorthCard accounts={accounts} />}
+      {hasContent && (
+        <AccountsNetWorthCard accounts={standaloneAccounts} wallets={wallets} />
+      )}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -211,11 +355,13 @@ function AccountsPage() {
         />
       ) : (
         <AccountsGroups
-          accounts={accounts}
+          accounts={standaloneAccounts}
+          wallets={wallets}
           homeCurrency={user.homeCurrency}
           seriesByAccount={seriesByAccount}
           onEdit={handleEdit}
           onSetDefault={handleSetDefault}
+          onEditWallet={handleEditWallet}
         />
       )}
 
@@ -225,15 +371,22 @@ function AccountsPage() {
           setFormOpen(open)
           if (!open) {
             setEditAccount(null)
+            setEditWallet(null)
             setPendingType(null)
           }
         }}
         account={editAccount}
+        wallet={editWallet}
         initialType={pendingType ?? undefined}
-        existingAccountColors={accounts.map((a) => a.color)}
-        existingAccountIcons={accounts.map((a) => a.icon)}
+        existingAccountColors={standaloneAccounts.map((a) => a.color)}
+        existingAccountIcons={standaloneAccounts.map((a) => a.icon)}
         onSubmit={handleSubmit}
+        onSubmitWallet={handleSubmitWallet}
         onArchive={handleOpenDelete}
+        onDeleteWallet={handleDeleteWallet}
+        onAddPocket={handleAddPocket}
+        onDeletePocket={handleDeletePocket}
+        pocketTransactionCounts={pocketTransactionCounts}
       />
 
       <AccountDeleteDialog

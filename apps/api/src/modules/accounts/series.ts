@@ -6,10 +6,15 @@ import {
   trades,
   transactions,
 } from "@workspace/db"
-import type { AccountSeriesItem } from "@workspace/api-contract"
+import type {
+  AccountSeriesItem,
+  AccountSeriesResponse,
+  WalletSeriesItem,
+} from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 import { ensureHistoricalPrices } from "@/modules/investments/instruments/service"
+import { getCurrentUser } from "@/modules/users/service"
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -38,6 +43,7 @@ interface AccountRow {
   type: string
   currency: string
   initialBalance: number
+  walletId: string | null
 }
 
 function tradeCashImpact(t: {
@@ -61,11 +67,31 @@ function tradeQtyImpact(t: {
   return 0
 }
 
+// Carry the nearest known cross-currency rate across the window. getRate
+// returns 1 for a pair of different currencies when a day's snapshot lacks the
+// target, which would otherwise sum a foreign pocket 1:1 into home currency for
+// that day. A missing day (1) reuses the closest prior rate, and leading gaps
+// reuse the first known rate. If no real rate exists at all, the 1s are kept.
+export function carryForwardRates(rates: number[]): number[] {
+  const out = [...rates]
+  let lastReal: number | null = null
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] !== 1) lastReal = out[i]
+    else if (lastReal !== null) out[i] = lastReal
+  }
+  let firstReal: number | null = null
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i] !== 1) firstReal = out[i]
+    else if (firstReal !== null) out[i] = firstReal
+  }
+  return out
+}
+
 export async function computeAccountSeries(
   organizationId: string,
-  _userId: string,
+  userId: string,
   days: number,
-): Promise<AccountSeriesItem[]> {
+): Promise<AccountSeriesResponse> {
   const window = buildWindow(days)
   const windowStartIso = window[0]
   const today = todayUTC()
@@ -77,12 +103,13 @@ export async function computeAccountSeries(
       type: accounts.type,
       currency: accounts.currency,
       initialBalance: accounts.initialBalance,
+      walletId: accounts.walletId,
     })
     .from(accounts)
     .where(eq(accounts.organizationId, organizationId))
     .orderBy(accounts.name)
 
-  if (accountRows.length === 0) return []
+  if (accountRows.length === 0) return { accounts: [], wallets: [] }
 
   const accountIds = accountRows.map((a) => a.id)
 
@@ -222,8 +249,11 @@ export async function computeAccountSeries(
     return answer === -1 ? 0 : series[answer][1]
   }
 
+  const { homeCurrency } = await getCurrentUser(userId)
+  const hasPockets = accountRows.some((a) => a.walletId !== null)
+
   // Pre-warm FX: for every (instrument.currency, account.currency, date) we'll
-  // touch.
+  // touch, plus (pocket.currency, home, date) for wallet aggregation.
   const fxByDate = new Map<string, number>() // `${from}:${to}:${date}` -> rate
   const fxKeys: Array<{ from: string; to: string; date: string }> = []
   for (const acc of accountRows) {
@@ -243,10 +273,22 @@ export async function computeAccountSeries(
       }
     }
   }
+  for (const acc of accountRows) {
+    if (acc.walletId === null) continue
+    if (acc.currency === homeCurrency) continue
+    for (const date of window) {
+      const k = `${acc.currency}:${homeCurrency}:${date}`
+      if (!fxByDate.has(k)) {
+        fxByDate.set(k, 0)
+        fxKeys.push({ from: acc.currency, to: homeCurrency, date })
+      }
+    }
+  }
   const usedCurrencies = [
     ...new Set([
       ...accountRows.map((a) => a.currency),
       ...instrumentCurrency.values(),
+      homeCurrency,
     ]),
   ]
   await Promise.all(
@@ -268,12 +310,30 @@ export async function computeAccountSeries(
     }),
   )
 
+  // Smooth pocket→home rates over the window so a day with no published rate
+  // reuses the nearest known one rather than collapsing the pocket to 1:1.
+  const pocketCurrencies = new Set(
+    accountRows
+      .filter((a) => a.walletId !== null && a.currency !== homeCurrency)
+      .map((a) => a.currency),
+  )
+  for (const cur of pocketCurrencies) {
+    const filled = carryForwardRates(
+      window.map((date) => fxByDate.get(`${cur}:${homeCurrency}:${date}`) ?? 1),
+    )
+    window.forEach((date, i) => {
+      fxByDate.set(`${cur}:${homeCurrency}:${date}`, filled[i])
+    })
+  }
+
   function fx(from: string, to: string, date: string): number {
     if (from === to) return 1
     return fxByDate.get(`${from}:${to}:${date}`) ?? 1
   }
 
-  return accountRows.map((acc) => {
+  type ComputedSeries = AccountSeriesItem & { walletId: string | null }
+
+  const allSeries: ComputedSeries[] = accountRows.map((acc) => {
     const deltas = cashDeltas.get(acc.id)!
     let cash = acc.initialBalance + (cashPreWindow.get(acc.id) ?? 0)
 
@@ -311,7 +371,40 @@ export async function computeAccountSeries(
     return {
       accountId: acc.id,
       currency: acc.currency,
+      walletId: acc.walletId,
       points,
     }
   })
+
+  const accountSeries: AccountSeriesItem[] = []
+  const pocketSeriesByWallet = new Map<string, ComputedSeries[]>()
+  for (const s of allSeries) {
+    if (s.walletId === null) {
+      accountSeries.push({
+        accountId: s.accountId,
+        currency: s.currency,
+        points: s.points,
+      })
+    } else {
+      const arr = pocketSeriesByWallet.get(s.walletId) ?? []
+      arr.push(s)
+      pocketSeriesByWallet.set(s.walletId, arr)
+    }
+  }
+
+  const walletSeries: WalletSeriesItem[] = []
+  if (hasPockets) {
+    for (const [walletId, pockets] of pocketSeriesByWallet) {
+      const points = window.map((date, idx) => {
+        let total = 0
+        for (const p of pockets) {
+          total += p.points[idx].balance * fx(p.currency, homeCurrency, date)
+        }
+        return { date, balance: total }
+      })
+      walletSeries.push({ walletId, currency: homeCurrency, points })
+    }
+  }
+
+  return { accounts: accountSeries, wallets: walletSeries }
 }

@@ -8,7 +8,9 @@ import {
 } from "bun:test"
 import { env } from "@workspace/env/api"
 import type { Account } from "@workspace/api-contract"
+import { exchangeRates } from "@workspace/db"
 import { honoApp } from "@/app"
+import { db } from "@/db"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { generateInviteCodeService } from "@/modules/auth/service"
@@ -81,7 +83,8 @@ async function listAccountsHttp(
     headers: { cookie: cookieValue },
   })
   expect(res.status).toBe(200)
-  return res.json()
+  const body = (await res.json()) as Array<{ type: string }>
+  return body.filter((a) => a.type !== "wallet") as Account[]
 }
 
 async function getAccountHttp(
@@ -185,7 +188,7 @@ describe("Accounts", () => {
   it("defaults balance to 0", async () => {
     const account = await createAccountHttp({
       name: "Cash",
-      type: "cash",
+      type: "bank",
       currency: "USD",
     })
 
@@ -194,7 +197,7 @@ describe("Accounts", () => {
 
   it("lists accounts for user", async () => {
     await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
-    await createAccountHttp({ name: "Cash", type: "cash", currency: "USD" })
+    await createAccountHttp({ name: "Cash", type: "bank", currency: "USD" })
 
     const accounts = await listAccountsHttp()
 
@@ -225,11 +228,11 @@ describe("Accounts", () => {
 
     const updated = await updateAccountHttp(created.id, {
       name: "New Name",
-      type: "cash",
+      type: "bank",
     })
 
     expect(updated.name).toBe("New Name")
-    expect(updated.type).toBe("cash")
+    expect(updated.type).toBe("bank")
   })
 
   it("deletes an account", async () => {
@@ -490,6 +493,88 @@ describe("Accounts — brokerage balance", () => {
     )
   })
 
+  it("rolls holdings into balance when fetched by id", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "buy",
+      quantity: 10,
+      price: 100,
+      date: "2026-01-01T00:00:00Z",
+    })
+    // GET /accounts/:id recomputes holdings on its own path, not via the list.
+    const fetched = await getAccountHttp(account.id)
+    expect(fetched.balance).toBeCloseTo(11_000, 2)
+  })
+
+  it("rejects deleting a brokerage with an open position", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "buy",
+      quantity: 10,
+      price: 100,
+      date: "2026-01-01T00:00:00Z",
+    })
+
+    // Distinct from the transaction guard: this trips the open-position check.
+    await deleteAccountHttp(account.id, cookie, 409)
+  })
+
+  it("rejects deleting a brokerage with closed trade history", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "buy",
+      quantity: 10,
+      price: 100,
+      date: "2026-01-01T00:00:00Z",
+    })
+    await postTrade({
+      accountId: account.id,
+      symbol: "AAPL",
+      type: "sell",
+      quantity: 10,
+      price: 200,
+      date: "2026-02-01T00:00:00Z",
+    })
+
+    // No open positions, but the trade rows remain — deletion still blocks.
+    await deleteAccountHttp(account.id, cookie, 409)
+  })
+
+  it("deletes a brokerage that never traded", async () => {
+    const account = await createAccountHttp({
+      name: "IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 5000,
+    })
+
+    await deleteAccountHttp(account.id)
+
+    const list = await listAccountsHttp()
+    expect(list.find((a) => a.id === account.id)).toBeUndefined()
+  })
+
   it("excludes fully-closed positions from balance", async () => {
     const account = await createAccountHttp({
       name: "IBKR",
@@ -530,5 +615,100 @@ describe("Accounts — brokerage balance", () => {
     })
     const list = await listAccountsHttp()
     expect(list.find((a) => a.id === bank.id)!.balance).toBeCloseTo(1234, 2)
+  })
+})
+
+interface WalletItem {
+  id: string
+  type: "wallet"
+  name: string
+  totalHomeBalance: number
+  pockets: Array<{ accountId: string; currency: string; balance: number }>
+}
+
+describe("GET /accounts list shape", () => {
+  it("returns leaf accounts in a flat list, never as wallet pockets", async () => {
+    await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
+    const res = await honoApp.request("/accounts", { headers: { cookie } })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as Array<{ type: string; name: string }>
+    expect(body).toHaveLength(1)
+    expect(body[0].type).toBe("bank")
+    expect(body[0].name).toBe("Bank")
+  })
+
+  it("returns a wallet as a single entry with nested pockets and a home total", async () => {
+    const today = new Date().toISOString().split("T")[0]
+    await db.insert(exchangeRates).values([
+      { date: today, base: "USD", target: "UAH", rate: 41 },
+    ])
+
+    const walletRes = await honoApp.request("/accounts", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        type: "wallet",
+        name: "Main",
+        pockets: [{ currency: "USD", balance: 100 }],
+      }),
+    })
+    expect(walletRes.status).toBe(201)
+    const createdWallet = await walletRes.json()
+
+    const res = await honoApp.request("/accounts", { headers: { cookie } })
+    const body = (await res.json()) as Array<{ type: string }>
+    // Exactly one entry (the wallet); pockets must not leak as leaf accounts.
+    expect(body).toHaveLength(1)
+    const wallets = body.filter((a): a is WalletItem => a.type === "wallet")
+    expect(wallets).toHaveLength(1)
+    expect(wallets[0].id).toBe(createdWallet.id)
+    expect(wallets[0].name).toBe("Main")
+    expect(wallets[0].pockets).toHaveLength(1)
+    expect(wallets[0].pockets[0].currency).toBe("USD")
+    expect(wallets[0].pockets[0].balance).toBe(100)
+    expect(wallets[0].totalHomeBalance).toBeCloseTo(100 * 41, 2)
+  })
+
+  it("returns the wallet shape (pockets + home total) when fetched by id", async () => {
+    const today = new Date().toISOString().split("T")[0]
+    await db.insert(exchangeRates).values([
+      { date: today, base: "USD", target: "UAH", rate: 41 },
+    ])
+
+    const walletRes = await honoApp.request("/accounts", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        type: "wallet",
+        name: "Main",
+        pockets: [{ currency: "USD", balance: 100 }],
+      }),
+    })
+    const createdWallet = await walletRes.json()
+
+    // GET /accounts/:id dispatches to the wallet loader, not getAccount.
+    const res = await honoApp.request(`/accounts/${createdWallet.id}`, {
+      headers: { cookie },
+    })
+    expect(res.status).toBe(200)
+    const wallet = (await res.json()) as WalletItem
+    expect(wallet.type).toBe("wallet")
+    expect(wallet.id).toBe(createdWallet.id)
+    expect(wallet.pockets).toHaveLength(1)
+    expect(wallet.pockets[0].currency).toBe("USD")
+    expect(wallet.pockets[0].balance).toBe(100)
+    expect(wallet.totalHomeBalance).toBeCloseTo(100 * 41, 2)
+  })
+
+  it("rejects creating a standalone account with an unsupported type", async () => {
+    for (const type of ["wallet", "cash", "crypto"]) {
+      const res = await honoApp.request("/accounts", {
+        method: "POST",
+        headers: { cookie, "content-type": "application/json" },
+        // wallet here is missing `pockets`, so it matches neither union variant
+        body: JSON.stringify({ name: "Orphan", type, currency: "USD" }),
+      })
+      expect(res.status).toBe(400)
+    }
   })
 })

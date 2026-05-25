@@ -100,7 +100,7 @@ describe("getMonthlySummary", () => {
       organizationId,
       userId,
       name: "Cash",
-      type: "cash",
+      type: "bank",
       currency: "UAH",
       balance: 0,
     })
