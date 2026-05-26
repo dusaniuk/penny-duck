@@ -152,6 +152,40 @@ test.describe("Categories CRUD", () => {
   })
 })
 
+test.describe("Categories seeding", () => {
+  test.beforeEach(async ({ request }) => {
+    await signupAndLogin(request)
+  })
+
+  test("seeds the default set into an empty org", async ({ request }) => {
+    const res = await request.post("/categories/seed")
+    expect(res.status()).toBe(201)
+
+    const created = await res.json()
+    expect(created.length).toBe(25)
+
+    const topLevel = created.filter((c: any) => c.parentId === null)
+    expect(topLevel.map((c: any) => c.name).sort()).toEqual([
+      "Essentials",
+      "Income",
+      "Lifestyle",
+      "Treats",
+    ])
+
+    const listed = await (await request.get("/categories")).json()
+    expect(listed.length).toBe(25)
+  })
+
+  test("rejects seeding when categories already exist", async ({ request }) => {
+    await request.post("/categories", {
+      data: { name: "Existing", color: "red" },
+    })
+
+    const res = await request.post("/categories/seed")
+    expect(res.status()).toBe(409)
+  })
+})
+
 test.describe("Categories - auth required", () => {
   test("returns 401 without auth", async () => {
     const { env } = await import("../../shared/env")

@@ -6,91 +6,12 @@ import {
   type CategoryType,
   type CategoryUsageItem,
 } from "@workspace/api-contract"
+import { DEFAULT_CATEGORY_SET } from "@workspace/shared/categories"
 import { db } from "@/db"
 
 type CategoryRow = typeof categories.$inferSelect
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type Executor = typeof db | Tx
-
-interface DefaultCategory {
-  icon: string | null
-  type: CategoryType
-  color: string
-  children: Array<{ name: string; icon: string | null }>
-}
-
-const DEFAULT_CATEGORIES: Record<string, DefaultCategory> = {
-  "Food & Drinks": {
-    icon: "pizza",
-    type: "expense",
-    color: "red",
-    children: [
-      { name: "Groceries", icon: "shopping-cart" },
-      { name: "Restaurants", icon: "meat" },
-      { name: "Coffee & Bars", icon: "coffee" },
-    ],
-  },
-  Transport: {
-    icon: "car",
-    type: "expense",
-    color: "blue",
-    children: [
-      { name: "Public Transit", icon: "bus" },
-      { name: "Taxi", icon: "car" },
-      { name: "Fuel", icon: "gas-station" },
-    ],
-  },
-  Housing: {
-    icon: "home",
-    type: "expense",
-    color: "orange",
-    children: [
-      { name: "Rent", icon: "home" },
-      { name: "Utilities", icon: "bolt" },
-      { name: "Maintenance", icon: "tool" },
-    ],
-  },
-  Shopping: {
-    icon: "shopping-bag",
-    type: "expense",
-    color: "purple",
-    children: [
-      { name: "Clothes", icon: "shirt" },
-      { name: "Electronics", icon: "credit-card" },
-      { name: "Gifts", icon: "gift" },
-    ],
-  },
-  Entertainment: {
-    icon: "ticket",
-    type: "expense",
-    color: "magenta",
-    children: [
-      { name: "Subscriptions", icon: "movie" },
-      { name: "Hobbies", icon: "device-gamepad" },
-      { name: "Events", icon: "ticket" },
-    ],
-  },
-  Health: {
-    icon: "heartbeat",
-    type: "expense",
-    color: "green",
-    children: [
-      { name: "Pharmacy", icon: "pill" },
-      { name: "Doctor", icon: "heartbeat" },
-      { name: "Sports", icon: "ball-tennis" },
-    ],
-  },
-  Income: {
-    icon: "cash",
-    type: "income",
-    color: "emerald",
-    children: [
-      { name: "Salary", icon: "building-bank" },
-      { name: "Freelance", icon: "briefcase" },
-      { name: "Other", icon: "coin" },
-    ],
-  },
-}
 
 function toResponse(row: CategoryRow): Category {
   return {
@@ -387,31 +308,48 @@ export async function deleteCategory(
 
 export async function seedDefaultCategories(
   organizationId: string,
-): Promise<void> {
-  await db.transaction(async (tx) => {
-    for (const [parentName, category] of Object.entries(DEFAULT_CATEGORIES)) {
+): Promise<Category[]> {
+  return db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.organizationId, organizationId))
+      .limit(1)
+    if (existing.length > 0) {
+      throw new HTTPException(409, { message: "Categories already exist" })
+    }
+
+    const created: CategoryRow[] = []
+    for (const group of DEFAULT_CATEGORY_SET) {
       const [parent] = await tx
         .insert(categories)
         .values({
           organizationId,
           parentId: null,
-          name: parentName,
-          type: category.type,
-          icon: category.icon,
-          color: category.color,
+          name: group.name,
+          type: group.type,
+          icon: group.icon,
+          color: group.color,
         })
         .returning()
+      created.push(parent)
 
-      if (category.children.length === 0) continue
-      await tx.insert(categories).values(
-        category.children.map((child) => ({
-          organizationId,
-          parentId: parent.id,
-          name: child.name,
-          type: category.type,
-          icon: child.icon,
-        })),
-      )
+      if (group.children.length === 0) continue
+      const childRows = await tx
+        .insert(categories)
+        .values(
+          group.children.map((child) => ({
+            organizationId,
+            parentId: parent.id,
+            name: child.name,
+            type: group.type,
+            icon: child.icon,
+          })),
+        )
+        .returning()
+      created.push(...childRows)
     }
+
+    return created.map(toResponse)
   })
 }

@@ -55,22 +55,6 @@ export function CategoryList({
     return map
   }, [categories])
 
-  if (categories.length === 0) {
-    return (
-      <div className="grid place-items-center rounded-[14px] border border-dashed border-border bg-card/40 px-6 py-16 text-center">
-        <div className="grid size-11 place-items-center rounded-[12px] bg-foreground/5 text-muted-foreground">
-          <IconTag size={20} />
-        </div>
-        <p className="mt-4 text-sm font-medium text-foreground">
-          No categories yet
-        </p>
-        <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
-          Create your first category to start tagging transactions.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-8">
       {GROUPS.map(({ type, label }) => {

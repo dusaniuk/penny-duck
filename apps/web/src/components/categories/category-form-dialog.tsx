@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/select"
 import { cn } from "@workspace/ui/lib/utils"
 import * as z from "zod"
+import type { CSSProperties } from "react"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { PaletteColor } from "@/lib/palette"
 import { ColorPicker } from "@/components/color-picker"
@@ -390,24 +391,32 @@ interface PreviewCardProps {
 }
 
 function PreviewCard({ name, type, color, icon, parentName }: PreviewCardProps) {
-  const fg = paletteColor(color, { l: 0.78, c: 0.14 })
-  const tint = paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 })
-  const halo = paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 })
   const displayName = name || (parentName ? "New subcategory" : "New category")
   const resolved = getIcon(icon)
   const IconComp = resolved?.component ?? IconTag
+  // Light/dark tokens mirror AccountIconChip in
+  // apps/web/src/components/accounts/account-card.tsx so the chip and halo read
+  // in both themes instead of using dark-only values.
+  const vars = {
+    "--chip-fg-l": paletteColor(color, { l: 0.5, c: 0.18 }),
+    "--chip-fg-d": paletteColor(color, { l: 0.78, c: 0.14 }),
+    "--chip-bg-l": paletteColor(color, { l: 0.93, c: 0.1 }),
+    "--chip-bg-d": paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 }),
+    "--halo-l": paletteColor(color, { l: 0.72, c: 0.15, a: 0.45 }),
+    "--halo-d": paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 }),
+  } as CSSProperties
 
   return (
-    <div className="relative flex items-center gap-2.5 overflow-hidden rounded-[12px] border border-border bg-card p-3.5">
+    <div
+      className="relative flex items-center gap-2.5 overflow-hidden rounded-[12px] border border-border bg-card p-3.5"
+      style={vars}
+    >
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full"
-        style={{ background: halo, filter: "blur(44px)" }}
+        className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
+        style={{ filter: "blur(44px)" }}
       />
-      <span
-        className="relative grid size-9 shrink-0 place-items-center rounded-[9px] border border-foreground/4"
-        style={{ color: fg, background: tint }}
-      >
+      <span className="relative grid size-9 shrink-0 place-items-center rounded-[9px] border border-foreground/4 bg-(--chip-bg-l) text-(--chip-fg-l) dark:bg-(--chip-bg-d) dark:text-(--chip-fg-d)">
         <IconComp size={18} />
       </span>
       <div className="relative flex min-w-0 flex-1 flex-col gap-0.5">

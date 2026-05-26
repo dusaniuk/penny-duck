@@ -11,6 +11,7 @@ import {
   deleteCategory,
   getCategoryUsage,
   listCategories,
+  seedDefaultCategories,
   updateCategory,
 } from "./service"
 
@@ -27,6 +28,11 @@ export const categoriesRoutes = new Hono<AuthedEnv>()
     const user = c.get("user")
     const result = await getCategoryUsage(user.organizationId)
     return c.json(result)
+  })
+  .post("/seed", async (c) => {
+    const user = c.get("user")
+    const result = await seedDefaultCategories(user.organizationId)
+    return c.json(result, 201)
   })
   .post("/", zValidator("json", CreateCategorySchema), async (c) => {
     const user = c.get("user")

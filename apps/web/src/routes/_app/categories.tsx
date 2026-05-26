@@ -8,6 +8,7 @@ import type { InferRequestType } from "hono/client"
 import type { Category } from "@workspace/api-contract"
 import type { CategorySubmitData } from "@/components/categories/category-form-dialog"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
+import { CategoryEmptyState } from "@/components/categories/category-empty-state"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
 import { CategoryList } from "@/components/categories/category-list"
 import { PageHeader } from "@/components/page-header"
@@ -106,6 +107,15 @@ function CategoriesPage() {
     onSuccess: invalidateCategories,
   })
 
+  const seedMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.categories.seed.$post()
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateCategories,
+  })
+
   function handleOpenCreate() {
     setEditCategory(null)
     setCreateParentId(null)
@@ -164,6 +174,14 @@ function CategoriesPage() {
     }
   }
 
+  async function handleUseDefaults() {
+    try {
+      await seedMutation.mutateAsync()
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't set up the default categories"))
+    }
+  }
+
   const deleteInfo = useMemo(() => {
     if (!deleteCategory) return { childCount: 0, transactionCount: 0 }
     const childIds = categories
@@ -200,6 +218,12 @@ function CategoriesPage() {
             />
           ))}
         </div>
+      ) : categories.length === 0 ? (
+        <CategoryEmptyState
+          onUseDefaults={handleUseDefaults}
+          onCreateFirst={handleOpenCreate}
+          isSeeding={seedMutation.isPending}
+        />
       ) : (
         <CategoryList
           categories={categories}
