@@ -21,7 +21,6 @@ import {
 } from "@workspace/ui/components/select"
 import { cn } from "@workspace/ui/lib/utils"
 import * as z from "zod"
-import type { CSSProperties } from "react"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { PaletteColor } from "@/lib/palette"
 import { ColorPicker } from "@/components/color-picker"
@@ -29,7 +28,7 @@ import { IconPicker } from "@/components/icon-picker"
 import { ICON_TOKENS, getIcon, pickRandomUnusedIcon } from "@/lib/icons"
 import {
   PALETTE_TOKENS,
-  paletteColor,
+  categoryShadeVars,
   pickRandomUnusedColor,
 } from "@/lib/palette"
 
@@ -281,7 +280,9 @@ function CategoryModalBody({
                         className="min-w-0 flex-1 border-0 bg-transparent px-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground/60 md:text-[13px]"
                       />
                     </div>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}
@@ -318,11 +319,7 @@ function CategoryModalBody({
                       {selected ? selected.name : "Top-level category"}
                     </span>
                   </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    align="start"
-                    sideOffset={6}
-                  >
+                  <SelectContent position="popper" align="start" sideOffset={6}>
                     <SelectItem value="none">Top-level category</SelectItem>
                     {parents.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
@@ -390,21 +387,19 @@ interface PreviewCardProps {
   parentName: string | null
 }
 
-function PreviewCard({ name, type, color, icon, parentName }: PreviewCardProps) {
+function PreviewCard({
+  name,
+  type,
+  color,
+  icon,
+  parentName,
+}: PreviewCardProps) {
   const displayName = name || (parentName ? "New subcategory" : "New category")
   const resolved = getIcon(icon)
   const IconComp = resolved?.component ?? IconTag
-  // Light/dark tokens mirror AccountIconChip in
-  // apps/web/src/components/accounts/account-card.tsx so the chip and halo read
-  // in both themes instead of using dark-only values.
-  const vars = {
-    "--chip-fg-l": paletteColor(color, { l: 0.5, c: 0.18 }),
-    "--chip-fg-d": paletteColor(color, { l: 0.78, c: 0.14 }),
-    "--chip-bg-l": paletteColor(color, { l: 0.93, c: 0.1 }),
-    "--chip-bg-d": paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 }),
-    "--halo-l": paletteColor(color, { l: 0.72, c: 0.15, a: 0.45 }),
-    "--halo-d": paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 }),
-  } as CSSProperties
+  // Shared chip/halo shade tokens (also used by the categories page and the
+  // empty-state tiers) so the preview reads in both light and dark themes.
+  const vars = categoryShadeVars(color)
 
   return (
     <div

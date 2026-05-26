@@ -7,10 +7,14 @@ import {
   expect,
 } from "bun:test"
 import { env } from "@workspace/env/api"
+import { exchangeRates, transactions } from "@workspace/db"
 import type { Category } from "@workspace/api-contract"
 import { honoApp } from "@/app"
+import { db } from "@/db"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
+import { createAccount } from "@/modules/accounts/service"
+import { createCategory, getCategoryUsage } from "@/modules/categories/service"
 import {
   closeTestApp,
   createTestApp,
@@ -19,6 +23,8 @@ import {
 } from "@/test/setup"
 
 let cookie: string
+let organizationId: string
+let userId: string
 
 function cookieHeader(jwt: string): string {
   return `${ACCESS_TOKEN_COOKIE}=${jwt}`
@@ -33,6 +39,8 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
+  organizationId = result.accessToken.organizationId
+  userId = result.accessToken.sub
   const jwt = signAccessToken(
     result.accessToken,
     env.JWT_SECRET,
@@ -411,5 +419,149 @@ describe("Categories", () => {
     expect(user2Cats.find((c) => c.name === "User2 Cat")).toBeDefined()
     expect(user1Cats.find((c) => c.name === "User2 Cat")).toBeUndefined()
     expect(user2Cats.find((c) => c.name === "User1 Cat")).toBeUndefined()
+  })
+})
+
+describe("Categories — usage stats", () => {
+  it("separates all-time count from current-month cash-flow stats", async () => {
+    const bank = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 0,
+    })
+    const brokerage = await createAccount({
+      organizationId,
+      userId,
+      name: "IBKR",
+      type: "brokerage",
+      currency: "UAH",
+      balance: 0,
+    })
+    const parent = await createCategory({
+      organizationId,
+      name: "Food",
+      parentId: null,
+      icon: null,
+      type: "expense",
+      color: "blue",
+    })
+
+    const now = new Date()
+    const thisMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15, 12, 0, 0),
+    )
+    const lastMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12, 0, 0),
+    )
+
+    // Two clean current-month expenses → counted everywhere.
+    const [base] = await db
+      .insert(transactions)
+      .values([
+        {
+          organizationId,
+          accountId: bank.id,
+          categoryId: parent.id,
+          amount: -50,
+          date: thisMonth,
+        },
+        {
+          organizationId,
+          accountId: bank.id,
+          categoryId: parent.id,
+          amount: -30,
+          date: thisMonth,
+        },
+      ])
+      .returning()
+
+    await db.insert(transactions).values([
+      // Prior month → all-time count only.
+      {
+        organizationId,
+        accountId: bank.id,
+        categoryId: parent.id,
+        amount: -20,
+        date: lastMonth,
+      },
+      // Brokerage row → excluded from cash-flow, still in all-time count.
+      {
+        organizationId,
+        accountId: brokerage.id,
+        categoryId: parent.id,
+        amount: -100,
+        date: thisMonth,
+      },
+      // Reimbursement leg → excluded from cash-flow, still in all-time count.
+      {
+        organizationId,
+        accountId: bank.id,
+        categoryId: parent.id,
+        amount: -40,
+        date: thisMonth,
+        reimbursementId: base.id,
+      },
+    ])
+
+    const usage = await getCategoryUsage(organizationId, userId)
+    const stat = usage.find((u) => u.categoryId === parent.id)
+
+    expect(stat).toBeDefined()
+    expect(stat!.count).toBe(5) // all categorized rows, no exclusions
+    expect(stat!.countThisMonth).toBe(2) // brokerage + reimbursement + prior month excluded
+    expect(stat!.spentThisMonth).toBe(80) // 50 + 30, account currency == home (UAH)
+    expect(stat!.lastActivityAt).toBe(thisMonth.toISOString())
+  })
+
+  it("converts spend to the home currency using cached rates", async () => {
+    // Home currency is UAH (signup default); spend on a USD account must be
+    // converted, not summed as raw USD.
+    const usd = await createAccount({
+      organizationId,
+      userId,
+      name: "USD account",
+      type: "bank",
+      currency: "USD",
+      balance: 0,
+    })
+    const parent = await createCategory({
+      organizationId,
+      name: "Travel",
+      parentId: null,
+      icon: null,
+      type: "expense",
+      color: "blue",
+    })
+
+    const now = new Date()
+    const when = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 10, 12, 0, 0),
+    )
+    const dateStr = when.toISOString().split("T")[0]
+
+    // Seed the cached USD->UAH rate so getRate resolves offline (no network).
+    await db.insert(exchangeRates).values({
+      date: dateStr,
+      base: "USD",
+      target: "UAH",
+      rate: 40,
+    })
+
+    await db.insert(transactions).values({
+      organizationId,
+      accountId: usd.id,
+      categoryId: parent.id,
+      amount: -100,
+      date: when,
+    })
+
+    const usage = await getCategoryUsage(organizationId, userId)
+    const stat = usage.find((u) => u.categoryId === parent.id)
+
+    expect(stat).toBeDefined()
+    expect(stat!.spentThisMonth).toBe(4000) // 100 USD * 40 UAH/USD
   })
 })

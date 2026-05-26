@@ -49,7 +49,14 @@ export const UpdateCategorySchema = z.object({
 
 export const CategoryUsageItemSchema = z.object({
   categoryId: z.uuid(),
+  // All-time count of categorized transactions. Drives the transaction-form
+  // "most used" grid and the delete-dialog "N transactions" warning.
   count: z.number().int().nonnegative(),
+  // Current-month cash-flow stats (excludes reimbursement legs and brokerage
+  // accounts). Drive the categories page banner, stats strip, and cards.
+  countThisMonth: z.number().int().nonnegative(),
+  spentThisMonth: z.number().nonnegative(),
+  lastActivityAt: z.string().nullable(),
 })
 
 export const CategoryUsageResponseSchema = z.array(CategoryUsageItemSchema)

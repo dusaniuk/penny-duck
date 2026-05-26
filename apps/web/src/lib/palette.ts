@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react"
 import type { Category } from "@workspace/api-contract"
 
 export type PaletteColor =
@@ -139,6 +140,26 @@ export function paletteColor(
     { l: opts.l ?? base.l, c: opts.c ?? base.c, h: base.h },
     opts.a
   )
+}
+
+// CSS custom properties for a category's "shade" surface — the light/dark chip
+// background, foreground, and halo glow shared by the form-dialog preview card,
+// the empty-state tiers, and the categories page. Apply in markup with
+// `bg-(--chip-bg-l) dark:bg-(--chip-bg-d)`,
+// `text-(--chip-fg-l) dark:text-(--chip-fg-d)`, and a halo via
+// `bg-(--halo-l) dark:bg-(--halo-d)`.
+export function categoryShadeVars(color: string | null): CSSProperties {
+  return {
+    "--chip-fg-l": paletteColor(color, { l: 0.5, c: 0.18 }),
+    "--chip-fg-d": paletteColor(color, { l: 0.78, c: 0.14 }),
+    "--chip-bg-l": paletteColor(color, { l: 0.93, c: 0.1 }),
+    "--chip-bg-d": paletteColor(color, { l: 0.42, c: 0.1, a: 0.18 }),
+    // Softer, lighter light-mode tint for large fills (e.g. a selected row)
+    // where the chip-bg pastel reads too heavy against a white card.
+    "--chip-bg-soft-l": paletteColor(color, { l: 0.955, c: 0.06 }),
+    "--halo-l": paletteColor(color, { l: 0.72, c: 0.15, a: 0.45 }),
+    "--halo-d": paletteColor(color, { l: 0.55, c: 0.16, a: 0.3 }),
+  } as CSSProperties
 }
 
 export function categoryColor(

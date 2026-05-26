@@ -26,7 +26,7 @@ export const categoriesRoutes = new Hono<AuthedEnv>()
   })
   .get("/usage", async (c) => {
     const user = c.get("user")
-    const result = await getCategoryUsage(user.organizationId)
+    const result = await getCategoryUsage(user.organizationId, user.sub)
     return c.json(result)
   })
   .post("/seed", async (c) => {

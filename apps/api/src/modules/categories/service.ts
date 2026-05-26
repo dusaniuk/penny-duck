@@ -1,13 +1,25 @@
-import { and, eq, isNotNull, sql } from "drizzle-orm"
+import { and, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
-import { categories, transactions } from "@workspace/db"
+import { accounts, categories, transactions, users } from "@workspace/db"
 import {
   type Category,
   type CategoryType,
   type CategoryUsageItem,
 } from "@workspace/api-contract"
 import { DEFAULT_CATEGORY_SET } from "@workspace/shared/categories"
+import { getRate } from "@/modules/exchange-rates/service"
 import { db } from "@/db"
+
+const DEFAULT_HOME_CURRENCY = "UAH"
+
+async function getHomeCurrency(userId: string): Promise<string> {
+  const rows = await db
+    .select({ homeCurrency: users.homeCurrency })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  return rows[0]?.homeCurrency ?? DEFAULT_HOME_CURRENCY
+}
 
 type CategoryRow = typeof categories.$inferSelect
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -67,19 +79,40 @@ export async function listCategories(
   return rows.map(toResponse)
 }
 
-// Count of transactions per category, scoped to the org. Used by the
-// transaction-form category grid to surface most-used categories first.
-// Transfers and reimbursements have no category and are filtered out by
-// the IS NOT NULL guard.
+// Per-category transaction aggregates, scoped to the org. Transfers carry no
+// category and drop out via the IS NOT NULL guard.
+//
+// `count` is the all-time tally of categorized transactions — it drives the
+// transaction-form "most used" grid and the delete-dialog warning, so its
+// semantics are kept exactly as before. The current-month cash-flow stats
+// (countThisMonth/spentThisMonth/lastActivityAt) apply the same exclusions as
+// the spendings view: reimbursement legs and brokerage-account rows.
+//
+// Counts and last-activity are pure SQL (no money involved). `spentThisMonth`
+// must be in the user's home currency, but `amount` is stored in each account's
+// own currency — so, like listTransactions, we convert each row with
+// getRate(accountCurrency -> home, date) and aggregate in JS. (A single SQL SUM
+// would silently mix currencies.)
 export async function getCategoryUsage(
   organizationId: string,
+  userId: string,
 ): Promise<CategoryUsageItem[]> {
-  const rows = await db
+  const now = new Date()
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  )
+  const cashFlow = sql`${transactions.reimbursementId} is null and ${accounts.type} <> 'brokerage'`
+  const thisMonth = sql`${cashFlow} and ${transactions.date} >= ${monthStart}`
+
+  const aggRows = await db
     .select({
       categoryId: transactions.categoryId,
       count: sql<number>`count(*)::int`,
+      countThisMonth: sql<number>`count(*) filter (where ${thisMonth})::int`,
+      lastActivity: sql<string | null>`max(${transactions.date}) filter (where ${cashFlow})`,
     })
     .from(transactions)
+    .innerJoin(accounts, eq(accounts.id, transactions.accountId))
     .where(
       and(
         eq(transactions.organizationId, organizationId),
@@ -88,11 +121,64 @@ export async function getCategoryUsage(
     )
     .groupBy(transactions.categoryId)
 
-  return rows
-    .filter((r): r is { categoryId: string; count: number } =>
-      r.categoryId !== null,
+  // This month's cash-flow rows, with each account's currency, for conversion.
+  const monthRows = await db
+    .select({
+      categoryId: transactions.categoryId,
+      amount: transactions.amount,
+      date: transactions.date,
+      currency: accounts.currency,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(accounts.id, transactions.accountId))
+    .where(
+      and(
+        eq(transactions.organizationId, organizationId),
+        isNotNull(transactions.categoryId),
+        isNull(transactions.reimbursementId),
+        ne(accounts.type, "brokerage"),
+        gte(transactions.date, monthStart),
+      ),
     )
-    .map((r) => ({ categoryId: r.categoryId, count: r.count }))
+
+  const homeCurrency = await getHomeCurrency(userId)
+  // Include the home currency: it's the conversion *target*, and getRate filters
+  // fetched rates down to this list — omitting it drops the rate we need.
+  const usedCurrencies = [
+    ...new Set([...monthRows.map((r) => r.currency), homeCurrency]),
+  ]
+  const spentByCategory = new Map<string, number>()
+  for (const row of monthRows) {
+    if (row.categoryId === null) continue
+    // `amount` comes through the money column type, so it's already in major
+    // units of the account's currency (e.g. 1000.00 UAH), matching listTransactions.
+    let home = Math.abs(row.amount)
+    if (row.currency && row.currency !== homeCurrency) {
+      const rate = await getRate(
+        row.currency,
+        homeCurrency,
+        row.date,
+        usedCurrencies,
+      )
+      home = Math.abs(row.amount) * rate
+    }
+    spentByCategory.set(
+      row.categoryId,
+      (spentByCategory.get(row.categoryId) ?? 0) + home,
+    )
+  }
+
+  return aggRows
+    .filter((r) => r.categoryId !== null)
+    .map((r) => ({
+      categoryId: r.categoryId as string,
+      count: r.count,
+      countThisMonth: r.countThisMonth,
+      spentThisMonth: spentByCategory.get(r.categoryId as string) ?? 0,
+      lastActivityAt: r.lastActivity
+        ? new Date(r.lastActivity).toISOString()
+        : null,
+    }))
 }
 
 export interface CreateCategoryInput {

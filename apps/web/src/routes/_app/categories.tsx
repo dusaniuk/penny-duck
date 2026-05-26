@@ -1,16 +1,22 @@
 import { useMemo, useState } from "react"
-import { IconPlus } from "@tabler/icons-react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, getRouteApi } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Button } from "@workspace/ui/components/button"
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import type { InferRequestType } from "hono/client"
-import type { Category } from "@workspace/api-contract"
+import type { Category, CategoryType } from "@workspace/api-contract"
 import type { CategorySubmitData } from "@/components/categories/category-form-dialog"
+import type { ParentRollup } from "@/components/categories/category-stats"
 import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
+import { CategoryDetail } from "@/components/categories/category-detail"
 import { CategoryEmptyState } from "@/components/categories/category-empty-state"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
-import { CategoryList } from "@/components/categories/category-list"
+import { CategorySidebar } from "@/components/categories/category-sidebar"
+import {
+  buildStatsMap,
+  rollupParent,
+  statFor,
+} from "@/components/categories/category-stats"
 import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
 
@@ -18,6 +24,15 @@ type CreateCategoryBody = InferRequestType<typeof api.categories.$post>["json"]
 type UpdateCategoryBody = InferRequestType<
   (typeof api.categories)[":id"]["$patch"]
 >["json"]
+
+const appRouteApi = getRouteApi("/_app")
+
+const TYPE_TABS: ReadonlyArray<{ value: CategoryType | "all"; label: string }> =
+  [
+    { value: "expense", label: "Expenses" },
+    { value: "income", label: "Income" },
+    { value: "all", label: "All" },
+  ]
 
 function errorMessage(err: unknown, fallback: string): string {
   if (
@@ -41,6 +56,8 @@ function invalidateCategories() {
 }
 
 function CategoriesPage() {
+  const { user } = appRouteApi.useRouteContext()
+
   const { data, isLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -56,7 +73,6 @@ function CategoriesPage() {
     [categories]
   )
 
-  // Transaction counts per category — drives the delete-dialog warning copy.
   const { data: usageData } = useQuery({
     queryKey: ["categories", "usage"],
     queryFn: async () => {
@@ -66,11 +82,70 @@ function CategoriesPage() {
     },
   })
 
-  const usageMap = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const u of usageData ?? []) m.set(u.categoryId, u.count)
-    return m
-  }, [usageData])
+  const statsMap = useMemo(() => buildStatsMap(usageData), [usageData])
+
+  // Children grouped under their parent, alphabetised.
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, Array<Category>>()
+    for (const c of categories) {
+      if (c.parentId === null) continue
+      const arr = map.get(c.parentId)
+      if (arr) arr.push(c)
+      else map.set(c.parentId, [c])
+    }
+    for (const arr of map.values())
+      arr.sort((a, b) => a.name.localeCompare(b.name))
+    return map
+  }, [categories])
+
+  const parentRollups = useMemo(() => {
+    const map = new Map<string, ParentRollup>()
+    for (const p of topLevel)
+      map.set(
+        p.id,
+        rollupParent(p.id, childrenByParent.get(p.id) ?? [], statsMap)
+      )
+    return map
+  }, [topLevel, childrenByParent, statsMap])
+
+  const tabCounts = useMemo(
+    () => ({
+      expense: topLevel.filter((p) => p.type === "expense").length,
+      income: topLevel.filter((p) => p.type === "income").length,
+      all: topLevel.length,
+    }),
+    [topLevel]
+  )
+
+  const [activeType, setActiveType] = useState<CategoryType | "all">("expense")
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
+
+  // Parents in the active tab, biggest spenders first.
+  const visibleParents = useMemo(() => {
+    return topLevel
+      .filter((p) => activeType === "all" || p.type === activeType)
+      .sort((a, b) => {
+        const sa = parentRollups.get(a.id)?.spentThisMonth ?? 0
+        const sb = parentRollups.get(b.id)?.spentThisMonth ?? 0
+        return sb - sa || a.name.localeCompare(b.name)
+      })
+  }, [topLevel, activeType, parentRollups])
+
+  const totalSpent = useMemo(
+    () =>
+      visibleParents.reduce(
+        (sum, p) => sum + (parentRollups.get(p.id)?.spentThisMonth ?? 0),
+        0
+      ),
+    [visibleParents, parentRollups]
+  )
+
+  // Resolve the selection against the current tab so switching tabs (or
+  // deleting the selected parent) always lands on a visible category.
+  const selectedParent =
+    visibleParents.find((p) => p.id === selectedParentId) ??
+    visibleParents[0] ??
+    null
 
   const [formOpen, setFormOpen] = useState(false)
   const [editCategory, setEditCategory] = useState<Category | null>(null)
@@ -189,34 +264,24 @@ function CategoriesPage() {
       .map((c) => c.id)
     const ids = [deleteCategory.id, ...childIds]
     const transactionCount = ids.reduce(
-      (sum, id) => sum + (usageMap.get(id) ?? 0),
+      (sum, id) => sum + statFor(statsMap, id).count,
       0
     )
     return { childCount: childIds.length, transactionCount }
-  }, [deleteCategory, categories, usageMap])
+  }, [deleteCategory, categories, statsMap])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Categories"
         title="Tag your money"
         description="Group transactions under the labels that mean something to you."
-        action={
-          <Button type="button" onClick={handleOpenCreate}>
-            <IconPlus />
-            New category
-          </Button>
-        }
       />
 
       {isLoading ? (
-        <div className="space-y-1.5">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[52px] animate-pulse rounded-[11px] bg-muted"
-            />
-          ))}
+        <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
+          <div className="h-72 animate-pulse rounded-2xl bg-muted" />
+          <div className="h-72 animate-pulse rounded-2xl bg-muted" />
         </div>
       ) : categories.length === 0 ? (
         <CategoryEmptyState
@@ -225,12 +290,63 @@ function CategoriesPage() {
           isSeeding={seedMutation.isPending}
         />
       ) : (
-        <CategoryList
-          categories={categories}
-          onEdit={handleEdit}
-          onDelete={setDeleteCategory}
-          onAddChild={handleAddChild}
-        />
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Tabs
+              value={activeType}
+              onValueChange={(v) => setActiveType(v as CategoryType | "all")}
+            >
+              <TabsList>
+                {TYPE_TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="px-3 py-1.5 text-[13px]"
+                  >
+                    {tab.label}
+                    <span className="ml-1.5 grid min-w-4 place-items-center rounded-full bg-foreground/[0.08] px-1 text-[10px] font-semibold tabular-nums">
+                      {tabCounts[tab.value]}
+                    </span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Children inherit shades from their parent&rsquo;s colour.
+            </p>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[320px_1fr] lg:items-start">
+            <CategorySidebar
+              parents={visibleParents}
+              childrenByParent={childrenByParent}
+              stats={statsMap}
+              totalSpent={totalSpent}
+              selectedId={selectedParent?.id ?? null}
+              onSelect={setSelectedParentId}
+              onCreateParent={handleOpenCreate}
+            />
+
+            {selectedParent ? (
+              <CategoryDetail
+                key={selectedParent.id}
+                parent={selectedParent}
+                children={childrenByParent.get(selectedParent.id) ?? []}
+                stats={statsMap}
+                totalSpent={totalSpent}
+                homeCurrency={user.homeCurrency}
+                onEdit={handleEdit}
+                onDelete={setDeleteCategory}
+                onAddChild={handleAddChild}
+              />
+            ) : (
+              <div className="grid place-items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center text-sm text-muted-foreground">
+                No {activeType === "all" ? "" : activeType} categories yet — add
+                a parent to get started.
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       <CategoryFormDialog
@@ -239,6 +355,7 @@ function CategoriesPage() {
         category={editCategory}
         parents={topLevel}
         initialParentId={createParentId}
+        initialType={activeType === "income" ? "income" : "expense"}
         existingColors={topLevel.map((c) => c.color)}
         existingIcons={categories.map((c) => c.icon)}
         onSubmit={handleSubmit}
