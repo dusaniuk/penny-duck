@@ -293,10 +293,7 @@ function SpendingsPage() {
 
       <TransactionFormDialog
         open={formOpen}
-        onOpenChange={(o) => {
-          setFormOpen(o)
-          if (!o) setEditTransaction(null)
-        }}
+        onOpenChange={setFormOpen}
         transaction={editTransaction}
         accounts={accounts}
         wallets={wallets}

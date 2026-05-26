@@ -363,14 +363,7 @@ function AccountsPage() {
 
       <AccountFormDialog
         open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) {
-            setEditAccount(null)
-            setEditWallet(null)
-            setPendingType(null)
-          }
-        }}
+        onOpenChange={setFormOpen}
         account={editAccount}
         wallet={editWallet}
         initialType={pendingType ?? undefined}
