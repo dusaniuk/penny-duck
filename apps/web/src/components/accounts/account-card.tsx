@@ -130,6 +130,7 @@ export function AccountCard({
   const navigate = useNavigate()
   const isBrokerage = account.type === "brokerage"
   const isWallet = !!account.pockets
+  const isLoan = account.type === "loan"
   const sparkColor = paletteColor(account.color, { l: 0.78, c: 0.14 })
 
   return (
@@ -186,11 +187,16 @@ export function AccountCard({
             </div>
           ) : (
             <>
-              <p className="font-heading text-lg font-semibold tracking-tight">
+              <p
+                className={cn(
+                  "font-heading text-lg font-semibold tracking-tight",
+                  isLoan && "text-amber-600 dark:text-amber-400"
+                )}
+              >
                 {fmtMoney(account.balance)}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {account.currency}
+                {isLoan ? `${account.currency} · Owed` : account.currency}
               </p>
             </>
           )}
@@ -258,11 +264,16 @@ export function AccountCard({
           </div>
         ) : (
           <p className="flex items-baseline gap-1.5 tabular-nums">
-            <span className="font-heading text-[22px] font-semibold tracking-tight">
+            <span
+              className={cn(
+                "font-heading text-[22px] font-semibold tracking-tight",
+                isLoan && "text-amber-600 dark:text-amber-400"
+              )}
+            >
               {fmtMoney(account.balance)}
             </span>
             <span className="text-[11px] text-muted-foreground">
-              {account.currency}
+              {isLoan ? `${account.currency} · Owed` : account.currency}
             </span>
           </p>
         )}
@@ -273,7 +284,7 @@ export function AccountCard({
             <div className="h-8 w-full animate-pulse rounded bg-muted/60" />
           )}
           <p className="font-mono text-[9.5px] tracking-widest text-muted-foreground/70 uppercase">
-            last 30 days
+            {isLoan ? "debt remaining · last 30 days" : "last 30 days"}
           </p>
         </div>
       </CardContent>
@@ -289,7 +300,7 @@ export function AccountCard({
         >
           Edit
         </Button>
-        {!account.isDefault && !isWallet && (
+        {!account.isDefault && !isWallet && !isLoan && (
           <Button
             type="button"
             size="xs"

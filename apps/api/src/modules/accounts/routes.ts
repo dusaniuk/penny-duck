@@ -71,6 +71,7 @@ export const accountsRoutes = new Hono<AuthedEnv>()
         return c.json(wallet, 201)
       case "bank":
       case "brokerage":
+      case "loan":
         const account = await createAccount({
           organizationId: user.organizationId,
           userId: user.sub,

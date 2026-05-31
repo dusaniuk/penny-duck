@@ -50,7 +50,7 @@ export const CreatePocketInputSchema = z.object({
 })
 
 export const CreateStandaloneAccountSchema = z.object({
-  type: z.enum(["bank", "brokerage"]),
+  type: z.enum(["bank", "brokerage", "loan"]),
   name: z.string().min(1).max(100),
   currency: z.string().length(3),
   color: AccountColorSchema.optional(),

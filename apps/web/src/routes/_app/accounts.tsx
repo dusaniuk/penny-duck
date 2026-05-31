@@ -20,7 +20,7 @@ import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
 import { leafAccountsOf, walletsOf } from "@/lib/accounts"
 
-type AccountType = "bank" | "wallet" | "brokerage"
+type AccountType = "bank" | "wallet" | "brokerage" | "loan"
 
 function errorMessage(err: unknown, fallback: string): string {
   if (

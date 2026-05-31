@@ -2,6 +2,7 @@ import {
   IconChevronRight,
   IconCreditCard,
   IconPlus,
+  IconReceipt2,
   IconSparkles,
   IconTrendingUp,
   IconWallet,
@@ -12,7 +13,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import type { PaletteColor } from "@/lib/palette"
 import { paletteColor } from "@/lib/palette"
 
-type AccountType = "bank" | "wallet" | "brokerage"
+type AccountType = "bank" | "wallet" | "brokerage" | "loan"
 
 interface AccountEmptyStateProps {
   onAdd: () => void
@@ -48,6 +49,13 @@ const PICKS: ReadonlyArray<Pick> = [
     sub: "Stocks, ETFs, retirement",
     Icon: IconTrendingUp,
     color: "violet",
+  },
+  {
+    type: "loan",
+    title: "Loan",
+    sub: "Track money you owe",
+    Icon: IconReceipt2,
+    color: "red",
   },
 ]
 

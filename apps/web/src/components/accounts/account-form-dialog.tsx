@@ -4,6 +4,7 @@ import {
   IconCreditCard,
   IconMinus,
   IconPlus,
+  IconReceipt2,
   IconTrendingUp,
   IconWallet,
 } from "@tabler/icons-react"
@@ -78,7 +79,7 @@ function messageOf(err: unknown, fallback: string): string {
   return fallback
 }
 
-type AccountType = "bank" | "wallet" | "brokerage"
+type AccountType = "bank" | "wallet" | "brokerage" | "loan"
 
 const ACCOUNT_TYPES: Array<{
   id: AccountType
@@ -103,6 +104,12 @@ const ACCOUNT_TYPES: Array<{
     name: "Brokerage",
     desc: "Stocks, ETFs, and other investments",
     Icon: IconTrendingUp,
+  },
+  {
+    id: "loan",
+    name: "Loan",
+    desc: "Track money you owe — car, mortgage, student",
+    Icon: IconReceipt2,
   },
 ]
 
@@ -132,7 +139,7 @@ const baseSchema = z.object({
     .trim()
     .min(1, "Name is required")
     .max(100, "100 characters or fewer"),
-  type: z.enum(["bank", "wallet", "brokerage"]),
+  type: z.enum(["bank", "wallet", "brokerage", "loan"]),
   balance: z.string(),
   isDefault: z.boolean(),
   color: z.string().trim().min(1, "Pick a color").max(20),
@@ -573,7 +580,14 @@ function AccountModalBody({
               )}
             </form.Field>
           ) : (
-            <div className="grid grid-cols-[1fr_140px] gap-2.5">
+            <div
+              className={cn(
+                "grid gap-2.5",
+                type === "loan"
+                  ? "grid-cols-1"
+                  : "grid-cols-[1fr_140px]"
+              )}
+            >
               <form.Field name="currency">
                 {(field) => {
                   const isInvalid =
@@ -609,7 +623,9 @@ function AccountModalBody({
                           htmlFor={field.name}
                           className={FORM_FIELD_LABEL}
                         >
-                          Initial balance
+                          {type === "loan"
+                            ? "How much do you owe?"
+                            : "Initial balance"}
                         </FieldLabel>
                         <InputGroup className="h-10 items-center rounded-[11px] border-border bg-card px-3">
                           <InputGroupInput
@@ -648,7 +664,7 @@ function AccountModalBody({
 
       <form.Subscribe selector={(s) => s.values.type}>
         {(type) =>
-          type !== "wallet" ? (
+          type !== "wallet" && type !== "loan" ? (
             <form.Field name="isDefault">
               {(field) => (
                 <Field

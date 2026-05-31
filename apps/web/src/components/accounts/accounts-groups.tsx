@@ -3,16 +3,22 @@ import type { Account, Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard } from "@/components/accounts/account-card"
 
-type StandaloneType = "bank" | "brokerage"
+type StandaloneType = "bank" | "brokerage" | "loan"
 
 type GroupKey = "wallet" | StandaloneType
 
-const GROUP_ORDER: Array<GroupKey> = ["wallet", "bank", "brokerage"]
+const GROUP_ORDER: Array<GroupKey> = [
+  "wallet",
+  "bank",
+  "brokerage",
+  "loan",
+]
 
 const GROUP_LABEL: Record<GroupKey, string> = {
   wallet: "Wallet",
   bank: "Bank",
   brokerage: "Brokerage",
+  loan: "Liabilities",
 }
 
 function formatInt(n: number): string {
@@ -101,7 +107,10 @@ export function AccountsGroups({
           return b.balance - a.balance
         })
       if (items.length === 0) return []
-      const subtotal = items.reduce((sum, a) => sum + a.homeBalance, 0)
+      const subtotal =
+        key === "loan"
+          ? items.reduce((sum, a) => sum + Math.abs(a.homeBalance), 0)
+          : items.reduce((sum, a) => sum + a.homeBalance, 0)
       const isApprox = items.some((a) => a.currency !== homeCurrency)
       return [
         {
@@ -139,9 +148,13 @@ export function AccountsGroups({
                   ? g.items.length === 1
                     ? "wallet"
                     : "wallets"
-                  : g.items.length === 1
-                    ? "account"
-                    : "accounts"}
+                  : g.key === "loan"
+                    ? g.items.length === 1
+                      ? "loan"
+                      : "loans"
+                    : g.items.length === 1
+                      ? "account"
+                      : "accounts"}
               </span>
             </div>
             <div className="flex items-baseline gap-1.5 tabular-nums">

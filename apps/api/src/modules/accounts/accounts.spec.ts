@@ -719,3 +719,69 @@ describe("GET /accounts list shape", () => {
     }
   })
 })
+
+describe("loan accounts", () => {
+  it("stores positive balance input as a negative initialBalance and returns negative balance", async () => {
+    const created = await createAccountHttp({
+      name: "Car loan",
+      type: "loan",
+      currency: "UAH",
+      balance: 250_000,
+    })
+    expect(created.type).toBe("loan")
+    expect(created.balance).toBe(-250_000)
+    expect(created.homeBalance).toBeLessThan(0)
+  })
+
+  it("creates a loan with zero owed amount when balance omitted", async () => {
+    const created = await createAccountHttp({
+      name: "Empty loan",
+      type: "loan",
+      currency: "UAH",
+    })
+    expect(created.balance).toBe(0)
+  })
+
+  it("reduces the loan's outstanding amount when a transfer credits it", async () => {
+    const loan = await createAccountHttp({
+      name: "Car loan",
+      type: "loan",
+      currency: "UAH",
+      balance: 250_000,
+    })
+    const checking = await createAccountHttp({
+      name: "Checking",
+      type: "bank",
+      currency: "UAH",
+      balance: 100_000,
+    })
+
+    const res = await honoApp.request("/transactions/transfers", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        fromAccountId: checking.id,
+        toAccountId: loan.id,
+        amount: 27_000,
+        date: new Date().toISOString(),
+      }),
+    })
+    expect(res.status).toBe(201)
+
+    const loanAfter = await getAccountHttp(loan.id)
+    expect(loanAfter.balance).toBe(-223_000)
+
+    const checkingAfter = await getAccountHttp(checking.id)
+    expect(checkingAfter.balance).toBe(73_000)
+  })
+
+  it("normalizes a negative input balance for a loan (treats sign as already-owed)", async () => {
+    const created = await createAccountHttp({
+      name: "Negative-input loan",
+      type: "loan",
+      currency: "UAH",
+      balance: -1_000,
+    })
+    expect(created.balance).toBe(-1_000)
+  })
+})

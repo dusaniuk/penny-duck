@@ -358,7 +358,10 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
         currency: input.currency,
         color: input.color ?? null,
         icon: input.icon ?? null,
-        initialBalance: input.balance ?? 0,
+        initialBalance:
+          input.type === "loan"
+            ? -Math.abs(input.balance ?? 0)
+            : (input.balance ?? 0),
       })
       .returning()
 
