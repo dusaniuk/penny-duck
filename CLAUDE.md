@@ -94,7 +94,7 @@ apps/api/src/<module>/
 
 ## Deployment (Railway)
 
-Hosted on Railway with three services: **Web**, **API** (private networking only), **Postgres**.
+Hosted on Railway with two services: **Web**, **API** (private networking only). The Postgres database is hosted on **Neon** (Postgres 18, eu-central-1, direct/non-pooler connection URL with `sslmode=verify-full`).
 
 ### Build & Start
 
@@ -112,7 +112,7 @@ Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup
 
 ### Environment Variables
 
-- **API service**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `WEB_URL`, `PORT=3030`
+- **API service**: `DATABASE_URL` (Neon direct connection string), `JWT_SECRET`, `WEB_URL`, `PORT=3030`
 - **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
 - **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
 

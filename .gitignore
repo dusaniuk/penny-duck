@@ -47,3 +47,5 @@ graphify-out
 # Misc
 .DS_Store
 *.pem
+
+.env.migration
