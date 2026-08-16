@@ -16,14 +16,14 @@
     "./app": "./src/app.ts"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.7.6",
+    "@hono/zod-validator": "^0.9.0",
     "@workspace/api-contract": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/shared": "workspace:^",
     "csv-parse": "^6.2.1",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.18",
+    "hono": "^4.13.2",
     "jsonwebtoken": "^9.0.3",
     "yahoo-finance2": "^3.14.0",
     "zod": "^4.0.0"
