@@ -22,7 +22,8 @@
     "@types/node": "^25.1.0",
     "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.10",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "xlsx": "^0.18.5"
   },
   "exports": {
     ".": "./src/index.ts",
