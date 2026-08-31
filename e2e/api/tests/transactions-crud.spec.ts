@@ -7,7 +7,10 @@ import {
 
 async function setupAccountAndCategory(request: any) {
   const accRes = await request.post("/accounts", {
-    data: createAccountData({ balance: 10000 }),
+    // Pin the type: brokerage-account transactions are hidden from the
+    // global transactions list, so a random "brokerage" type makes every
+    // list assertion in this file flake.
+    data: createAccountData({ balance: 10000, type: "bank" }),
   })
   const account = await accRes.json()
 
