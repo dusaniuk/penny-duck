@@ -23,7 +23,9 @@ async function createAccountViaPage(
   page: any,
   overrides: Parameters<typeof createAccountData>[0] = {},
 ) {
-  const data = createAccountData(overrides)
+  // Pin the type: the factory picks bank/brokerage at random, and
+  // brokerage-account transactions are hidden from the transactions list
+  const data = createAccountData({ type: "bank", ...overrides })
   const res = await page.request.post(`${env.WEB_BASE_URL}/api/accounts`, {
     data,
   })

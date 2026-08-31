@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { IconFilter, IconPlus } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
 import type {
   Category,
   Member,
@@ -38,7 +38,6 @@ export const Route = createFileRoute("/_app/transactions")({
 const PAGE_SIZE = 50
 
 function TransactionsPage() {
-  const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<TransactionFilters>({})
 
   const [formOpen, setFormOpen] = useState(false)
@@ -51,19 +50,20 @@ function TransactionsPage() {
     useState<Transaction | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
-  const { openCreate, dialog: createDialog } = useTransactionCreate({
-    onSuccess: () => {
-      setExtraTransactions([])
-      setPage(1)
-    },
-  })
+  const { openCreate, dialog: createDialog } = useTransactionCreate()
 
-  const { data: txData, isLoading: loading } = useQuery({
-    queryKey: ["transactions", filters, page],
-    queryFn: async () => {
+  const {
+    data: txData,
+    isLoading: loading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["transactions", filters],
+    queryFn: async ({ pageParam }) => {
       const res = await api.transactions.$get({
         query: {
-          page: String(page),
+          page: String(pageParam),
           limit: String(PAGE_SIZE),
           accountId: filters.accountId,
           type: filters.type as "expense" | "income" | undefined,
@@ -86,10 +86,17 @@ function TransactionsPage() {
       if (!res.ok) throw await res.json()
       return res.json()
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.data.length, 0)
+      return loaded < lastPage.total ? allPages.length + 1 : undefined
+    },
   })
 
-  const transactions = txData?.data ?? []
-  const total = txData?.total ?? 0
+  const allTransactions = useMemo(
+    () => txData?.pages.flatMap((p) => p.data) ?? [],
+    [txData]
+  )
 
   const { data: unsettledData } = useQuery({
     queryKey: ["transactions", "unsettled-count"],
@@ -166,14 +173,6 @@ function TransactionsPage() {
     },
   })
   const latestRates = ratesData?.rates ?? {}
-
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [extraTransactions, setExtraTransactions] = useState<
-    Array<Transaction>
-  >([])
-
-  const allTransactions =
-    page === 1 ? transactions : [...transactions, ...extraTransactions]
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["transactions"] })
@@ -276,37 +275,6 @@ function TransactionsPage() {
     onSuccess: invalidateAll,
   })
 
-  async function handleLoadMore() {
-    setLoadingMore(true)
-    try {
-      const nextPage = page + 1
-      const res = await api.transactions.$get({
-        query: {
-          page: String(nextPage),
-          limit: String(PAGE_SIZE),
-          accountId: filters.accountId,
-          type: filters.type as "expense" | "income" | undefined,
-          categoryId: filters.categoryId,
-          settled:
-            filters.settled !== undefined ? String(filters.settled) : undefined,
-          dateFrom: filters.dateFrom
-            ? new Date(filters.dateFrom).toISOString()
-            : undefined,
-          dateTo: filters.dateTo
-            ? new Date(filters.dateTo).toISOString()
-            : undefined,
-          madeById: filters.madeById,
-        },
-      })
-      if (!res.ok) throw await res.json()
-      const body = await res.json()
-      setExtraTransactions((prev) => [...prev, ...body.data])
-      setPage(nextPage)
-    } finally {
-      setLoadingMore(false)
-    }
-  }
-
   function handleClickTransaction(t: Transaction) {
     setEditTransaction(t)
     setFormOpen(true)
@@ -328,8 +296,6 @@ function TransactionsPage() {
       id: editTransaction.id,
       body: updateFields,
     })
-    setExtraTransactions([])
-    setPage(1)
   }
 
   async function handleTransferSubmit(data: {
@@ -349,8 +315,6 @@ function TransactionsPage() {
       transferId: editTransaction.transferId,
       body: updateData,
     })
-    setExtraTransactions([])
-    setPage(1)
   }
 
   async function handleDelete() {
@@ -360,8 +324,6 @@ function TransactionsPage() {
     } else {
       await deleteMutation.mutateAsync(deleteTransaction.id)
     }
-    setExtraTransactions([])
-    setPage(1)
   }
 
   function handleToggleUnsettled() {
@@ -373,8 +335,6 @@ function TransactionsPage() {
     } else {
       setFilters((prev) => ({ ...prev, settled: false }))
     }
-    setExtraTransactions([])
-    setPage(1)
   }
 
   function handleToggleUncategorized() {
@@ -386,8 +346,6 @@ function TransactionsPage() {
     } else {
       setFilters((prev) => ({ ...prev, uncategorized: true }))
     }
-    setExtraTransactions([])
-    setPage(1)
   }
 
   const activeFilterBadges: Array<{ key: string; label: string }> = []
@@ -435,8 +393,6 @@ function TransactionsPage() {
       }
       return next
     })
-    setExtraTransactions([])
-    setPage(1)
   }
 
   return (
@@ -508,9 +464,9 @@ function TransactionsPage() {
         homeCurrency={homeCurrency}
         showMember={members.length > 1}
         loading={loading}
-        hasMore={allTransactions.length < total}
-        onLoadMore={handleLoadMore}
-        loadingMore={loadingMore}
+        hasMore={hasNextPage}
+        onLoadMore={fetchNextPage}
+        loadingMore={isFetchingNextPage}
         onEdit={handleClickTransaction}
         onReimburse={(t) => setReimburseTransaction(t)}
         onSettle={(t) => {
@@ -590,11 +546,7 @@ function TransactionsPage() {
         open={filterSheetOpen}
         onOpenChange={setFilterSheetOpen}
         filters={filters}
-        onApply={(f) => {
-          setFilters(f)
-          setExtraTransactions([])
-          setPage(1)
-        }}
+        onApply={setFilters}
         accounts={accounts}
         categories={categories}
         members={members}
