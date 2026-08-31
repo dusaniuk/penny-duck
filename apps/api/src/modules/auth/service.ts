@@ -1,5 +1,5 @@
 import { eq, lt, and } from "drizzle-orm"
-import { randomBytes } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { HTTPException } from "hono/http-exception"
 import {
   organizationMembers,
@@ -27,6 +27,13 @@ export interface SignupInput {
   email: string
   password: string
   inviteCode?: string
+}
+
+// Refresh tokens are stored as a SHA-256 digest, never in plaintext: the raw
+// token lives only in the client's httpOnly cookie. A DB read (leaked backup,
+// compromised DATABASE_URL) therefore cannot be replayed to mint sessions.
+function hashRefreshToken(token: string): string {
+  return createHash("sha256").update(token).digest("base64url")
 }
 
 export async function signupService(
@@ -119,7 +126,9 @@ export async function loginService(email: string, password: string) {
         return rows[0] ?? null
       },
       insertRefreshToken: async (data) => {
-        await db.insert(refreshTokens).values(data)
+        await db
+          .insert(refreshTokens)
+          .values({ ...data, token: hashRefreshToken(data.token) })
       },
     })
   } catch (err) {
@@ -140,15 +149,19 @@ export async function refreshService(rawToken: string) {
             expiresAt: refreshTokens.expiresAt,
           })
           .from(refreshTokens)
-          .where(eq(refreshTokens.token, token))
+          .where(eq(refreshTokens.token, hashRefreshToken(token)))
           .limit(1)
         return rows[0] ?? null
       },
       deleteRefreshToken: async (token) => {
-        await db.delete(refreshTokens).where(eq(refreshTokens.token, token))
+        await db
+          .delete(refreshTokens)
+          .where(eq(refreshTokens.token, hashRefreshToken(token)))
       },
       insertRefreshToken: async (data) => {
-        await db.insert(refreshTokens).values(data)
+        await db
+          .insert(refreshTokens)
+          .values({ ...data, token: hashRefreshToken(data.token) })
       },
       findUserById: async (id) => {
         const rows = await db
@@ -190,7 +203,9 @@ export async function refreshService(rawToken: string) {
 export async function logoutService(rawToken: string): Promise<void> {
   await logout(rawToken, {
     deleteRefreshToken: async (token) => {
-      await db.delete(refreshTokens).where(eq(refreshTokens.token, token))
+      await db
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.token, hashRefreshToken(token)))
     },
   })
 }

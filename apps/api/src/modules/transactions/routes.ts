@@ -189,7 +189,7 @@ export const transactionsRoutes = new Hono<AuthedEnv>()
       const user = c.get("user")
       const { id } = c.req.valid("param")
       const body = c.req.valid("json")
-      const transaction = await updateTransaction(id, user.organizationId, {
+      const transaction = await updateTransaction(id, user.organizationId, user.sub, {
         accountId: body.accountId,
         amount: body.amount,
         categoryId: body.categoryId,

@@ -274,9 +274,11 @@ describe("Auth", () => {
   })
 
   describe("HTTP layer", () => {
-    const originalNodeEnv = process.env.NODE_ENV
+    const originalRailwayEnv = process.env.RAILWAY_ENVIRONMENT_NAME
     afterEach(() => {
-      process.env.NODE_ENV = originalNodeEnv
+      if (originalRailwayEnv === undefined)
+        delete process.env.RAILWAY_ENVIRONMENT_NAME
+      else process.env.RAILWAY_ENVIRONMENT_NAME = originalRailwayEnv
     })
 
     it("POST /auth/login sets access_token and refresh_token cookies", async () => {
@@ -320,7 +322,7 @@ describe("Auth", () => {
     })
 
     it("rate limits POST /auth/login to 5/min in production", async () => {
-      process.env.NODE_ENV = "production"
+      process.env.RAILWAY_ENVIRONMENT_NAME = "production"
       const body = JSON.stringify({
         email: "ratelimited@example.com",
         password: "wrongpassword",

@@ -400,6 +400,40 @@ describe("GET /positions and /investments/summary", () => {
     expect(res.status).toBe(404)
   })
 
+  it("does not leak another org's position via /positions/:accountId/:symbol", async () => {
+    // Victim org holds a real AAPL position in its own brokerage account.
+    const victim = await signupUser()
+    const victimCookie = cookieHeader(
+      signAccessToken(victim.accessToken, env.JWT_SECRET, env.JWT_EXPIRATION)
+    )
+    const victimAccount = await createAccount({
+      organizationId: victim.accessToken.organizationId,
+      userId: victim.accessToken.sub,
+      name: "Victim IBKR",
+      type: "brokerage",
+      currency: "USD",
+      balance: 10_000,
+    })
+    await honoApp.request("/trades", {
+      method: "POST",
+      headers: { cookie: victimCookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        accountId: victimAccount.id,
+        symbol: "AAPL",
+        type: "buy",
+        quantity: 10,
+        price: 150,
+        date: "2026-04-01T00:00:00Z",
+      }),
+    })
+
+    // Attacker in a different org must not read it, even knowing the account id.
+    const res = await honoApp.request(`/positions/${victimAccount.id}/AAPL`, {
+      headers: { cookie },
+    })
+    expect(res.status).toBe(404)
+  })
+
   it("GET /investments/summary aggregates position totals", async () => {
     const account = await makeBrokerage()
     await postTrade({

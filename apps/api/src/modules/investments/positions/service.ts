@@ -100,7 +100,7 @@ export async function getPositions(
 export async function getPositionBySymbol(
   accountId: string,
   symbol: string,
-  _organizationId: string,
+  organizationId: string,
   userId: string
 ): Promise<Position> {
   const inst = await findInstrumentBySymbol(symbol.toUpperCase())
@@ -109,7 +109,13 @@ export async function getPositionBySymbol(
   const tradeRows = await db
     .select()
     .from(trades)
-    .where(and(eq(trades.accountId, accountId), eq(trades.instrumentId, inst.id)))
+    .where(
+      and(
+        eq(trades.organizationId, organizationId),
+        eq(trades.accountId, accountId),
+        eq(trades.instrumentId, inst.id)
+      )
+    )
     .orderBy(asc(trades.date), asc(trades.createdAt))
   if (tradeRows.length === 0) {
     throw new HTTPException(404, { message: "Position not found" })

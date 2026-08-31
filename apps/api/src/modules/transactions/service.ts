@@ -433,6 +433,14 @@ export async function createTransaction(
       message: "User is not a member of this organization",
     })
 
+  const account = await findAccountById(
+    input.accountId,
+    input.organizationId,
+    input.madeById,
+  )
+  if (!account)
+    throw new HTTPException(404, { message: "Account not found" })
+
   const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
   const row = await insertTransaction({
@@ -469,6 +477,7 @@ export interface UpdateTransactionInput {
 export async function updateTransaction(
   id: string,
   organizationId: string,
+  userId: string,
   fields: UpdateTransactionInput,
 ): Promise<Transaction> {
   const existing = await findById(id, organizationId)
@@ -482,6 +491,13 @@ export async function updateTransaction(
   const updateData: UpdateData = {}
 
   if (fields.accountId !== undefined && fields.accountId !== existing.accountId) {
+    const account = await findAccountById(
+      fields.accountId,
+      organizationId,
+      userId,
+    )
+    if (!account)
+      throw new HTTPException(404, { message: "Account not found" })
     updateData.accountId = fields.accountId
   }
 

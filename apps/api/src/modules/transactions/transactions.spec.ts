@@ -760,3 +760,38 @@ describe("Transactions", () => {
     expect(acc2.balance).toBe(5000)
   })
 })
+
+describe("Transactions — cross-tenant isolation", () => {
+  // An account owned by a DIFFERENT organization than the authenticated user.
+  async function otherOrgAccount(): Promise<string> {
+    const victim = await signupUser()
+    const account = await createAccount({
+      organizationId: victim.accessToken.organizationId,
+      userId: victim.accessToken.sub,
+      name: "Victim Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 999999,
+    })
+    return account.id
+  }
+
+  it("rejects creating a transaction on another org's account", async () => {
+    const victimAccountId = await otherOrgAccount()
+    await createTxHttp(
+      { accountId: victimAccountId, type: "expense", amount: 50, categoryId },
+      404,
+    )
+  })
+
+  it("rejects reassigning a transaction onto another org's account", async () => {
+    const victimAccountId = await otherOrgAccount()
+    const tx = await createTxHttp({
+      accountId,
+      type: "expense",
+      amount: 50,
+      categoryId,
+    })
+    await updateTxHttp(tx.id, { accountId: victimAccountId }, 404)
+  })
+})
