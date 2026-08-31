@@ -2,13 +2,18 @@ services:
   postgres:
     image: postgres:18
     ports:
-      - "${POSTGRES_PORT}:5432"
+      # Bind to loopback only so the dev DB isn't reachable from the local
+      # network (it uses trivial dev credentials).
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Postgres 18+ image places data in a versioned subdirectory and expects
+      # the volume mounted at /var/lib/postgresql (not .../data), which also
+      # keeps future major upgrades via pg_upgrade working.
+      - pgdata:/var/lib/postgresql
       - ./docker/init:/docker-entrypoint-initdb.d
 
 volumes:
