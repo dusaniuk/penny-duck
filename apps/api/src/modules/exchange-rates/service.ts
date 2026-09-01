@@ -6,7 +6,7 @@ const PG_INT_MAX = 2_147_483_647
 
 async function fetchRatesFromApi(
   base: string,
-  date: Date,
+  date: Date
 ): Promise<Record<string, number>> {
   const dateStr = date.toISOString().split("T")[0]
   const baseLower = base.toLowerCase()
@@ -55,7 +55,7 @@ async function fetchRatesFromApi(
 async function findCachedRate(
   date: string,
   base: string,
-  target: string,
+  target: string
 ): Promise<number | null> {
   const rows = await db
     .select({ rate: exchangeRates.rate })
@@ -64,8 +64,8 @@ async function findCachedRate(
       and(
         eq(exchangeRates.date, date),
         eq(exchangeRates.base, base),
-        eq(exchangeRates.target, target),
-      ),
+        eq(exchangeRates.target, target)
+      )
     )
     .limit(1)
 
@@ -74,7 +74,7 @@ async function findCachedRate(
 
 async function findLatestCachedRate(
   base: string,
-  target: string,
+  target: string
 ): Promise<number | null> {
   const rows = await db
     .select({ rate: exchangeRates.rate })
@@ -89,7 +89,7 @@ async function findLatestCachedRate(
 async function upsertRates(
   date: string,
   base: string,
-  rates: Record<string, number>,
+  rates: Record<string, number>
 ): Promise<void> {
   const values = Object.entries(rates).map(([target, rate]) => ({
     date,
@@ -113,7 +113,7 @@ export async function getRate(
   base: string,
   target: string,
   date: Date,
-  usedCurrencies?: string[],
+  usedCurrencies?: string[]
 ): Promise<number> {
   if (base === target) return 1
 
@@ -130,7 +130,7 @@ export async function getRate(
     const fallback = await findLatestCachedRate(base, target)
     if (fallback !== null) {
       console.warn(
-        `Exchange rate API failed for ${base}->${target} on ${dateStr} (${message}); using latest cached rate`,
+        `Exchange rate API failed for ${base}->${target} on ${dateStr} (${message}); using latest cached rate`
       )
       return fallback
     }
@@ -147,8 +147,8 @@ export async function getRate(
         code.length <= 3 &&
         code.toUpperCase() !== baseUpper &&
         Math.round(value * 1_000_000) <= PG_INT_MAX &&
-        (!allowedTargets || allowedTargets.has(code.toUpperCase())),
-    ),
+        (!allowedTargets || allowedTargets.has(code.toUpperCase()))
+    )
   )
   await upsertRates(dateStr, base, rates)
 
@@ -162,7 +162,7 @@ export async function getRate(
 }
 
 export async function getLatestRates(
-  currencies: string[],
+  currencies: string[]
 ): Promise<Record<string, Record<string, number>>> {
   const result: Record<string, Record<string, number>> = {}
   const today = new Date()

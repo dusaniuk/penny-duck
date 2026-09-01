@@ -8,7 +8,7 @@ export interface MembershipRow {
 }
 
 export async function findUserMemberships(
-  userId: string,
+  userId: string
 ): Promise<MembershipRow[]> {
   return db
     .select({
@@ -21,7 +21,7 @@ export async function findUserMemberships(
 
 export async function hasOtherOwners(
   organizationId: string,
-  excludingUserId: string,
+  excludingUserId: string
 ): Promise<boolean> {
   const rows = await db
     .select({ id: organizationMembers.id })
@@ -30,15 +30,15 @@ export async function hasOtherOwners(
       and(
         eq(organizationMembers.organizationId, organizationId),
         eq(organizationMembers.role, "owner"),
-        ne(organizationMembers.userId, excludingUserId),
-      ),
+        ne(organizationMembers.userId, excludingUserId)
+      )
     )
     .limit(1)
   return rows.length > 0
 }
 
 export async function deleteOrganization(
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   await db.delete(organizations).where(eq(organizations.id, organizationId))
 }
@@ -52,7 +52,7 @@ export interface MemberResult {
 }
 
 export async function listMembersForOrganization(
-  organizationId: string,
+  organizationId: string
 ): Promise<MemberResult[]> {
   const rows = await db
     .select({

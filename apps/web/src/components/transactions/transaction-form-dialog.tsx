@@ -465,8 +465,7 @@ function TransactionModalBody({
             className="size-1.5 rounded-full"
             style={{ background: palette.ink }}
           />
-          {isEdit ? "Edit" : "New"}{" "}
-          {isConvert ? "conversion" : activeType}
+          {isEdit ? "Edit" : "New"} {isConvert ? "conversion" : activeType}
         </Badge>
       </FormDialogHeader>
 
@@ -588,7 +587,7 @@ function TransactionModalBody({
                     >
                       {wallets
                         .filter((w) =>
-                          sortedAccounts.some((a) => a.walletId === w.id),
+                          sortedAccounts.some((a) => a.walletId === w.id)
                         )
                         .map((w) => (
                           <optgroup key={w.id} label={w.name}>
@@ -654,8 +653,8 @@ function TransactionModalBody({
                           sortedAccounts.some(
                             (a) =>
                               a.walletId === w.id &&
-                              a.id !== values.fromAccountId,
-                          ),
+                              a.id !== values.fromAccountId
+                          )
                         )
                         .map((w) => (
                           <optgroup key={w.id} label={w.name}>
@@ -663,7 +662,7 @@ function TransactionModalBody({
                               .filter(
                                 (a) =>
                                   a.walletId === w.id &&
-                                  a.id !== values.fromAccountId,
+                                  a.id !== values.fromAccountId
                               )
                               .map((a) => (
                                 <option key={a.id} value={a.id}>
@@ -675,8 +674,7 @@ function TransactionModalBody({
                       {sortedAccounts
                         .filter(
                           (a) =>
-                            a.walletId === null &&
-                            a.id !== values.fromAccountId,
+                            a.walletId === null && a.id !== values.fromAccountId
                         )
                         .map((a) => (
                           <option key={a.id} value={a.id}>

@@ -25,7 +25,10 @@ export function toTradeResponse(
     date: row.date.toISOString(),
     externalSource: row.externalSource ?? null,
     externalId: row.externalId ?? null,
-    externalMetadata: (row.externalMetadata ?? null) as Record<string, unknown> | null,
+    externalMetadata: (row.externalMetadata ?? null) as Record<
+      string,
+      unknown
+    > | null,
     createdAt: row.createdAt.toISOString(),
   }
 }
@@ -40,7 +43,8 @@ export function toPositionResponse(
   const currentValue = state.quantity * currentPrice
   const costBasis = state.quantity * state.averageCost
   const unrealizedGain = currentValue - costBasis
-  const unrealizedGainPct = costBasis > 0 ? (unrealizedGain / costBasis) * 100 : 0
+  const unrealizedGainPct =
+    costBasis > 0 ? (unrealizedGain / costBasis) * 100 : 0
   return {
     accountId,
     symbol: instrument.symbol,

@@ -1,20 +1,10 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { env } from "@workspace/env/api"
 import type { Account, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import {
-  createAccount,
-  getAccount,
-} from "@/modules/accounts/service"
+import { createAccount, getAccount } from "@/modules/accounts/service"
 import {
   closeTestApp,
   createTestApp,
@@ -67,7 +57,7 @@ interface TransferBody {
 
 async function createTransferHttp(
   body: TransferBody,
-  expectedStatus = 201,
+  expectedStatus = 201
 ): Promise<{ outgoing: Transaction; incoming: Transaction }> {
   const res = await honoApp.request("/transactions/transfers", {
     method: "POST",
@@ -84,7 +74,7 @@ async function createTransferHttp(
 async function updateTransferHttp(
   transferId: string,
   body: Record<string, unknown>,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<{ outgoing: Transaction; incoming: Transaction }> {
   const res = await honoApp.request(`/transactions/transfers/${transferId}`, {
     method: "PATCH",
@@ -97,7 +87,7 @@ async function updateTransferHttp(
 
 async function deleteTransferHttp(
   transferId: string,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(`/transactions/transfers/${transferId}`, {
     method: "DELETE",
@@ -109,7 +99,7 @@ async function deleteTransferHttp(
 
 async function deleteTxHttp(
   id: string,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(`/transactions/${id}`, {
     method: "DELETE",
@@ -215,7 +205,7 @@ describe("Transfers", () => {
         toAccountId: acc.id,
         amount: 100,
       },
-      400,
+      400
     )
   })
 

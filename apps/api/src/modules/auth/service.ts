@@ -37,7 +37,7 @@ function hashRefreshToken(token: string): string {
 }
 
 export async function signupService(
-  input: SignupInput,
+  input: SignupInput
 ): Promise<{ message: string }> {
   try {
     await signup(input, {
@@ -119,7 +119,7 @@ export async function loginService(email: string, password: string) {
           .from(organizationMembers)
           .innerJoin(
             organizations,
-            eq(organizations.id, organizationMembers.organizationId),
+            eq(organizations.id, organizationMembers.organizationId)
           )
           .where(eq(organizationMembers.userId, userId))
           .limit(1)
@@ -177,7 +177,7 @@ export async function refreshService(rawToken: string) {
           .from(organizationMembers)
           .innerJoin(
             organizations,
-            eq(organizations.id, organizationMembers.organizationId),
+            eq(organizations.id, organizationMembers.organizationId)
           )
           .where(eq(organizationMembers.userId, userId))
           .limit(1)
@@ -186,8 +186,7 @@ export async function refreshService(rawToken: string) {
     })
 
     // Lazy cleanup: piggyback on a successful refresh to drop expired rows.
-    db
-      .delete(refreshTokens)
+    db.delete(refreshTokens)
       .where(lt(refreshTokens.expiresAt, new Date()))
       .catch(() => {})
 
@@ -211,7 +210,7 @@ export async function logoutService(rawToken: string): Promise<void> {
 }
 
 export async function getInviteService(
-  code: string,
+  code: string
 ): Promise<{ organizationName: string } | null> {
   return getInvite(code, {
     findOrgByInviteCode: async (c) => {
@@ -227,7 +226,7 @@ export async function getInviteService(
 
 export async function generateInviteCodeService(
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<{ inviteCode: string; inviteUrl: string }> {
   try {
     const inviteCode = await generateInviteCode(userId, organizationId, {
@@ -238,8 +237,8 @@ export async function generateInviteCodeService(
           .where(
             and(
               eq(organizationMembers.organizationId, orgId),
-              eq(organizationMembers.userId, uid),
-            ),
+              eq(organizationMembers.userId, uid)
+            )
           )
           .limit(1)
         return rows[0]?.role ?? null

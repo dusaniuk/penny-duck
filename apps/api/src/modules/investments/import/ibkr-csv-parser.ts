@@ -5,9 +5,16 @@ import { splitSections } from "./split-sections"
 import type { ParsedImport } from "./types"
 
 /** Identifies which IBKR section a raw section is based on its header columns. */
-function classify(header: string[]): "trades" | "cash_transactions" | "unknown" {
-  if (header.includes("TransactionType") && header.includes("Buy/Sell")) return "trades"
-  if (header.includes("Type") && header.includes("Amount") && header.includes("Date/Time"))
+function classify(
+  header: string[]
+): "trades" | "cash_transactions" | "unknown" {
+  if (header.includes("TransactionType") && header.includes("Buy/Sell"))
+    return "trades"
+  if (
+    header.includes("Type") &&
+    header.includes("Amount") &&
+    header.includes("Date/Time")
+  )
     return "cash_transactions"
   return "unknown"
 }

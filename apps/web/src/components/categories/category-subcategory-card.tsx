@@ -79,7 +79,9 @@ export function CategorySubcategoryCard({
               <span className="text-[10px] font-medium text-muted-foreground">
                 {homeCurrency}
               </span>
-              <span className="text-[11px] text-muted-foreground">· {pct}%</span>
+              <span className="text-[11px] text-muted-foreground">
+                · {pct}%
+              </span>
             </p>
           ) : (
             <p className="text-[12px] text-muted-foreground">unused</p>
@@ -91,7 +93,11 @@ export function CategorySubcategoryCard({
       {/* Desktop: full card with progress + activity footer */}
       <div className="relative hidden sm:block">
         <div className="flex items-start justify-between gap-2">
-          <CategoryIconChip color={parentColor} icon={category.icon} size="md" />
+          <CategoryIconChip
+            color={parentColor}
+            icon={category.icon}
+            size="md"
+          />
           {actions}
         </div>
 

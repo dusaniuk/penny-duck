@@ -39,10 +39,7 @@ function pruneExpired(now: number): void {
   }
 }
 
-export function rateLimit({
-  limit,
-  ttl,
-}: RateLimitOptions): MiddlewareHandler {
+export function rateLimit({ limit, ttl }: RateLimitOptions): MiddlewareHandler {
   return async (c, next) => {
     const effectiveLimit = limitsEnforced() ? limit : 10_000
     const key = `${c.req.routePath}:${clientIp(c)}`

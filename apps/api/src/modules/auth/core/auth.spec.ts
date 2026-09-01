@@ -57,7 +57,9 @@ describe("login", () => {
     expect(call.userId).toBe("u1")
     expect(call.token).toBe(result.refreshToken)
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
-    const drift = Math.abs(call.expiresAt.getTime() - (Date.now() + sevenDaysMs))
+    const drift = Math.abs(
+      call.expiresAt.getTime() - (Date.now() + sevenDaysMs)
+    )
     expect(drift).toBeLessThan(5000)
   })
 
@@ -320,10 +322,7 @@ describe("signup", () => {
     expect(deps.insertUser).toHaveBeenCalledWith(
       expect.objectContaining({ agreedToTermsAt: expect.any(Date) })
     )
-    expect(deps.createOrgWithOwner).toHaveBeenCalledWith(
-      "Alice's Space",
-      "u1"
-    )
+    expect(deps.createOrgWithOwner).toHaveBeenCalledWith("Alice's Space", "u1")
     expect(deps.addOrgMember).not.toHaveBeenCalled()
   })
 
@@ -333,9 +332,8 @@ describe("signup", () => {
       { name: "Alice", email: "alice@example.com", password: PASSWORD },
       deps
     )
-    const insertedHash = (
-      deps.insertUser as ReturnType<typeof mock>
-    ).mock.calls[0][0].passwordHash
+    const insertedHash = (deps.insertUser as ReturnType<typeof mock>).mock
+      .calls[0][0].passwordHash
     expect(insertedHash).not.toBe(PASSWORD)
     expect(await Bun.password.verify(PASSWORD, insertedHash)).toBe(true)
   })

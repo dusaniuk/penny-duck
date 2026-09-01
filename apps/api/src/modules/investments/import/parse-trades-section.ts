@@ -107,7 +107,10 @@ function parseFloatOrThrow(raw: string, field: string): number {
   return n
 }
 
-function parseFloatOrDefault(raw: string | undefined, fallback: number): number {
+function parseFloatOrDefault(
+  raw: string | undefined,
+  fallback: number
+): number {
   if (!raw) return fallback
   const n = Number(raw)
   return Number.isFinite(n) ? n : fallback
@@ -134,7 +137,9 @@ function parseIbkrDateTime(
     const date = new Date(iso)
     if (!isNaN(date.getTime())) return date
   }
-  throw new Error(`Invalid date: DateTime="${dateTime}" TradeDate="${tradeDate}"`)
+  throw new Error(
+    `Invalid date: DateTime="${dateTime}" TradeDate="${tradeDate}"`
+  )
 }
 
 function formatIbkrDate(raw: string | undefined): string | null {

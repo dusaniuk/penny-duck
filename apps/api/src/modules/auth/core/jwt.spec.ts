@@ -28,7 +28,9 @@ describe("signAccessToken / verifyAccessToken", () => {
 
   it("returns null when verifying with wrong secret", () => {
     const token = signAccessToken(PAYLOAD, SECRET, "15m")
-    expect(verifyAccessToken(token, "different-secret-also-32-chars-long")).toBeNull()
+    expect(
+      verifyAccessToken(token, "different-secret-also-32-chars-long")
+    ).toBeNull()
   })
 
   it("returns null for expired token", () => {

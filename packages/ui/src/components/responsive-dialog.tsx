@@ -56,7 +56,11 @@ function ResponsiveDialogContent({
   }
 
   return (
-    <DialogContent className={className} showCloseButton={showCloseButton} {...props}>
+    <DialogContent
+      className={className}
+      showCloseButton={showCloseButton}
+      {...props}
+    >
       {children}
     </DialogContent>
   )

@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./dropdown-menu"
-import type {Theme} from "./theme-provider";
+import type { Theme } from "./theme-provider"
 
 const options: Array<{ value: Theme; label: string; icon: React.ReactNode }> = [
   { value: "light", label: "Light", icon: <IconSun className="size-4" /> },

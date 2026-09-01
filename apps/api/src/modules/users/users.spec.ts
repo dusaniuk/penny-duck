@@ -1,11 +1,4 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { eq } from "drizzle-orm"
 import { type DbClient, organizations, users } from "@workspace/db"
 import { env } from "@workspace/env/api"
@@ -177,7 +170,10 @@ describe("Users (Hono)", () => {
     })
 
     it("removes membership but keeps org when not sole owner", async () => {
-      const inviteResult = await generateInviteCodeService(userId, organizationId)
+      const inviteResult = await generateInviteCodeService(
+        userId,
+        organizationId
+      )
 
       const member = await signupUser({
         name: "Member",
@@ -258,7 +254,10 @@ describe("Users (Hono)", () => {
     })
 
     it("returns owner + invited member", async () => {
-      const inviteResult = await generateInviteCodeService(userId, organizationId)
+      const inviteResult = await generateInviteCodeService(
+        userId,
+        organizationId
+      )
       const member = await signupUser({
         name: "Member",
         email: "member@test.com",

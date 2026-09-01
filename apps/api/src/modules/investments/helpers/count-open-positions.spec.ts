@@ -24,10 +24,7 @@ describe("countOpenPositionsFromTrades", () => {
   })
 
   it("counts each instrument with non-zero quantity", () => {
-    const trades = [
-      trade("inst-a", "buy", 10),
-      trade("inst-b", "buy", 5),
-    ]
+    const trades = [trade("inst-a", "buy", 10), trade("inst-b", "buy", 5)]
     expect(countOpenPositionsFromTrades(trades)).toBe(2)
   })
 

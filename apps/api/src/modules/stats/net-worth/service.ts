@@ -29,7 +29,7 @@ interface MonthlyDeltaRow {
 
 async function fetchMonthlyDeltasByCurrency(
   organizationId: string,
-  months: number,
+  months: number
 ): Promise<MonthlyDeltaRow[]> {
   const rows = await db.execute(sql`
     WITH txs AS (
@@ -87,9 +87,7 @@ function generateMonthKeys(months: number): string[] {
   const now = new Date()
   for (let i = months - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    keys.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-    )
+    keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`)
   }
   return keys
 }
@@ -97,7 +95,7 @@ function generateMonthKeys(months: number): string[] {
 async function getMonthlyDeltasHome(
   organizationId: string,
   homeCurrency: string,
-  months: number,
+  months: number
 ): Promise<Array<{ month: string; delta: number }>> {
   const rows = await fetchMonthlyDeltasByCurrency(organizationId, months)
   const currencies = [...new Set(rows.map((r) => r.currency))]
@@ -107,7 +105,7 @@ async function getMonthlyDeltasHome(
     currencies.map(async (cur) => {
       const r = await getRate(cur, homeCurrency, today, currencies)
       rates.set(cur, r)
-    }),
+    })
   )
 
   const byMonth = new Map<string, number>()
@@ -124,7 +122,7 @@ async function getMonthlyDeltasHome(
 
 export async function getNetWorth(
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<NetWorthResponse> {
   const list = await listAccounts(organizationId, userId)
   // A wallet is one entity (its pockets summed into totalHomeBalance), so the
@@ -134,7 +132,7 @@ export async function getNetWorth(
   const entities = list.map((item) =>
     "pockets" in item
       ? { id: item.id, name: item.name, homeBalance: item.totalHomeBalance }
-      : { id: item.id, name: item.name, homeBalance: item.homeBalance },
+      : { id: item.id, name: item.name, homeBalance: item.homeBalance }
   )
 
   const total = entities.reduce((acc, e) => acc + e.homeBalance, 0)
@@ -150,7 +148,7 @@ export async function getNetWorth(
   const monthlyDeltas = await getMonthlyDeltasHome(
     organizationId,
     homeCurrency,
-    HISTORY_MONTHS,
+    HISTORY_MONTHS
   )
 
   // Walk back from today through monthly deltas (newest first).

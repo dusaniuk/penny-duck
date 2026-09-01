@@ -37,7 +37,9 @@ export const trades = appSchema.table(
     externalSource: text("external_source"),
     externalId: text("external_id"),
     externalMetadata: jsonb("external_metadata"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     index("trades_org_date_idx").on(table.organizationId, table.date),

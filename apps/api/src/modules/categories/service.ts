@@ -39,13 +39,13 @@ function toResponse(row: CategoryRow): Category {
 async function findById(
   executor: Executor,
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<CategoryRow | null> {
   const rows = await executor
     .select()
     .from(categories)
     .where(
-      and(eq(categories.id, id), eq(categories.organizationId, organizationId)),
+      and(eq(categories.id, id), eq(categories.organizationId, organizationId))
     )
     .limit(1)
   return rows[0] ?? null
@@ -54,7 +54,7 @@ async function findById(
 async function hasChildren(
   executor: Executor,
   parentId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> {
   const rows = await executor
     .select({ id: categories.id })
@@ -62,15 +62,15 @@ async function hasChildren(
     .where(
       and(
         eq(categories.parentId, parentId),
-        eq(categories.organizationId, organizationId),
-      ),
+        eq(categories.organizationId, organizationId)
+      )
     )
     .limit(1)
   return rows.length > 0
 }
 
 export async function listCategories(
-  organizationId: string,
+  organizationId: string
 ): Promise<Category[]> {
   const rows = await db
     .select()
@@ -95,11 +95,11 @@ export async function listCategories(
 // would silently mix currencies.)
 export async function getCategoryUsage(
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<CategoryUsageItem[]> {
   const now = new Date()
   const monthStart = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
   )
   const cashFlow = sql`${transactions.reimbursementId} is null and ${accounts.type} <> 'brokerage'`
   const thisMonth = sql`${cashFlow} and ${transactions.date} >= ${monthStart}`
@@ -109,15 +109,17 @@ export async function getCategoryUsage(
       categoryId: transactions.categoryId,
       count: sql<number>`count(*)::int`,
       countThisMonth: sql<number>`count(*) filter (where ${thisMonth})::int`,
-      lastActivity: sql<string | null>`max(${transactions.date}) filter (where ${cashFlow})`,
+      lastActivity: sql<
+        string | null
+      >`max(${transactions.date}) filter (where ${cashFlow})`,
     })
     .from(transactions)
     .innerJoin(accounts, eq(accounts.id, transactions.accountId))
     .where(
       and(
         eq(transactions.organizationId, organizationId),
-        isNotNull(transactions.categoryId),
-      ),
+        isNotNull(transactions.categoryId)
+      )
     )
     .groupBy(transactions.categoryId)
 
@@ -137,8 +139,8 @@ export async function getCategoryUsage(
         isNotNull(transactions.categoryId),
         isNull(transactions.reimbursementId),
         ne(accounts.type, "brokerage"),
-        gte(transactions.date, monthStart),
-      ),
+        gte(transactions.date, monthStart)
+      )
     )
 
   const homeCurrency = await getHomeCurrency(userId)
@@ -158,13 +160,13 @@ export async function getCategoryUsage(
         row.currency,
         homeCurrency,
         row.date,
-        usedCurrencies,
+        usedCurrencies
       )
       home = Math.abs(row.amount) * rate
     }
     spentByCategory.set(
       row.categoryId,
-      (spentByCategory.get(row.categoryId) ?? 0) + home,
+      (spentByCategory.get(row.categoryId) ?? 0) + home
     )
   }
 
@@ -191,7 +193,7 @@ export interface CreateCategoryInput {
 }
 
 export async function createCategory(
-  input: CreateCategoryInput,
+  input: CreateCategoryInput
 ): Promise<Category> {
   let type: CategoryType = input.type
   if (input.parentId !== null) {
@@ -243,7 +245,7 @@ export interface UpdateCategoryInput {
 }
 
 export async function updateCategory(
-  input: UpdateCategoryInput,
+  input: UpdateCategoryInput
 ): Promise<Category> {
   return db.transaction(async (tx) => {
     const existing = await findById(tx, input.id, input.organizationId)
@@ -279,7 +281,8 @@ export async function updateCategory(
         (input.color === undefined || input.color === null)
       ) {
         throw new HTTPException(400, {
-          message: "A color is required when promoting a subcategory to top-level",
+          message:
+            "A color is required when promoting a subcategory to top-level",
         })
       }
 
@@ -301,7 +304,7 @@ export async function updateCategory(
         const childOfMoving = await hasChildren(
           tx,
           input.id,
-          input.organizationId,
+          input.organizationId
         )
         if (childOfMoving) {
           throw new HTTPException(400, {
@@ -313,7 +316,8 @@ export async function updateCategory(
 
     if (input.type !== undefined && existing.parentId !== null) {
       throw new HTTPException(400, {
-        message: "Subcategory type is inherited from parent and cannot be changed directly",
+        message:
+          "Subcategory type is inherited from parent and cannot be changed directly",
       })
     }
 
@@ -339,8 +343,8 @@ export async function updateCategory(
       .where(
         and(
           eq(categories.id, input.id),
-          eq(categories.organizationId, input.organizationId),
-        ),
+          eq(categories.organizationId, input.organizationId)
+        )
       )
       .returning()
 
@@ -355,8 +359,8 @@ export async function updateCategory(
         .where(
           and(
             eq(categories.parentId, input.id),
-            eq(categories.organizationId, input.organizationId),
-          ),
+            eq(categories.organizationId, input.organizationId)
+          )
         )
     }
 
@@ -366,7 +370,7 @@ export async function updateCategory(
 
 export async function deleteCategory(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const existing = await findById(tx, id, organizationId)
@@ -378,22 +382,22 @@ export async function deleteCategory(
       .where(
         and(
           eq(categories.parentId, id),
-          eq(categories.organizationId, organizationId),
-        ),
+          eq(categories.organizationId, organizationId)
+        )
       )
     await tx
       .delete(categories)
       .where(
         and(
           eq(categories.id, id),
-          eq(categories.organizationId, organizationId),
-        ),
+          eq(categories.organizationId, organizationId)
+        )
       )
   })
 }
 
 export async function seedDefaultCategories(
-  organizationId: string,
+  organizationId: string
 ): Promise<Category[]> {
   return db.transaction(async (tx) => {
     const existing = await tx
@@ -430,7 +434,7 @@ export async function seedDefaultCategories(
             name: child.name,
             type: group.type,
             icon: child.icon,
-          })),
+          }))
         )
         .returning()
       created.push(...childRows)

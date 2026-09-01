@@ -1,11 +1,4 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { eq } from "drizzle-orm"
@@ -229,13 +222,14 @@ describe("POST /trades", () => {
     expect(div.type).toBe("dividend")
     expect(div.amount).toBe(25)
 
-    const listRes = await honoApp.request(
-      `/trades?accountId=${account.id}`,
-      { headers: { cookie } }
-    )
+    const listRes = await honoApp.request(`/trades?accountId=${account.id}`, {
+      headers: { cookie },
+    })
     const list = await listRes.json()
     expect(list).toHaveLength(2)
-    expect(list.find((t: { type: string }) => t.type === "dividend").amount).toBe(25)
+    expect(
+      list.find((t: { type: string }) => t.type === "dividend").amount
+    ).toBe(25)
   })
 
   it("dividend with withheld tax: balance impact = amount + withheldTax", async () => {
@@ -259,9 +253,7 @@ describe("POST /trades", () => {
       date: "2026-02-01T00:00:00Z",
     })
     const accountsList = await listAccountsFlat(organizationId, userId)
-    const broker = accountsList.find(
-      (a: { id: string }) => a.id === account.id
-    )
+    const broker = accountsList.find((a: { id: string }) => a.id === account.id)
     // Cash impact: 10_000 - (10 × 100) + 4.25 = 9004.25.
     // Plus market value of holdings: 10 × 200 (mock price) = 2000.
     expect(broker!.balance).toBeCloseTo(11_004.25, 2)
@@ -340,7 +332,9 @@ describe("PATCH/DELETE /trades", () => {
 
     const posRes = await honoApp.request("/positions", { headers: { cookie } })
     const { positions } = await posRes.json()
-    expect(positions.find((p: { symbol: string }) => p.symbol === "AAPL")).toBeUndefined()
+    expect(
+      positions.find((p: { symbol: string }) => p.symbol === "AAPL")
+    ).toBeUndefined()
   })
 })
 
@@ -381,10 +375,9 @@ describe("GET /positions and /investments/summary", () => {
       price: 150,
       date: "2026-04-01T00:00:00Z",
     })
-    const res = await honoApp.request(
-      `/positions/${account.id}/AAPL`,
-      { headers: { cookie } }
-    )
+    const res = await honoApp.request(`/positions/${account.id}/AAPL`, {
+      headers: { cookie },
+    })
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.symbol).toBe("AAPL")
@@ -393,10 +386,9 @@ describe("GET /positions and /investments/summary", () => {
 
   it("GET /positions/:accountId/:symbol returns 404 for never-traded symbol", async () => {
     const account = await makeBrokerage()
-    const res = await honoApp.request(
-      `/positions/${account.id}/AAPL`,
-      { headers: { cookie } }
-    )
+    const res = await honoApp.request(`/positions/${account.id}/AAPL`, {
+      headers: { cookie },
+    })
     expect(res.status).toBe(404)
   })
 
@@ -456,7 +448,9 @@ describe("GET /positions and /investments/summary", () => {
 
 describe("Instruments", () => {
   it("GET /instruments/:symbol returns the instrument (lazy-loads via Yahoo)", async () => {
-    const res = await honoApp.request("/instruments/AAPL", { headers: { cookie } })
+    const res = await honoApp.request("/instruments/AAPL", {
+      headers: { cookie },
+    })
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.symbol).toBe("AAPL")
@@ -479,7 +473,9 @@ describe("Instruments", () => {
     })
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.find((r: { symbol: string }) => r.symbol === "MSFT")).toBeDefined()
+    expect(
+      body.find((r: { symbol: string }) => r.symbol === "MSFT")
+    ).toBeDefined()
   })
 })
 
@@ -539,10 +535,9 @@ describe("POST /trades/import (multipart)", () => {
     expect(result.summary.tradesToCreate).toBe(1)
     expect(result.rows[0].status).toBe("new")
 
-    const listRes = await honoApp.request(
-      `/trades?accountId=${account.id}`,
-      { headers: { cookie } }
-    )
+    const listRes = await honoApp.request(`/trades?accountId=${account.id}`, {
+      headers: { cookie },
+    })
     const list = await listRes.json()
     expect(list).toHaveLength(0)
   })
@@ -563,14 +558,16 @@ describe("POST /trades/import (multipart)", () => {
     expect(result.summary.depositsFound).toBe(5)
     expect(result.summary.depositsTotalAmount).toBe(5000)
 
-    const listRes = await honoApp.request(
-      `/trades?accountId=${account.id}`,
-      { headers: { cookie } }
-    )
+    const listRes = await honoApp.request(`/trades?accountId=${account.id}`, {
+      headers: { cookie },
+    })
     const list = await listRes.json()
     expect(list.length).toBe(result.createdCount)
     expect(
-      list.every((t: { externalSource: string }) => t.externalSource === "ibkr_flex_query")
+      list.every(
+        (t: { externalSource: string }) =>
+          t.externalSource === "ibkr_flex_query"
+      )
     ).toBe(true)
 
     const after = await db
@@ -627,7 +624,7 @@ describe("Cross-module: DeleteAccount uses inlined trade query", () => {
       date: "2026-04-01T00:00:00Z",
     })
     await expect(
-      deleteAccount(account.id, organizationId, userId),
+      deleteAccount(account.id, organizationId, userId)
     ).rejects.toThrow(/trade history/i)
   })
 })

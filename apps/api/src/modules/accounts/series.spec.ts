@@ -1,11 +1,4 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import {
   closeTestApp,
   createTestApp,
@@ -13,7 +6,15 @@ import {
   truncateAll,
 } from "@/test/setup"
 import { db } from "@/db"
-import { accounts, exchangeRates, instrumentPrices, instruments, trades, transactions, wallets } from "@workspace/db"
+import {
+  accounts,
+  exchangeRates,
+  instrumentPrices,
+  instruments,
+  trades,
+  transactions,
+  wallets,
+} from "@workspace/db"
 import { chartMock } from "@/test/yahoo-mock"
 import { carryForwardRates, computeAccountSeries } from "./series"
 import { honoApp } from "@/app"
@@ -214,14 +215,8 @@ async function insertTrade(opts: {
   })
 }
 
-async function seedPrice(
-  instrumentId: string,
-  date: string,
-  close: number,
-) {
-  await db
-    .insert(instrumentPrices)
-    .values({ instrumentId, date, close })
+async function seedPrice(instrumentId: string, date: string, close: number) {
+  await db.insert(instrumentPrices).values({ instrumentId, date, close })
 }
 
 describe("computeAccountSeries — brokerage", () => {

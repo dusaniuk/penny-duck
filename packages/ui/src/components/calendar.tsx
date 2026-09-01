@@ -1,15 +1,14 @@
 import * as React from "react"
-import {
-  
-  DayPicker,
-  
-  getDefaultClassNames
-} from "react-day-picker"
+import { DayPicker, getDefaultClassNames } from "react-day-picker"
 
-import { IconChevronDown, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
+import {
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+} from "@tabler/icons-react"
 import { cn } from "@workspace/ui/lib/utils"
 import { Button, buttonVariants } from "@workspace/ui/components/button"
-import type {DayButton, Locale} from "react-day-picker";
+import type { DayButton, Locale } from "react-day-picker"
 
 function Calendar({
   className,
@@ -162,10 +161,7 @@ function Calendar({
           }
 
           return (
-            <IconChevronDown
-              className={cn("size-4", chevCls)}
-              {...chevRest}
-            />
+            <IconChevronDown className={cn("size-4", chevCls)} {...chevRest} />
           )
         },
         DayButton: (dayProps) => (

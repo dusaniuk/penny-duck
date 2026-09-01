@@ -79,8 +79,18 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
 }
 
 interface Issue {
@@ -89,13 +99,24 @@ interface Issue {
   message: string
 }
 
-function parseDate(value: unknown, tab: string, row: number, issues: Issue[]): Date | null {
+function parseDate(
+  value: unknown,
+  tab: string,
+  row: number,
+  issues: Issue[]
+): Date | null {
   if (value == null || value === "") return null
   if (value instanceof Date) {
     if (value.getFullYear() !== CONFIG.year) {
-      issues.push({ tab, row, message: `date year ${value.getFullYear()} != ${CONFIG.year}, kept as-is` })
+      issues.push({
+        tab,
+        row,
+        message: `date year ${value.getFullYear()} != ${CONFIG.year}, kept as-is`,
+      })
     }
-    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate(), 12))
+    return new Date(
+      Date.UTC(value.getFullYear(), value.getMonth(), value.getDate(), 12)
+    )
   }
   const s = String(value).trim()
   // "March 1", "Mar 1", "1 March"
@@ -112,7 +133,9 @@ function parseDate(value: unknown, tab: string, row: number, issues: Issue[]): D
   }
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (iso) {
-    return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12))
+    return new Date(
+      Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12)
+    )
   }
   issues.push({ tab, row, message: `unparseable date "${s}"` })
   return null
@@ -188,7 +211,11 @@ function fallbackMapping(name: string): CategoryMapping {
   const idx = name.indexOf(":")
   const type = name.startsWith("Дохід") ? "income" : "expense"
   if (idx === -1) return { parent: name, sub: name, type }
-  return { parent: name.slice(0, idx).trim(), sub: name.slice(idx + 1).trim(), type }
+  return {
+    parent: name.slice(0, idx).trim(),
+    sub: name.slice(idx + 1).trim(),
+    type,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -232,24 +259,50 @@ function readMonthTab(
     issues.push({ tab, row: 0, message: "tab not found, skipped" })
     return []
   }
-  const grid = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null })
+  const grid = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+    header: 1,
+    defval: null,
+  })
   const headerIdx = grid.findIndex(
     (r) =>
-      r.some((c) => String(c ?? "").trim().toLowerCase() === "date") &&
-      r.some((c) => String(c ?? "").trim().toLowerCase() === "category")
+      r.some(
+        (c) =>
+          String(c ?? "")
+            .trim()
+            .toLowerCase() === "date"
+      ) &&
+      r.some(
+        (c) =>
+          String(c ?? "")
+            .trim()
+            .toLowerCase() === "category"
+      )
   )
   if (headerIdx === -1) {
-    issues.push({ tab, row: 0, message: "no Date/Category header row found, skipped" })
+    issues.push({
+      tab,
+      row: 0,
+      message: "no Date/Category header row found, skipped",
+    })
     return []
   }
   const cols: Record<string, number> = {}
   grid[headerIdx].forEach((cell, i) => {
-    const key = HEADER_ALIASES[String(cell ?? "").trim().toLowerCase()]
+    const key =
+      HEADER_ALIASES[
+        String(cell ?? "")
+          .trim()
+          .toLowerCase()
+      ]
     if (key && cols[key] === undefined) cols[key] = i
   })
   for (const required of ["date", "category", "amount"]) {
     if (cols[required] === undefined) {
-      issues.push({ tab, row: headerIdx + 1, message: `missing "${required}" column, tab skipped` })
+      issues.push({
+        tab,
+        row: headerIdx + 1,
+        message: `missing "${required}" column, tab skipped`,
+      })
       return []
     }
   }
@@ -264,14 +317,22 @@ function readMonthTab(
 
     const amount = parseAmount(amountRaw)
     if (!categoryName || amount == null) {
-      issues.push({ tab, row: rowNum, message: `incomplete row (category="${categoryName}", amount="${amountRaw}"), skipped` })
+      issues.push({
+        tab,
+        row: rowNum,
+        message: `incomplete row (category="${categoryName}", amount="${amountRaw}"), skipped`,
+      })
       continue
     }
     if (amount === 0) continue
 
     const date = parseDate(row[cols.date], tab, rowNum, issues)
     if (!date) {
-      issues.push({ tab, row: rowNum, message: `row has amount but no date, skipped` })
+      issues.push({
+        tab,
+        row: rowNum,
+        message: `row has amount but no date, skipped`,
+      })
       continue
     }
 
@@ -287,7 +348,8 @@ function readMonthTab(
     if (original) {
       const sheetRate = parseAmount(row[cols.rate])
       exchangeRate =
-        sheetRate ?? Math.round((Math.abs(amount) / original.amount) * 1e6) / 1e6
+        sheetRate ??
+        Math.round((Math.abs(amount) / original.amount) * 1e6) / 1e6
     }
 
     parsed.push({
@@ -318,16 +380,28 @@ async function lookup() {
   for (const org of orgs) {
     console.log(`\norganization: ${org.name}  ${org.id}`)
     const members = await db
-      .select({ userId: users.id, email: users.email, name: users.name, role: organizationMembers.role })
+      .select({
+        userId: users.id,
+        email: users.email,
+        name: users.name,
+        role: organizationMembers.role,
+      })
       .from(organizationMembers)
       .innerJoin(users, eq(users.id, organizationMembers.userId))
       .where(eq(organizationMembers.organizationId, org.id))
-    for (const m of members) console.log(`  user: ${m.name} <${m.email}> (${m.role})  ${m.userId}`)
+    for (const m of members)
+      console.log(`  user: ${m.name} <${m.email}> (${m.role})  ${m.userId}`)
     const accts = await db
-      .select({ id: accounts.id, name: accounts.name, type: accounts.type, currency: accounts.currency })
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        type: accounts.type,
+        currency: accounts.currency,
+      })
       .from(accounts)
       .where(eq(accounts.organizationId, org.id))
-    for (const a of accts) console.log(`  account: ${a.name} [${a.type} ${a.currency}]  ${a.id}`)
+    for (const a of accts)
+      console.log(`  account: ${a.name} [${a.type} ${a.currency}]  ${a.id}`)
   }
 }
 
@@ -339,7 +413,9 @@ function validateConfig() {
     if (!p.accountId) missing.push(`people.${key}.accountId`)
   }
   if (missing.length) {
-    console.error(`CONFIG is incomplete: ${missing.join(", ")}. Run --lookup and fill in the ids.`)
+    console.error(
+      `CONFIG is incomplete: ${missing.join(", ")}. Run --lookup and fill in the ids.`
+    )
     process.exit(1)
   }
 }
@@ -360,21 +436,35 @@ async function run(file: string, commit: boolean) {
   }
 
   // --- report -------------------------------------------------------------
-  console.log(`\nParsed ${rows.length} transactions from ${CONFIG.monthTabs.length} tabs\n`)
+  console.log(
+    `\nParsed ${rows.length} transactions from ${CONFIG.monthTabs.length} tabs\n`
+  )
 
   console.log("Per tab:")
   for (const tab of CONFIG.monthTabs) {
     const tabRows = rows.filter((r) => r.tab === tab)
     if (!tabRows.length) continue
-    const expenses = tabRows.filter((r) => r.type === "expense").reduce((s, r) => s + r.amount, 0)
-    const income = tabRows.filter((r) => r.type === "income").reduce((s, r) => s + r.amount, 0)
-    console.log(`  ${tab}: ${String(tabRows.length).padStart(4)} rows  expenses ${money(expenses)}  income ${money(income)}`)
+    const expenses = tabRows
+      .filter((r) => r.type === "expense")
+      .reduce((s, r) => s + r.amount, 0)
+    const income = tabRows
+      .filter((r) => r.type === "income")
+      .reduce((s, r) => s + r.amount, 0)
+    console.log(
+      `  ${tab}: ${String(tabRows.length).padStart(4)} rows  expenses ${money(expenses)}  income ${money(income)}`
+    )
   }
 
-  console.log("\nCategory tree (unique parent → sub, with row counts and totals):")
-  const byCat = new Map<string, { mapping: CategoryMapping; count: number; total: number }>()
+  console.log(
+    "\nCategory tree (unique parent → sub, with row counts and totals):"
+  )
+  const byCat = new Map<
+    string,
+    { mapping: CategoryMapping; count: number; total: number }
+  >()
   for (const r of rows) {
-    const mapping = categoryMap.get(r.categoryName) ?? fallbackMapping(r.categoryName)
+    const mapping =
+      categoryMap.get(r.categoryName) ?? fallbackMapping(r.categoryName)
     const entry = byCat.get(r.categoryName) ?? { mapping, count: 0, total: 0 }
     entry.count += 1
     entry.total += r.amount
@@ -385,13 +475,18 @@ async function run(file: string, commit: boolean) {
     console.log(`  ${parent}`)
     for (const [name, e] of byCat) {
       if (e.mapping.parent !== parent) continue
-      console.log(`    ${e.mapping.sub} (${e.mapping.type})  ${e.count} rows  ${money(e.total)}   [sheet: "${name}"]`)
+      console.log(
+        `    ${e.mapping.sub} (${e.mapping.type})  ${e.count} rows  ${money(e.total)}   [sheet: "${name}"]`
+      )
     }
   }
 
   if (unmapped.size) {
-    console.log("\n⚠ Categories not in the Categories tab (colon-split fallback applied):")
-    for (const [name, count] of unmapped) console.log(`  "${name}" — ${count} rows`)
+    console.log(
+      "\n⚠ Categories not in the Categories tab (colon-split fallback applied):"
+    )
+    for (const [name, count] of unmapped)
+      console.log(`  "${name}" — ${count} rows`)
   }
 
   const persons = new Map<string, number>()
@@ -405,7 +500,8 @@ async function run(file: string, commit: boolean) {
 
   if (issues.length) {
     console.log(`\n⚠ ${issues.length} row issues:`)
-    for (const i of issues.slice(0, 50)) console.log(`  [${i.tab} row ${i.row}] ${i.message}`)
+    for (const i of issues.slice(0, 50))
+      console.log(`  [${i.tab} row ${i.row}] ${i.message}`)
     if (issues.length > 50) console.log(`  … and ${issues.length - 50} more`)
   }
 
@@ -417,7 +513,9 @@ async function run(file: string, commit: boolean) {
   // --- commit -------------------------------------------------------------
   validateConfig()
   if (unknownPersons.length) {
-    console.error(`\nCannot commit: person values not in CONFIG.people: ${unknownPersons.map((p) => `"${p}"`).join(", ")}`)
+    console.error(
+      `\nCannot commit: person values not in CONFIG.people: ${unknownPersons.map((p) => `"${p}"`).join(", ")}`
+    )
     process.exit(1)
   }
   if (!rows.length) {
@@ -440,15 +538,29 @@ async function run(file: string, commit: boolean) {
       const existing = await tx
         .select({ id: categories.id })
         .from(categories)
-        .where(and(eq(categories.organizationId, orgId), eq(categories.name, parentName), isNull(categories.parentId)))
+        .where(
+          and(
+            eq(categories.organizationId, orgId),
+            eq(categories.name, parentName),
+            isNull(categories.parentId)
+          )
+        )
       if (existing[0]) {
         parentIds.set(parentName, existing[0].id)
         continue
       }
-      const color = GROUPING_COLORS[parentName] ?? FALLBACK_COLORS[colorIdx++ % FALLBACK_COLORS.length]
+      const color =
+        GROUPING_COLORS[parentName] ??
+        FALLBACK_COLORS[colorIdx++ % FALLBACK_COLORS.length]
       const [created] = await tx
         .insert(categories)
-        .values({ organizationId: orgId, parentId: null, name: parentName, type, color })
+        .values({
+          organizationId: orgId,
+          parentId: null,
+          name: parentName,
+          type,
+          color,
+        })
         .returning({ id: categories.id })
       parentIds.set(parentName, created.id)
       console.log(`created parent category "${parentName}" (${type}, ${color})`)
@@ -459,17 +571,30 @@ async function run(file: string, commit: boolean) {
       const existing = await tx
         .select({ id: categories.id })
         .from(categories)
-        .where(and(eq(categories.organizationId, orgId), eq(categories.name, mapping.sub), eq(categories.parentId, parentId)))
+        .where(
+          and(
+            eq(categories.organizationId, orgId),
+            eq(categories.name, mapping.sub),
+            eq(categories.parentId, parentId)
+          )
+        )
       if (existing[0]) {
         catIds.set(sheetName, existing[0].id)
         continue
       }
       const [created] = await tx
         .insert(categories)
-        .values({ organizationId: orgId, parentId, name: mapping.sub, type: mapping.type })
+        .values({
+          organizationId: orgId,
+          parentId,
+          name: mapping.sub,
+          type: mapping.type,
+        })
         .returning({ id: categories.id })
       catIds.set(sheetName, created.id)
-      console.log(`created category "${mapping.parent}" → "${mapping.sub}" (${mapping.type})`)
+      console.log(
+        `created category "${mapping.parent}" → "${mapping.sub}" (${mapping.type})`
+      )
     }
 
     const values = rows.map((r) => {
@@ -505,7 +630,9 @@ if (args.includes("--lookup")) {
 } else {
   const file = args.find((a) => !a.startsWith("--"))
   if (!file) {
-    console.error("Usage: bun scripts/import-spreadsheet.ts <file.xlsx> [--commit] | --lookup")
+    console.error(
+      "Usage: bun scripts/import-spreadsheet.ts <file.xlsx> [--commit] | --lookup"
+    )
     process.exit(1)
   }
   await run(file, args.includes("--commit"))

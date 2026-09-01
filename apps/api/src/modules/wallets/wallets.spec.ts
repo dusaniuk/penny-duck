@@ -1,18 +1,16 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { env } from "@workspace/env/api"
 import { exchangeRates } from "@workspace/db"
 import { honoApp } from "@/app"
 import { db } from "@/db"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import { closeTestApp, createTestApp, signupUser, truncateAll } from "@/test/setup"
+import {
+  closeTestApp,
+  createTestApp,
+  signupUser,
+  truncateAll,
+} from "@/test/setup"
 
 let cookie: string
 
@@ -92,10 +90,10 @@ describe("POST /accounts (wallet)", () => {
     expect(body.name).toBe("Main Wallet")
     expect(body.pockets).toHaveLength(3)
     expect(
-      body.pockets.map((p: { currency: string }) => p.currency).sort(),
+      body.pockets.map((p: { currency: string }) => p.currency).sort()
     ).toEqual(["EUR", "PLN", "USD"])
     const usd = body.pockets.find(
-      (p: { currency: string }) => p.currency === "USD",
+      (p: { currency: string }) => p.currency === "USD"
     )
     expect(usd.balance).toBe(200)
   })
@@ -144,7 +142,7 @@ describe("PATCH /accounts/:id (wallet)", () => {
         method: "PATCH",
         headers: { cookie, "content-type": "application/json" },
         body: JSON.stringify({ name: "Nope" }),
-      },
+      }
     )
     expect(res.status).toBe(404)
   })
@@ -231,7 +229,7 @@ describe("POST /accounts/:id/pockets", () => {
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(
-      body.pockets.map((p: { currency: string }) => p.currency).sort(),
+      body.pockets.map((p: { currency: string }) => p.currency).sort()
     ).toEqual(["EUR", "USD"])
   })
 
@@ -264,13 +262,10 @@ describe("DELETE /accounts/:id/pockets/:currency", () => {
       })
     ).json()
 
-    const res = await honoApp.request(
-      `/accounts/${created.id}/pockets/EUR`,
-      {
-        method: "DELETE",
-        headers: { cookie },
-      },
-    )
+    const res = await honoApp.request(`/accounts/${created.id}/pockets/EUR`, {
+      method: "DELETE",
+      headers: { cookie },
+    })
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.pockets.map((p: { currency: string }) => p.currency)).toEqual([
@@ -299,13 +294,10 @@ describe("DELETE /accounts/:id/pockets/:currency", () => {
       }),
     })
 
-    const res = await honoApp.request(
-      `/accounts/${created.id}/pockets/USD`,
-      {
-        method: "DELETE",
-        headers: { cookie },
-      },
-    )
+    const res = await honoApp.request(`/accounts/${created.id}/pockets/USD`, {
+      method: "DELETE",
+      headers: { cookie },
+    })
     expect(res.status).toBe(409)
   })
 })

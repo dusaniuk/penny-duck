@@ -21,7 +21,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000
 function todayUTC(): Date {
   const now = new Date()
   return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
   )
 }
 
@@ -57,10 +57,7 @@ function tradeCashImpact(t: {
   return 0
 }
 
-function tradeQtyImpact(t: {
-  type: string
-  quantity: number | null
-}): number {
+function tradeQtyImpact(t: { type: string; quantity: number | null }): number {
   if (t.quantity == null) return 0
   if (t.type === "buy") return t.quantity
   if (t.type === "sell") return -t.quantity
@@ -90,7 +87,7 @@ export function carryForwardRates(rates: number[]): number[] {
 export async function computeAccountSeries(
   organizationId: string,
   userId: string,
-  days: number,
+  days: number
 ): Promise<AccountSeriesResponse> {
   const window = buildWindow(days)
   const windowStartIso = window[0]
@@ -123,8 +120,8 @@ export async function computeAccountSeries(
     .where(
       and(
         inArray(transactions.accountId, accountIds),
-        lte(transactions.date, tomorrow),
-      ),
+        lte(transactions.date, tomorrow)
+      )
     )
 
   const tradeRows = await db
@@ -139,10 +136,7 @@ export async function computeAccountSeries(
     })
     .from(trades)
     .where(
-      and(
-        inArray(trades.accountId, accountIds),
-        lte(trades.date, tomorrow),
-      ),
+      and(inArray(trades.accountId, accountIds), lte(trades.date, tomorrow))
     )
 
   // Per-account cash deltas (in account currency) and pre-window cash total.
@@ -231,7 +225,7 @@ export async function computeAccountSeries(
   // Forward-fill helper. `series` is sorted ASC by date.
   function forwardFill(
     series: Array<[string, number]> | undefined,
-    date: string,
+    date: string
   ): number {
     if (!series || series.length === 0) return 0
     let lo = 0
@@ -298,16 +292,16 @@ export async function computeAccountSeries(
           from,
           to,
           new Date(`${date}T00:00:00Z`),
-          usedCurrencies,
+          usedCurrencies
         )
         fxByDate.set(`${from}:${to}:${date}`, rate)
       } catch (err) {
         console.warn(
-          `FX preheat failed for ${from}->${to} on ${date}: ${(err as Error).message}`,
+          `FX preheat failed for ${from}->${to} on ${date}: ${(err as Error).message}`
         )
         fxByDate.set(`${from}:${to}:${date}`, 1)
       }
-    }),
+    })
   )
 
   // Smooth pocket→home rates over the window so a day with no published rate
@@ -315,11 +309,11 @@ export async function computeAccountSeries(
   const pocketCurrencies = new Set(
     accountRows
       .filter((a) => a.walletId !== null && a.currency !== homeCurrency)
-      .map((a) => a.currency),
+      .map((a) => a.currency)
   )
   for (const cur of pocketCurrencies) {
     const filled = carryForwardRates(
-      window.map((date) => fxByDate.get(`${cur}:${homeCurrency}:${date}`) ?? 1),
+      window.map((date) => fxByDate.get(`${cur}:${homeCurrency}:${date}`) ?? 1)
     )
     window.forEach((date, i) => {
       fxByDate.set(`${cur}:${homeCurrency}:${date}`, filled[i])

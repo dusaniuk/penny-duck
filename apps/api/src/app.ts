@@ -31,7 +31,7 @@ function errorResponse(c: Context, body: ApiError) {
 
 export function attachErrorHandlers<E extends Hono>(app: E): E {
   app.notFound((c) =>
-    errorResponse(c, buildApiError({ statusCode: 404, message: "Not found" })),
+    errorResponse(c, buildApiError({ statusCode: 404, message: "Not found" }))
   )
 
   app.onError((err, c) => {
@@ -45,7 +45,7 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
         buildApiError({
           statusCode: err.status,
           message: err.message || "Error",
-        }),
+        })
       )
     }
 
@@ -56,7 +56,7 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
     console.error(err)
     return errorResponse(
       c,
-      buildApiError({ statusCode: 500, message: "Internal server error" }),
+      buildApiError({ statusCode: 500, message: "Internal server error" })
     )
   })
 
@@ -72,7 +72,7 @@ export const honoApp = attachErrorHandlers(
         credentials: true,
         allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
         allowHeaders: ["Content-Type"],
-      }),
+      })
     )
     .get("/healthz", (c) => c.json({ status: "ok" }))
     .route("/accounts", accountsRoutes)
@@ -85,7 +85,7 @@ export const honoApp = attachErrorHandlers(
     .route("/trades", tradesRoutes)
     .route("/investments", investmentsRoutes)
     .route("/transactions", transactionsRoutes)
-    .route("/users", usersRoutes),
+    .route("/users", usersRoutes)
 )
 
 export type AppType = typeof honoApp

@@ -47,7 +47,10 @@ export function groupDividends(
     }
     const first = g.divs[0]
     const amount = g.divs.reduce((s, d) => s + Number(d["Amount"] || 0), 0)
-    const withheldTax = g.taxes.reduce((s, t) => s + Number(t["Amount"] || 0), 0)
+    const withheldTax = g.taxes.reduce(
+      (s, t) => s + Number(t["Amount"] || 0),
+      0
+    )
     const date = parseIbkrDateTime(String(first["Date/Time"] ?? ""))
     if (!date) {
       errors.push({

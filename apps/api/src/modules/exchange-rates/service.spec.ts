@@ -1,11 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  beforeEach,
-  afterAll,
-} from "bun:test"
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "bun:test"
 import { eq, and } from "drizzle-orm"
 import { exchangeRates } from "@workspace/db"
 import { db } from "@/db"
@@ -23,7 +16,7 @@ function todayStr() {
 async function readCachedRate(
   date: string,
   base: string,
-  target: string,
+  target: string
 ): Promise<number | null> {
   const rows = await db
     .select({ rate: exchangeRates.rate })
@@ -32,8 +25,8 @@ async function readCachedRate(
       and(
         eq(exchangeRates.date, date),
         eq(exchangeRates.base, base),
-        eq(exchangeRates.target, target),
-      ),
+        eq(exchangeRates.target, target)
+      )
     )
     .limit(1)
   return rows[0]?.rate ?? null

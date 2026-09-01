@@ -65,7 +65,7 @@ export const categoriesRoutes = new Hono<AuthedEnv>()
         color: body.color,
       })
       return c.json(category)
-    },
+    }
   )
   .delete("/:id", zValidator("param", IdParamSchema), async (c) => {
     const user = c.get("user")

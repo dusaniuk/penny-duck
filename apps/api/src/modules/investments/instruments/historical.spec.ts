@@ -1,24 +1,10 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { eq } from "drizzle-orm"
 import { instrumentPrices } from "@workspace/db"
 import { db } from "@/db"
 import { chartMock } from "@/test/yahoo-mock"
-import {
-  closeTestApp,
-  createTestApp,
-  truncateAll,
-} from "@/test/setup"
-import {
-  ensureHistoricalPrices,
-  upsertInstrument,
-} from "./service"
+import { closeTestApp, createTestApp, truncateAll } from "@/test/setup"
+import { ensureHistoricalPrices, upsertInstrument } from "./service"
 
 beforeAll(async () => {
   await createTestApp()
@@ -59,7 +45,7 @@ describe("ensureHistoricalPrices", () => {
         { date: "2026-05-19", close: 100 },
         { date: "2026-05-20", close: 101 },
         { date: "2026-05-21", close: 102 },
-      ]),
+      ])
     )
 
     await ensureHistoricalPrices([inst.id], 30)
@@ -121,14 +107,14 @@ describe("ensureHistoricalPrices", () => {
   it("upserts on conflict, not insert-only", async () => {
     const inst = await seedAAPL()
     chartMock.mockResolvedValueOnce(
-      chartResult([{ date: "2026-05-20", close: 100 }]),
+      chartResult([{ date: "2026-05-20", close: 100 }])
     )
     await ensureHistoricalPrices([inst.id], 30)
 
     // Force a re-fetch (clear today's marker — we use latest date check, so
     // a far-old latest date triggers a refetch).
     chartMock.mockResolvedValueOnce(
-      chartResult([{ date: "2026-05-20", close: 110 }]),
+      chartResult([{ date: "2026-05-20", close: 110 }])
     )
     // Bypass the "recent enough" check by clearing the only row's date to
     // something stale.

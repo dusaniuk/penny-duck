@@ -84,8 +84,7 @@ export function buildNetWorthBreakdown(
   ).map((t) => ({
     type: t,
     value: liabilitySums[t],
-    pct:
-      liabilitiesTotal > 0 ? (liabilitySums[t] / liabilitiesTotal) * 100 : 0,
+    pct: liabilitiesTotal > 0 ? (liabilitySums[t] / liabilitiesTotal) * 100 : 0,
   }))
 
   return {

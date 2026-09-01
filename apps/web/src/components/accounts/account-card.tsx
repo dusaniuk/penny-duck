@@ -169,7 +169,7 @@ export function AccountCard({
         </div>
         <div className="shrink-0 text-right tabular-nums">
           {isWallet ? (
-            <div className="flex flex-col items-end gap-0.5 text-[13px] font-semibold leading-tight">
+            <div className="flex flex-col items-end gap-0.5 text-[13px] leading-tight font-semibold">
               {account.pockets!.length === 0 ? (
                 <span className="text-[11px] font-normal text-muted-foreground">
                   empty
@@ -248,10 +248,7 @@ export function AccountCard({
               </span>
             ) : (
               account.pockets!.map((p) => (
-                <span
-                  key={p.currency}
-                  className="flex items-baseline gap-1"
-                >
+                <span key={p.currency} className="flex items-baseline gap-1">
                   <span className="font-heading text-[18px] font-semibold tracking-tight">
                     {fmtMoney(p.balance)}
                   </span>

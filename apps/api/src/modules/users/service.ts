@@ -32,7 +32,7 @@ function toCurrentUser(row: typeof users.$inferSelect): CurrentUserResult {
 }
 
 export async function getCurrentUser(
-  userId: string,
+  userId: string
 ): Promise<CurrentUserResult> {
   const rows = await db
     .select()
@@ -51,7 +51,7 @@ export interface UpdateProfileInput {
 
 export async function updateProfile(
   userId: string,
-  input: UpdateProfileInput,
+  input: UpdateProfileInput
 ): Promise<CurrentUserResult> {
   if (input.homeCurrency && !isValidCurrencyCode(input.homeCurrency)) {
     throw new HTTPException(400, { message: "Invalid currency code" })
@@ -59,7 +59,8 @@ export async function updateProfile(
 
   const updates: Record<string, unknown> = { updatedAt: new Date() }
   if (input.name !== undefined) updates.name = input.name
-  if (input.homeCurrency !== undefined) updates.homeCurrency = input.homeCurrency
+  if (input.homeCurrency !== undefined)
+    updates.homeCurrency = input.homeCurrency
 
   const rows = await db
     .update(users)
@@ -73,7 +74,7 @@ export async function updateProfile(
 
 export async function deleteAccount(
   userId: string,
-  confirmEmail: string,
+  confirmEmail: string
 ): Promise<{ message: string }> {
   const userRows = await db
     .select()
@@ -137,7 +138,7 @@ export interface ExportData {
 
 export async function getExportData(
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ExportData> {
   const [userRows, orgRows, accountRows, categoryRows, txRows] =
     await Promise.all([

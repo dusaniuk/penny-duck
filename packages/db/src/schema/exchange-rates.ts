@@ -1,4 +1,11 @@
-import { date, index, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core"
+import {
+  date,
+  index,
+  timestamp,
+  unique,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { rate } from "./custom-types"
 

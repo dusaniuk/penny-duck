@@ -3,7 +3,6 @@ import * as RechartsPrimitive from "recharts"
 import { cn } from "@workspace/ui/lib/utils"
 import type { TooltipValueType } from "recharts"
 
-
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 
@@ -152,10 +151,9 @@ function ChartTooltipContent({
     const [item] = payload
     const key = `${labelKey ?? item.dataKey ?? item.name ?? "value"}`
     const itemConfig = getPayloadConfigFromPayload(config, item, key)
-    const labelConfig = !labelKey && typeof label === "string" ? config[label] : undefined
-    const value = labelConfig
-      ? (labelConfig.label ?? label)
-      : itemConfig?.label
+    const labelConfig =
+      !labelKey && typeof label === "string" ? config[label] : undefined
+    const value = labelConfig ? (labelConfig.label ?? label) : itemConfig?.label
 
     if (labelFormatter) {
       return (

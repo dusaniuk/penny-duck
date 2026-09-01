@@ -25,7 +25,9 @@ describe("parseCashTxnsSection", () => {
     expect(totalDeposits).toBe(5000)
     expect(result.deposits[0].externalId).toBe("10000001841")
     expect(result.deposits[0].currency).toBe("USD")
-    expect(result.deposits[0].externalMetadata.type).toBe("Deposits/Withdrawals")
+    expect(result.deposits[0].externalMetadata.type).toBe(
+      "Deposits/Withdrawals"
+    )
   })
 
   it("dividends-only fixture → 1 dividend, 1 tax, 0 deposits, 0 errors", () => {

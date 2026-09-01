@@ -12,8 +12,12 @@ export const wallets = appSchema.table(
     name: varchar("name", { length: 100 }).notNull(),
     color: varchar("color", { length: 20 }),
     icon: varchar("icon", { length: 50 }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [index("wallets_org_idx").on(table.organizationId)]
 )

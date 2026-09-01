@@ -29,7 +29,10 @@ describe("groupDividends", () => {
   })
 
   it("BND-style 1-div + 3-tax rows → one event, withheldTax = sum of all tax", () => {
-    const csv = readFileSync(join(FIXTURES, "bnd-complex-withholding.csv"), "utf8")
+    const csv = readFileSync(
+      join(FIXTURES, "bnd-complex-withholding.csv"),
+      "utf8"
+    )
     const [section] = splitSections(csv)
     const cash = parseCashTxnsSection(section)
     const { events, errors } = groupDividends(cash.dividends, cash.taxes)
@@ -47,7 +50,15 @@ describe("groupDividends", () => {
   it("orphan tax with no matching dividend → error", () => {
     const { events, errors } = groupDividends(
       [],
-      [{ Symbol: "XYZ", "Date/Time": "20250101", Amount: "-1.00", TransactionID: "t1", line: 2 }]
+      [
+        {
+          Symbol: "XYZ",
+          "Date/Time": "20250101",
+          Amount: "-1.00",
+          TransactionID: "t1",
+          line: 2,
+        },
+      ]
     )
     expect(events).toHaveLength(0)
     expect(errors).toHaveLength(1)

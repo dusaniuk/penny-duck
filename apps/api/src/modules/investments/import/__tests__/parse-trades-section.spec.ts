@@ -17,7 +17,8 @@ describe("parseTradesSection", () => {
     expect(events).toHaveLength(1)
     const ev = events[0]
     expect(ev.kind).toBe("buy")
-    if (ev.kind !== "buy" && ev.kind !== "sell") throw new Error("expected trade event")
+    if (ev.kind !== "buy" && ev.kind !== "sell")
+      throw new Error("expected trade event")
     expect(ev.symbol).toBe("VOO")
     expect(ev.quantity).toBe(8)
     expect(ev.price).toBe(418.98)

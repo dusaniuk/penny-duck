@@ -2,10 +2,7 @@ import { sql } from "drizzle-orm"
 import { faker } from "@faker-js/faker"
 import { type DbClient } from "@workspace/db"
 import { db } from "@/db"
-import {
-  loginService,
-  signupService,
-} from "@/modules/auth/service"
+import { loginService, signupService } from "@/modules/auth/service"
 
 export async function createTestApp(): Promise<{ db: DbClient }> {
   return { db }
@@ -38,7 +35,7 @@ export async function signupUser(
     email: string
     password: string
     inviteCode: string
-  }>,
+  }>
 ) {
   const email = overrides?.email ?? faker.internet.email()
   const password =

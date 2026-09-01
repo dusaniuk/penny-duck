@@ -1,11 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "bun:test"
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { eq } from "drizzle-orm"
 import { exchangeRates, users } from "@workspace/db"
 import { env } from "@workspace/env/api"
@@ -43,7 +36,7 @@ async function authed(): Promise<{
   const jwt = signAccessToken(
     result.accessToken,
     env.JWT_SECRET,
-    env.JWT_EXPIRATION,
+    env.JWT_EXPIRATION
   )
   await db
     .update(users)
@@ -77,7 +70,7 @@ describe("GET /stats/net-worth", () => {
     expect(body.current.topAccounts).toEqual([])
     expect(body.history.points).toHaveLength(13)
     expect(
-      body.history.points.every((p: { total: number }) => p.total === 0),
+      body.history.points.every((p: { total: number }) => p.total === 0)
     ).toBe(true)
   })
 
@@ -159,7 +152,7 @@ describe("GET /stats/net-worth", () => {
     // 1 bank + 1 wallet — pockets must not each count as an account.
     expect(body.current.accountsCount).toBe(2)
     const cashEntries = body.current.topAccounts.filter(
-      (a: { name: string }) => a.name === "Cash",
+      (a: { name: string }) => a.name === "Cash"
     )
     expect(cashEntries).toHaveLength(1)
     // 100 * 40 + 50 * 44 = 6200 in home currency.
@@ -208,7 +201,7 @@ describe("GET /stats/net-worth", () => {
     // 13 points: today's = 1500, all previous = 1000 (the income happened this month).
     expect(body.history.points).toHaveLength(13)
     expect(
-      body.history.points[body.history.points.length - 1].total,
+      body.history.points[body.history.points.length - 1].total
     ).toBeCloseTo(1500, 2)
     // Earlier points should all equal 1000 because the only delta is in the current month.
     for (let i = 0; i < body.history.points.length - 1; i++) {

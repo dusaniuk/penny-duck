@@ -1,11 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  beforeEach,
-  afterAll,
-} from "bun:test"
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "bun:test"
 import { env } from "@workspace/env/api"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
@@ -41,7 +34,7 @@ async function authedCookie(): Promise<{
   const jwt = signAccessToken(
     result.accessToken,
     env.JWT_SECRET,
-    env.JWT_EXPIRATION,
+    env.JWT_EXPIRATION
   )
   return {
     cookie: cookieHeader(jwt),

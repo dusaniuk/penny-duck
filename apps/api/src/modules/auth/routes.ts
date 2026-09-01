@@ -35,19 +35,19 @@ const cookieOptions = (maxAgeMs: number) => ({
 function setAuthCookies(
   c: Context,
   accessJwt: string,
-  refreshToken: string,
+  refreshToken: string
 ): void {
   setCookie(
     c,
     ACCESS_TOKEN_COOKIE,
     accessJwt,
-    cookieOptions(ACCESS_TOKEN_MAX_AGE_MS),
+    cookieOptions(ACCESS_TOKEN_MAX_AGE_MS)
   )
   setCookie(
     c,
     REFRESH_TOKEN_COOKIE,
     refreshToken,
-    cookieOptions(REFRESH_TOKEN_MAX_AGE_MS),
+    cookieOptions(REFRESH_TOKEN_MAX_AGE_MS)
   )
 }
 
@@ -65,7 +65,7 @@ export const authRoutes = new Hono<AuthedEnv>()
       const body = c.req.valid("json")
       const result = await signupService(body)
       return c.json(result, 201)
-    },
+    }
   )
   .post(
     "/login",
@@ -77,11 +77,11 @@ export const authRoutes = new Hono<AuthedEnv>()
       const accessJwt = signAccessToken(
         result.accessToken,
         env.JWT_SECRET,
-        env.JWT_EXPIRATION,
+        env.JWT_EXPIRATION
       )
       setAuthCookies(c, accessJwt, result.refreshToken)
       return c.json(result.user)
-    },
+    }
   )
   .post("/refresh", rateLimit({ limit: 20, ttl: 60_000 }), async (c) => {
     const rawToken = getCookie(c, REFRESH_TOKEN_COOKIE)
@@ -93,7 +93,7 @@ export const authRoutes = new Hono<AuthedEnv>()
     const accessJwt = signAccessToken(
       result.accessToken,
       env.JWT_SECRET,
-      env.JWT_EXPIRATION,
+      env.JWT_EXPIRATION
     )
     setAuthCookies(c, accessJwt, result.refreshToken)
     return c.json({ message: "Tokens refreshed" })
@@ -116,13 +116,13 @@ export const authRoutes = new Hono<AuthedEnv>()
         return c.json({ message: "Invalid invite link" }, 404)
       }
       return c.json(result)
-    },
+    }
   )
   .post("/invite-code", honoAuthMiddleware, async (c) => {
     const user = c.get("user")
     const result = await generateInviteCodeService(
       user.sub,
-      user.organizationId,
+      user.organizationId
     )
     return c.json(result)
   })

@@ -1,5 +1,15 @@
 import { HTTPException } from "hono/http-exception"
-import { and, asc, desc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm"
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  sql,
+  type SQL,
+} from "drizzle-orm"
 import type {
   ImportTradesResponse,
   ImportTradesRow,
@@ -46,7 +56,12 @@ async function findTradesForReplay(
   return executor
     .select()
     .from(trades)
-    .where(and(eq(trades.accountId, accountId), eq(trades.instrumentId, instrumentId)))
+    .where(
+      and(
+        eq(trades.accountId, accountId),
+        eq(trades.instrumentId, instrumentId)
+      )
+    )
     .orderBy(asc(trades.date), asc(trades.createdAt))
 }
 
@@ -183,7 +198,8 @@ export async function createTrade(input: CreateTradeInput): Promise<Trade> {
       )
     )
     .limit(1)
-  if (!accountRow) throw new HTTPException(404, { message: "Account not found" })
+  if (!accountRow)
+    throw new HTTPException(404, { message: "Account not found" })
   if (accountRow.type !== "brokerage") {
     throw new HTTPException(400, {
       message: "Trades require a brokerage-type account",
@@ -226,7 +242,11 @@ export async function createTrade(input: CreateTradeInput): Promise<Trade> {
     await takeAdvisoryLock(tx, input.accountId, instrument.id)
 
     if (input.type === "sell") {
-      const existing = await findTradesForReplay(tx, input.accountId, instrument.id)
+      const existing = await findTradesForReplay(
+        tx,
+        input.accountId,
+        instrument.id
+      )
       const proposed: ReplayTrade = {
         type: "sell",
         quantity,
@@ -314,7 +334,8 @@ export async function updateTrade(input: UpdateTradeInput): Promise<Trade> {
       .from(accounts)
       .where(eq(accounts.id, existing.accountId))
       .limit(1)
-    if (!accountRow) throw new HTTPException(404, { message: "Account not found" })
+    if (!accountRow)
+      throw new HTTPException(404, { message: "Account not found" })
     if (instrumentCurrency !== accountRow.currency) {
       throw new HTTPException(400, {
         message: `Instrument currency (${instrumentCurrency}) does not match account currency (${accountRow.currency})`,
@@ -323,7 +344,9 @@ export async function updateTrade(input: UpdateTradeInput): Promise<Trade> {
   }
 
   return db.transaction(async (tx) => {
-    const keys = Array.from(new Set([existing.instrumentId, instrumentId])).sort()
+    const keys = Array.from(
+      new Set([existing.instrumentId, instrumentId])
+    ).sort()
     for (const iid of keys) {
       await takeAdvisoryLock(tx, existing.accountId, iid)
     }
@@ -386,11 +409,10 @@ export interface ListTradesFilters {
   to?: Date
 }
 
-export async function listTrades(
-  filters: ListTradesFilters
-): Promise<Trade[]> {
+export async function listTrades(filters: ListTradesFilters): Promise<Trade[]> {
   const conditions: SQL[] = [eq(trades.organizationId, filters.organizationId)]
-  if (filters.accountId) conditions.push(eq(trades.accountId, filters.accountId))
+  if (filters.accountId)
+    conditions.push(eq(trades.accountId, filters.accountId))
   if (filters.type) conditions.push(eq(trades.type, filters.type))
   if (filters.from) conditions.push(gte(trades.date, filters.from))
   if (filters.to) conditions.push(lte(trades.date, filters.to))
@@ -456,7 +478,8 @@ export async function importTrades(
       )
     )
     .limit(1)
-  if (!accountRow) throw new HTTPException(404, { message: "Account not found" })
+  if (!accountRow)
+    throw new HTTPException(404, { message: "Account not found" })
   if (accountRow.type !== "brokerage") {
     throw new HTTPException(400, {
       message: "Selected account must be a brokerage",
@@ -565,10 +588,7 @@ export async function importTrades(
       .where(eq(accounts.id, input.accountId))
   }
 
-  if (
-    singleIbkrAccount &&
-    accountRow.externalAccountId !== singleIbkrAccount
-  ) {
+  if (singleIbkrAccount && accountRow.externalAccountId !== singleIbkrAccount) {
     await db
       .update(accounts)
       .set({ externalAccountId: singleIbkrAccount, updatedAt: new Date() })
@@ -593,7 +613,10 @@ function toCreateTradeInput(
       date: ev.date,
       externalSource: ev.externalSource,
       externalId: ev.externalId,
-      externalMetadata: ev.externalMetadata as unknown as Record<string, unknown>,
+      externalMetadata: ev.externalMetadata as unknown as Record<
+        string,
+        unknown
+      >,
     }
   }
   return {
@@ -650,7 +673,8 @@ function buildSummary(
   return {
     clientAccountId: parsed.clientAccountId,
     tradesFound: tradeEvents.length,
-    tradesToCreate: tradeEvents.filter((t) => !existing.has(t.externalId)).length,
+    tradesToCreate: tradeEvents.filter((t) => !existing.has(t.externalId))
+      .length,
     tradesSkippedAsDuplicate: tradeEvents.filter((t) =>
       existing.has(t.externalId)
     ).length,

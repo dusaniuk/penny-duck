@@ -190,7 +190,11 @@ interface AccountFormDialogProps {
   onSubmitWallet: (data: WalletSubmitData) => Promise<void>
   onArchive?: (account: AccountData) => void
   onDeleteWallet?: (wallet: Wallet) => Promise<void>
-  onAddPocket?: (walletId: string, currency: string, balance: number) => Promise<void>
+  onAddPocket?: (
+    walletId: string,
+    currency: string,
+    balance: number
+  ) => Promise<void>
   onDeletePocket?: (walletId: string, currency: string) => Promise<void>
   pocketTransactionCounts?: Record<string, number>
 }
@@ -583,9 +587,7 @@ function AccountModalBody({
             <div
               className={cn(
                 "grid gap-2.5",
-                type === "loan"
-                  ? "grid-cols-1"
-                  : "grid-cols-[1fr_140px]"
+                type === "loan" ? "grid-cols-1" : "grid-cols-[1fr_140px]"
               )}
             >
               <form.Field name="currency">
@@ -802,7 +804,12 @@ function PocketFields({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className={cn(FORM_FIELD_LABEL, "text-[11.5px] font-medium text-muted-foreground uppercase tracking-wider")}>
+        <span
+          className={cn(
+            FORM_FIELD_LABEL,
+            "text-[11.5px] font-medium tracking-wider text-muted-foreground uppercase"
+          )}
+        >
           Currency pockets
         </span>
       </div>
@@ -851,9 +858,7 @@ function PocketFields({
           </div>
         ))}
       </div>
-      {error && (
-        <p className="text-[11.5px] text-destructive">{error}</p>
-      )}
+      {error && <p className="text-[11.5px] text-destructive">{error}</p>}
       <Button
         type="button"
         variant="outline"
@@ -876,7 +881,11 @@ interface WalletEditBodyProps {
   existingAccountIcons?: ReadonlyArray<string | null>
   onSubmitWallet: (data: WalletSubmitData) => Promise<void>
   onDeleteWallet?: (wallet: Wallet) => Promise<void>
-  onAddPocket?: (walletId: string, currency: string, balance: number) => Promise<void>
+  onAddPocket?: (
+    walletId: string,
+    currency: string,
+    balance: number
+  ) => Promise<void>
   onDeletePocket?: (walletId: string, currency: string) => Promise<void>
   pocketTransactionCounts?: Record<string, number>
   shellClass: string
@@ -909,14 +918,25 @@ function WalletEditBody({
   isMobile,
   close,
 }: WalletEditBodyProps) {
-  const [initialValues] = useState<{ name: string; color: string; icon: string }>(() => ({
+  const [initialValues] = useState<{
+    name: string
+    color: string
+    icon: string
+  }>(() => ({
     name: wallet.name,
-    color: asPaletteColor(wallet.color) ?? pickRandomUnusedColor(existingAccountColors ?? []),
-    icon: asKnownIcon(wallet.icon) ?? pickRandomUnusedIcon(existingAccountIcons ?? []),
+    color:
+      asPaletteColor(wallet.color) ??
+      pickRandomUnusedColor(existingAccountColors ?? []),
+    icon:
+      asKnownIcon(wallet.icon) ??
+      pickRandomUnusedIcon(existingAccountIcons ?? []),
   }))
 
   // New pocket form state
-  const [newPocket, setNewPocket] = useState<{ currency: string; balance: string } | null>(null)
+  const [newPocket, setNewPocket] = useState<{
+    currency: string
+    balance: string
+  } | null>(null)
   const [addPocketError, setAddPocketError] = useState<string | null>(null)
   const [deletingCurrency, setDeletingCurrency] = useState<string | null>(null)
   const [deletingWallet, setDeletingWallet] = useState(false)
@@ -954,14 +974,20 @@ function WalletEditBody({
       setAddPocketError("Select a currency")
       return
     }
-    const alreadyExists = wallet.pockets.some((p) => p.currency === newPocket.currency)
+    const alreadyExists = wallet.pockets.some(
+      (p) => p.currency === newPocket.currency
+    )
     if (alreadyExists) {
       setAddPocketError("This currency already exists in the wallet")
       return
     }
     setAddPocketError(null)
     try {
-      await onAddPocket(wallet.id, newPocket.currency, parseFloat(newPocket.balance) || 0)
+      await onAddPocket(
+        wallet.id,
+        newPocket.currency,
+        parseFloat(newPocket.balance) || 0
+      )
       setNewPocket(null)
     } catch (err) {
       setAddPocketError(messageOf(err, "Failed to add pocket"))
@@ -1064,10 +1090,15 @@ function WalletEditBody({
 
       {/* Existing pockets */}
       <div className="space-y-2">
-        <span className={cn(FORM_FIELD_LABEL, "text-[11.5px] font-medium text-muted-foreground uppercase tracking-wider")}>
+        <span
+          className={cn(
+            FORM_FIELD_LABEL,
+            "text-[11.5px] font-medium tracking-wider text-muted-foreground uppercase"
+          )}
+        >
           Currency pockets
         </span>
-        <div className="rounded-[11px] border border-border bg-card divide-y divide-border overflow-hidden">
+        <div className="divide-y divide-border overflow-hidden rounded-[11px] border border-border bg-card">
           {wallet.pockets.length === 0 && (
             <p className="px-3 py-2.5 text-[12px] text-muted-foreground">
               No currency pockets yet.
@@ -1082,10 +1113,10 @@ function WalletEditBody({
                 key={pocket.currency}
                 className="flex items-center gap-2.5 px-3 py-2.5"
               >
-                <span className="font-mono text-xs font-semibold text-muted-foreground uppercase tracking-widest w-8 shrink-0">
+                <span className="w-8 shrink-0 font-mono text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                   {pocket.currency}
                 </span>
-                <span className="flex-1 tabular-nums text-[13px] text-foreground">
+                <span className="flex-1 text-[13px] text-foreground tabular-nums">
                   {pocket.balance.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
@@ -1095,7 +1126,9 @@ function WalletEditBody({
                   type="button"
                   disabled={hasTx || isDeleting}
                   onClick={() => handleDeletePocket(pocket.currency)}
-                  title={hasTx ? "Has transactions — cannot delete" : "Delete pocket"}
+                  title={
+                    hasTx ? "Has transactions — cannot delete" : "Delete pocket"
+                  }
                   className={cn(
                     "grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition",
                     hasTx
@@ -1118,7 +1151,9 @@ function WalletEditBody({
               <div className="flex-1">
                 <CurrencyPicker
                   value={newPocket.currency}
-                  onValueChange={(c) => setNewPocket((p) => p ? { ...p, currency: c } : p)}
+                  onValueChange={(c) =>
+                    setNewPocket((p) => (p ? { ...p, currency: c } : p))
+                  }
                   portalContainer={portalContainer}
                 />
               </div>
@@ -1132,7 +1167,7 @@ function WalletEditBody({
                     onChange={(e) => {
                       const value = e.target.value.replace(",", ".")
                       if (value === "" || /^\d{0,12}(\.\d{0,2})?$/.test(value))
-                        setNewPocket((p) => p ? { ...p, balance: value } : p)
+                        setNewPocket((p) => (p ? { ...p, balance: value } : p))
                     }}
                     className="text-right text-base tabular-nums"
                   />
@@ -1192,7 +1227,8 @@ function WalletEditBody({
               Delete this wallet
             </span>
             <span className="text-[11.5px] text-muted-foreground">
-              Permanently removes the wallet and all its pockets. Blocked if any pocket has transactions.
+              Permanently removes the wallet and all its pockets. Blocked if any
+              pocket has transactions.
             </span>
           </div>
           <Button

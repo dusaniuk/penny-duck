@@ -9,7 +9,7 @@ type Chip =
 
 function buildChips(
   accounts: Array<Account>,
-  wallets: Array<Wallet>,
+  wallets: Array<Wallet>
 ): Array<Chip> {
   const chips: Array<Chip> = []
 
@@ -108,9 +108,7 @@ export function TransactionAccountChips({
               onClick={() => {
                 // If a pocket in this wallet is already selected, keep it.
                 // Otherwise pick the default pocket.
-                const alreadySelected = pockets.some(
-                  (p) => p.id === selectedId,
-                )
+                const alreadySelected = pockets.some((p) => p.id === selectedId)
                 if (!alreadySelected) {
                   onSelect(pickDefaultPocket(pockets))
                 }
@@ -146,7 +144,7 @@ export function TransactionAccountChips({
                   "rounded-md border px-2 py-1 text-[11px] tabular-nums",
                   p.id === selectedId
                     ? "border-violet-500 bg-violet-500/10 text-violet-600"
-                    : "border-foreground/10 text-foreground/60 hover:border-foreground/20",
+                    : "border-foreground/10 text-foreground/60 hover:border-foreground/20"
                 )}
               >
                 {p.currency}

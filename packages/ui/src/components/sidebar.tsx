@@ -1,5 +1,5 @@
 import * as React from "react"
-import {  cva } from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
 import { IconLayoutSidebar } from "@tabler/icons-react"
@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
-import type {VariantProps} from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -88,9 +88,7 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile
-      ? setOpenMobile((prev) => !prev)
-      : setOpen((prev) => !prev)
+    return isMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev)
   }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.

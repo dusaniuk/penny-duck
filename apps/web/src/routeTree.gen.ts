@@ -9,33 +9,45 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as InviteRouteImport } from './routes/invite'
-import { Route as PublicRouteImport } from './routes/_public'
-import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingsIndexRouteImport } from './routes/settings/index'
-import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
-import { Route as SettingsMembersRouteImport } from './routes/settings/members'
-import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
-import { Route as AppSpendingsRouteImport } from './routes/_app/spendings'
-import { Route as AppInvestmentsRouteImport } from './routes/_app/investments'
-import { Route as AppIncomeExpensesRouteImport } from './routes/_app/income-expenses'
-import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
-import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as InviteRouteImport } from './routes/invite'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
+import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppIncomeExpensesRouteImport } from './routes/_app/income-expenses'
+import { Route as AppInvestmentsRouteImport } from './routes/_app/investments'
+import { Route as AppSpendingsRouteImport } from './routes/_app/spendings'
+import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsMembersRouteImport } from './routes/settings/members'
+import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as AppInvestmentsIndexRouteImport } from './routes/_app/investments/index'
-import { Route as PublicLegalTermsRouteImport } from './routes/_public/legal/terms'
-import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
 import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments/$accountId'
+import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
+import { Route as PublicLegalTermsRouteImport } from './routes/_public/legal/terms'
 import { Route as AppInvestmentsAccountIdSymbolRouteImport } from './routes/_app/investments/$accountId_.$symbol'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteRoute = InviteRouteImport.update({
@@ -43,71 +55,14 @@ const InviteRoute = InviteRouteImport.update({
   path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PublicRoute = PublicRouteImport.update({
-  id: '/_public',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsProfileRoute = SettingsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsMembersRoute = SettingsMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const AuthSignupRoute = AuthSignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AppTransactionsRoute = AppTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSpendingsRoute = AppSpendingsRouteImport.update({
-  id: '/spendings',
-  path: '/spendings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppInvestmentsRoute = AppInvestmentsRouteImport.update({
-  id: '/investments',
-  path: '/investments',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppIncomeExpensesRoute = AppIncomeExpensesRouteImport.update({
-  id: '/income-expenses',
-  path: '/income-expenses',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AppAccountsRoute = AppAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCategoriesRoute = AppCategoriesRouteImport.update({
@@ -115,30 +70,75 @@ const AppCategoriesRoute = AppCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAccountsRoute = AppAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AppRoute,
+} as any)
+const AppIncomeExpensesRoute = AppIncomeExpensesRouteImport.update({
+  id: '/income-expenses',
+  path: '/income-expenses',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInvestmentsRoute = AppInvestmentsRouteImport.update({
+  id: '/investments',
+  path: '/investments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSpendingsRoute = AppSpendingsRouteImport.update({
+  id: '/spendings',
+  path: '/spendings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTransactionsRoute = AppTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMembersRoute = SettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const AppInvestmentsIndexRoute = AppInvestmentsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppInvestmentsRoute,
 } as any)
-const PublicLegalTermsRoute = PublicLegalTermsRouteImport.update({
-  id: '/legal/terms',
-  path: '/legal/terms',
-  getParentRoute: () => PublicRoute,
+const AppInvestmentsAccountIdRoute = AppInvestmentsAccountIdRouteImport.update({
+  id: '/$accountId',
+  path: '/$accountId',
+  getParentRoute: () => AppInvestmentsRoute,
 } as any)
 const PublicLegalPrivacyRoute = PublicLegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
   getParentRoute: () => PublicRoute,
 } as any)
-const AppInvestmentsAccountIdRoute = AppInvestmentsAccountIdRouteImport.update({
-  id: '/$accountId',
-  path: '/$accountId',
-  getParentRoute: () => AppInvestmentsRoute,
+const PublicLegalTermsRoute = PublicLegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => PublicRoute,
 } as any)
 const AppInvestmentsAccountIdSymbolRoute =
   AppInvestmentsAccountIdSymbolRouteImport.update({
@@ -296,32 +296,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/invite': {
-      id: '/invite'
-      path: '/invite'
-      fullPath: '/invite'
-      preLoaderRoute: typeof InviteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_public': {
-      id: '/_public'
-      path: ''
+    '/': {
+      id: '/'
+      path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof PublicRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -331,81 +310,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
+    '/_auth': {
+      id: '/_auth'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings/': {
-      id: '/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof SettingsRoute
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/settings/profile': {
-      id: '/settings/profile'
-      path: '/profile'
-      fullPath: '/settings/profile'
-      preLoaderRoute: typeof SettingsProfileRouteImport
-      parentRoute: typeof SettingsRoute
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/settings/members': {
-      id: '/settings/members'
-      path: '/members'
-      fullPath: '/settings/members'
-      preLoaderRoute: typeof SettingsMembersRouteImport
-      parentRoute: typeof SettingsRoute
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_auth/signup': {
-      id: '/_auth/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof AuthSignupRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_app/transactions': {
-      id: '/_app/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof AppTransactionsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/spendings': {
-      id: '/_app/spendings'
-      path: '/spendings'
-      fullPath: '/spendings'
-      preLoaderRoute: typeof AppSpendingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/investments': {
-      id: '/_app/investments'
-      path: '/investments'
-      fullPath: '/investments'
-      preLoaderRoute: typeof AppInvestmentsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/income-expenses': {
-      id: '/_app/income-expenses'
-      path: '/income-expenses'
-      fullPath: '/income-expenses'
-      preLoaderRoute: typeof AppIncomeExpensesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
+    '/_app/accounts': {
+      id: '/_app/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AppAccountsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/categories': {
@@ -415,12 +352,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/accounts': {
-      id: '/_app/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof AppAccountsRouteImport
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/income-expenses': {
+      id: '/_app/income-expenses'
+      path: '/income-expenses'
+      fullPath: '/income-expenses'
+      preLoaderRoute: typeof AppIncomeExpensesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/investments': {
+      id: '/_app/investments'
+      path: '/investments'
+      fullPath: '/investments'
+      preLoaderRoute: typeof AppInvestmentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/spendings': {
+      id: '/_app/spendings'
+      path: '/spendings'
+      fullPath: '/spendings'
+      preLoaderRoute: typeof AppSpendingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/transactions': {
+      id: '/_app/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof AppTransactionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/signup': {
+      id: '/_auth/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/members': {
+      id: '/settings/members'
+      path: '/members'
+      fullPath: '/settings/members'
+      preLoaderRoute: typeof SettingsMembersRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/profile': {
+      id: '/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/_app/investments/': {
       id: '/_app/investments/'
@@ -429,12 +429,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInvestmentsIndexRouteImport
       parentRoute: typeof AppInvestmentsRoute
     }
-    '/_public/legal/terms': {
-      id: '/_public/legal/terms'
-      path: '/legal/terms'
-      fullPath: '/legal/terms'
-      preLoaderRoute: typeof PublicLegalTermsRouteImport
-      parentRoute: typeof PublicRoute
+    '/_app/investments/$accountId': {
+      id: '/_app/investments/$accountId'
+      path: '/$accountId'
+      fullPath: '/investments/$accountId'
+      preLoaderRoute: typeof AppInvestmentsAccountIdRouteImport
+      parentRoute: typeof AppInvestmentsRoute
     }
     '/_public/legal/privacy': {
       id: '/_public/legal/privacy'
@@ -443,12 +443,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLegalPrivacyRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_app/investments/$accountId': {
-      id: '/_app/investments/$accountId'
-      path: '/$accountId'
-      fullPath: '/investments/$accountId'
-      preLoaderRoute: typeof AppInvestmentsAccountIdRouteImport
-      parentRoute: typeof AppInvestmentsRoute
+    '/_public/legal/terms': {
+      id: '/_public/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof PublicLegalTermsRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/_app/investments/$accountId_/$symbol': {
       id: '/_app/investments/$accountId_/$symbol'

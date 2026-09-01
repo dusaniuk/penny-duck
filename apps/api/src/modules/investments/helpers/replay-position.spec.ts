@@ -1,7 +1,9 @@
 import { describe, it, expect } from "bun:test"
 import { replayPosition, type ReplayTrade } from "./replay-position"
 
-function mkTrade(overrides: Partial<ReplayTrade> & { type: ReplayTrade["type"] }): ReplayTrade {
+function mkTrade(
+  overrides: Partial<ReplayTrade> & { type: ReplayTrade["type"] }
+): ReplayTrade {
   return {
     type: overrides.type,
     quantity: overrides.quantity ?? null,
@@ -14,7 +16,9 @@ function mkTrade(overrides: Partial<ReplayTrade> & { type: ReplayTrade["type"] }
 
 describe("replayPosition", () => {
   it("single buy sets quantity and average cost", () => {
-    const r = replayPosition([mkTrade({ type: "buy", quantity: 10, price: 150 })])
+    const r = replayPosition([
+      mkTrade({ type: "buy", quantity: 10, price: 150 }),
+    ])
     expect(r.quantity).toBe(10)
     expect(r.averageCost).toBeCloseTo(150, 6)
     expect(r.realizedGain).toBe(0)
@@ -22,8 +26,18 @@ describe("replayPosition", () => {
 
   it("two buys average correctly", () => {
     const r = replayPosition([
-      mkTrade({ type: "buy", quantity: 5, price: 140, date: new Date("2026-01-01T00:00:00Z") }),
-      mkTrade({ type: "buy", quantity: 5, price: 160, date: new Date("2026-01-02T00:00:00Z") }),
+      mkTrade({
+        type: "buy",
+        quantity: 5,
+        price: 140,
+        date: new Date("2026-01-01T00:00:00Z"),
+      }),
+      mkTrade({
+        type: "buy",
+        quantity: 5,
+        price: 160,
+        date: new Date("2026-01-02T00:00:00Z"),
+      }),
     ])
     expect(r.quantity).toBe(10)
     expect(r.averageCost).toBeCloseTo(150, 6)
@@ -31,8 +45,18 @@ describe("replayPosition", () => {
 
   it("buy then sell realizes gain and preserves basis", () => {
     const r = replayPosition([
-      mkTrade({ type: "buy", quantity: 10, price: 150, date: new Date("2026-01-01T00:00:00Z") }),
-      mkTrade({ type: "sell", quantity: 4, price: 200, date: new Date("2026-01-02T00:00:00Z") }),
+      mkTrade({
+        type: "buy",
+        quantity: 10,
+        price: 150,
+        date: new Date("2026-01-01T00:00:00Z"),
+      }),
+      mkTrade({
+        type: "sell",
+        quantity: 4,
+        price: 200,
+        date: new Date("2026-01-02T00:00:00Z"),
+      }),
     ])
     expect(r.quantity).toBe(6)
     expect(r.averageCost).toBeCloseTo(150, 6)
@@ -41,9 +65,24 @@ describe("replayPosition", () => {
 
   it("sell-all then buy-again resets basis but preserves realized gain", () => {
     const r = replayPosition([
-      mkTrade({ type: "buy", quantity: 10, price: 100, date: new Date("2026-01-01T00:00:00Z") }),
-      mkTrade({ type: "sell", quantity: 10, price: 120, date: new Date("2026-01-02T00:00:00Z") }),
-      mkTrade({ type: "buy", quantity: 5, price: 130, date: new Date("2026-01-03T00:00:00Z") }),
+      mkTrade({
+        type: "buy",
+        quantity: 10,
+        price: 100,
+        date: new Date("2026-01-01T00:00:00Z"),
+      }),
+      mkTrade({
+        type: "sell",
+        quantity: 10,
+        price: 120,
+        date: new Date("2026-01-02T00:00:00Z"),
+      }),
+      mkTrade({
+        type: "buy",
+        quantity: 5,
+        price: 130,
+        date: new Date("2026-01-03T00:00:00Z"),
+      }),
     ])
     expect(r.quantity).toBe(5)
     expect(r.averageCost).toBeCloseTo(130, 6)
@@ -79,8 +118,20 @@ describe("replayPosition", () => {
 
   it("fees on buy add to basis, fees on sell subtract from realized", () => {
     const r = replayPosition([
-      mkTrade({ type: "buy", quantity: 10, price: 100, fees: 10, date: new Date("2026-01-01T00:00:00Z") }),
-      mkTrade({ type: "sell", quantity: 5, price: 120, fees: 5, date: new Date("2026-01-02T00:00:00Z") }),
+      mkTrade({
+        type: "buy",
+        quantity: 10,
+        price: 100,
+        fees: 10,
+        date: new Date("2026-01-01T00:00:00Z"),
+      }),
+      mkTrade({
+        type: "sell",
+        quantity: 5,
+        price: 120,
+        fees: 5,
+        date: new Date("2026-01-02T00:00:00Z"),
+      }),
     ])
     expect(r.averageCost).toBeCloseTo(101, 6)
     expect(r.realizedGain).toBeCloseTo(90, 6)
@@ -97,7 +148,12 @@ describe("replayPosition", () => {
   it("sell exceeding held quantity produces negative state for caller to reject", () => {
     const r = replayPosition([
       mkTrade({ type: "buy", quantity: 3, price: 100 }),
-      mkTrade({ type: "sell", quantity: 5, price: 150, date: new Date("2026-01-02T00:00:00Z") }),
+      mkTrade({
+        type: "sell",
+        quantity: 5,
+        price: 150,
+        date: new Date("2026-01-02T00:00:00Z"),
+      }),
     ])
     expect(r.quantity).toBe(-2)
     // Realized gain still accrues for the portion where basis exists;
@@ -106,7 +162,9 @@ describe("replayPosition", () => {
   })
 
   it("sell with no prior buys leaves quantity negative and finite numbers", () => {
-    const r = replayPosition([mkTrade({ type: "sell", quantity: 5, price: 150 })])
+    const r = replayPosition([
+      mkTrade({ type: "sell", quantity: 5, price: 150 }),
+    ])
     expect(r.quantity).toBe(-5)
     expect(Number.isFinite(r.averageCost)).toBe(true)
     expect(Number.isFinite(r.realizedGain)).toBe(true)

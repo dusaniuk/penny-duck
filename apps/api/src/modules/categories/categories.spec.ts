@@ -1,11 +1,4 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { env } from "@workspace/env/api"
 import { exchangeRates, transactions } from "@workspace/db"
 import type { Category } from "@workspace/api-contract"
@@ -44,7 +37,7 @@ beforeEach(async () => {
   const jwt = signAccessToken(
     result.accessToken,
     env.JWT_SECRET,
-    env.JWT_EXPIRATION,
+    env.JWT_EXPIRATION
   )
   cookie = cookieHeader(jwt)
 })
@@ -57,7 +50,7 @@ async function listCategoriesHttp(): Promise<Category[]> {
 
 async function createCategoryHttp(
   body: Record<string, unknown>,
-  expectedStatus = 201,
+  expectedStatus = 201
 ): Promise<Category> {
   const res = await honoApp.request("/categories", {
     method: "POST",
@@ -71,7 +64,7 @@ async function createCategoryHttp(
 async function updateCategoryHttp(
   id: string,
   body: Record<string, unknown>,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Category> {
   const res = await honoApp.request(`/categories/${id}`, {
     method: "PATCH",
@@ -250,7 +243,7 @@ describe("Categories", () => {
   it("returns 404 when deleting an unknown category", async () => {
     const res = await honoApp.request(
       "/categories/00000000-0000-0000-0000-000000000000",
-      { method: "DELETE", headers: { cookie } },
+      { method: "DELETE", headers: { cookie } }
     )
     expect(res.status).toBe(404)
   })
@@ -347,7 +340,7 @@ describe("Categories", () => {
       color: "green",
     })
     const incomeParent = (await listCategoriesHttp()).find(
-      (c) => c.name === "IncomeParent",
+      (c) => c.name === "IncomeParent"
     )!
     const child = await createCategoryHttp({
       name: "Child",
@@ -394,7 +387,7 @@ describe("Categories", () => {
     const otherJwt = signAccessToken(
       other.accessToken,
       env.JWT_SECRET,
-      env.JWT_EXPIRATION,
+      env.JWT_EXPIRATION
     )
     const otherCookie = cookieHeader(otherJwt)
 
@@ -451,10 +444,10 @@ describe("Categories — usage stats", () => {
 
     const now = new Date()
     const thisMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15, 12, 0, 0),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15, 12, 0, 0)
     )
     const lastMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12, 0, 0),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12, 0, 0)
     )
 
     // Two clean current-month expenses → counted everywhere.
@@ -538,7 +531,7 @@ describe("Categories — usage stats", () => {
 
     const now = new Date()
     const when = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 10, 12, 0, 0),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 10, 12, 0, 0)
     )
     const dateStr = when.toISOString().split("T")[0]
 

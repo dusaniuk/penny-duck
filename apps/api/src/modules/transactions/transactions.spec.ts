@@ -1,21 +1,11 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { env } from "@workspace/env/api"
 import type { Account, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { signAccessToken } from "@/modules/auth/core/jwt"
 import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createCategory } from "@/modules/categories/service"
-import {
-  createAccount,
-  getAccount,
-} from "@/modules/accounts/service"
+import { createAccount, getAccount } from "@/modules/accounts/service"
 import {
   closeTestApp,
   createTestApp,
@@ -99,7 +89,7 @@ async function createTxHttp(
     amount: number
     categoryId: string
   },
-  expectedStatus = 201,
+  expectedStatus = 201
 ): Promise<Transaction> {
   const res = await honoApp.request("/transactions", {
     method: "POST",
@@ -113,7 +103,10 @@ async function createTxHttp(
   return res.json()
 }
 
-async function getTxHttp(id: string, expectedStatus = 200): Promise<Transaction> {
+async function getTxHttp(
+  id: string,
+  expectedStatus = 200
+): Promise<Transaction> {
   const res = await honoApp.request(`/transactions/${id}`, {
     headers: { cookie },
   })
@@ -122,8 +115,13 @@ async function getTxHttp(id: string, expectedStatus = 200): Promise<Transaction>
 }
 
 async function listTxHttp(
-  query: Record<string, string | number | boolean> = {},
-): Promise<{ data: Transaction[]; total: number; page: number; limit: number }> {
+  query: Record<string, string | number | boolean> = {}
+): Promise<{
+  data: Transaction[]
+  total: number
+  page: number
+  limit: number
+}> {
   const params = new URLSearchParams()
   for (const [k, v] of Object.entries(query)) params.set(k, String(v))
   const qs = params.toString() ? `?${params.toString()}` : ""
@@ -137,7 +135,7 @@ async function listTxHttp(
 async function updateTxHttp(
   id: string,
   body: Record<string, unknown>,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Transaction> {
   const res = await honoApp.request(`/transactions/${id}`, {
     method: "PATCH",
@@ -150,7 +148,7 @@ async function updateTxHttp(
 
 async function deleteTxHttp(
   id: string,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(`/transactions/${id}`, {
     method: "DELETE",
@@ -162,7 +160,7 @@ async function deleteTxHttp(
 
 async function settleTxHttp(
   id: string,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Transaction> {
   const res = await honoApp.request(`/transactions/${id}/settle`, {
     method: "PATCH",
@@ -183,7 +181,7 @@ interface ReimburseBody {
 async function reimburseHttp(
   txId: string,
   body: ReimburseBody,
-  expectedStatus = 201,
+  expectedStatus = 201
 ): Promise<Transaction> {
   const res = await honoApp.request(`/transactions/${txId}/reimburse`, {
     method: "POST",
@@ -200,14 +198,14 @@ async function reimburseHttp(
 async function deleteReimburseHttp(
   txId: string,
   reimbursementTxId: string,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(
     `/transactions/${txId}/reimburse/${reimbursementTxId}`,
     {
       method: "DELETE",
       headers: { cookie },
-    },
+    }
   )
   expect(res.status).toBe(expectedStatus)
   return res
@@ -780,7 +778,7 @@ describe("Transactions — cross-tenant isolation", () => {
     const victimAccountId = await otherOrgAccount()
     await createTxHttp(
       { accountId: victimAccountId, type: "expense", amount: 50, categoryId },
-      404,
+      404
     )
   })
 

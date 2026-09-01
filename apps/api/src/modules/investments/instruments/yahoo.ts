@@ -88,7 +88,7 @@ export interface YahooHistoricalPoint {
 export async function fetchHistorical(
   symbol: string,
   from: Date,
-  to: Date,
+  to: Date
 ): Promise<YahooHistoricalPoint[]> {
   try {
     const result = (await yahoo.chart(symbol, {

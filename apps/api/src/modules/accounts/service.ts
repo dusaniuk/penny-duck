@@ -88,15 +88,15 @@ function selectAccountRow(userId: string) {
       organizationMembers,
       and(
         eq(organizationMembers.organizationId, accounts.organizationId),
-        eq(organizationMembers.userId, userId),
-      ),
+        eq(organizationMembers.userId, userId)
+      )
     )
   return baseSelect
 }
 
 export async function findAllByOrganizationId(
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<AccountRow[]> {
   return selectAccountRow(userId)
     .where(eq(accounts.organizationId, organizationId))
@@ -106,11 +106,11 @@ export async function findAllByOrganizationId(
 export async function findById(
   id: string,
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<AccountRow | null> {
   const rows = await selectAccountRow(userId)
     .where(
-      and(eq(accounts.id, id), eq(accounts.organizationId, organizationId)),
+      and(eq(accounts.id, id), eq(accounts.organizationId, organizationId))
     )
     .limit(1)
   return rows[0] ?? null
@@ -145,7 +145,7 @@ function toResponse(row: AccountRow, rate: number, holdings = 0): Account {
 // to the account's own currency. Returned map's value is in account-currency
 // units; non-brokerage accounts should not be passed in.
 async function computeBrokerageHoldingsByAccount(
-  brokerageAccounts: Array<{ id: string; currency: string }>,
+  brokerageAccounts: Array<{ id: string; currency: string }>
 ): Promise<Map<string, number>> {
   if (brokerageAccounts.length === 0) return new Map()
 
@@ -211,7 +211,7 @@ async function computeBrokerageHoldingsByAccount(
     const valueAccountCcy = valueInstrumentCcy * fx
     holdings.set(
       group.accountId,
-      (holdings.get(group.accountId) ?? 0) + valueAccountCcy,
+      (holdings.get(group.accountId) ?? 0) + valueAccountCcy
     )
   }
 
@@ -224,7 +224,7 @@ async function computeBrokerageHoldingsByAccount(
 // pockets).
 export async function listAccountsFlat(
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<Account[]> {
   const [rows, homeCurrency] = await Promise.all([
     findAllByOrganizationId(organizationId, userId),
@@ -242,11 +242,11 @@ export async function listAccountsFlat(
     currencies.map(async (currency) => {
       const rate = await getRate(currency, homeCurrency, today, currencies)
       rates.set(currency, rate)
-    }),
+    })
   )
 
   return rows.map((r) =>
-    toResponse(r, rates.get(r.currency) ?? 1, holdingsByAccount.get(r.id) ?? 0),
+    toResponse(r, rates.get(r.currency) ?? 1, holdingsByAccount.get(r.id) ?? 0)
   )
 }
 
@@ -255,14 +255,11 @@ export async function listAccountsFlat(
 // Pocket rows are folded into their wallet, never surfaced individually.
 export async function listAccounts(
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<AccountsResponse> {
   const [flat, walletRows] = await Promise.all([
     listAccountsFlat(organizationId, userId),
-    db
-      .select()
-      .from(wallets)
-      .where(eq(wallets.organizationId, organizationId)),
+    db.select().from(wallets).where(eq(wallets.organizationId, organizationId)),
   ])
 
   const standalone = flat.filter((a) => a.walletId === null)
@@ -302,7 +299,7 @@ export async function listAccounts(
 // Includes both regular transactions and transfer legs (both write rows
 // with accountId set).
 export async function getAccountUsage(
-  organizationId: string,
+  organizationId: string
 ): Promise<AccountUsageItem[]> {
   const rows = await db
     .select({
@@ -319,7 +316,7 @@ export async function getAccountUsage(
 export async function getAccount(
   id: string,
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<Account> {
   const [row, homeCurrency] = await Promise.all([
     findById(id, organizationId, userId),
@@ -347,7 +344,9 @@ export interface CreateAccountInput {
   isDefault?: boolean
 }
 
-export async function createAccount(input: CreateAccountInput): Promise<Account> {
+export async function createAccount(
+  input: CreateAccountInput
+): Promise<Account> {
   const inserted = await db.transaction(async (tx) => {
     const [row] = await tx
       .insert(accounts)
@@ -372,8 +371,8 @@ export async function createAccount(input: CreateAccountInput): Promise<Account>
         .where(
           and(
             eq(organizationMembers.userId, input.userId),
-            eq(organizationMembers.organizationId, input.organizationId),
-          ),
+            eq(organizationMembers.organizationId, input.organizationId)
+          )
         )
     }
 
@@ -402,7 +401,9 @@ export interface UpdateAccountInput {
   isDefault?: boolean
 }
 
-export async function updateAccount(input: UpdateAccountInput): Promise<Account> {
+export async function updateAccount(
+  input: UpdateAccountInput
+): Promise<Account> {
   const existing = await findById(input.id, input.organizationId, input.userId)
   if (!existing) throw new HTTPException(404, { message: "Account not found" })
 
@@ -419,8 +420,8 @@ export async function updateAccount(input: UpdateAccountInput): Promise<Account>
       .where(
         and(
           eq(accounts.id, input.id),
-          eq(accounts.organizationId, input.organizationId),
-        ),
+          eq(accounts.organizationId, input.organizationId)
+        )
       )
 
     if (input.isDefault) {
@@ -430,8 +431,8 @@ export async function updateAccount(input: UpdateAccountInput): Promise<Account>
         .where(
           and(
             eq(organizationMembers.userId, input.userId),
-            eq(organizationMembers.organizationId, input.organizationId),
-          ),
+            eq(organizationMembers.organizationId, input.organizationId)
+          )
         )
     }
   })
@@ -453,7 +454,7 @@ export async function updateAccount(input: UpdateAccountInput): Promise<Account>
 export async function deleteAccount(
   id: string,
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<void> {
   const account = await findById(id, organizationId, userId)
   if (!account) throw new HTTPException(404, { message: "Account not found" })
@@ -484,14 +485,14 @@ export async function deleteAccount(
   await db
     .delete(accounts)
     .where(
-      and(eq(accounts.id, id), eq(accounts.organizationId, organizationId)),
+      and(eq(accounts.id, id), eq(accounts.organizationId, organizationId))
     )
 }
 
 export async function setDefaultAccount(
   userId: string,
   organizationId: string,
-  accountId: string,
+  accountId: string
 ): Promise<Account> {
   const existing = await findById(accountId, organizationId, userId)
   if (!existing) throw new HTTPException(404, { message: "Account not found" })
@@ -502,8 +503,8 @@ export async function setDefaultAccount(
     .where(
       and(
         eq(organizationMembers.userId, userId),
-        eq(organizationMembers.organizationId, organizationId),
-      ),
+        eq(organizationMembers.organizationId, organizationId)
+      )
     )
 
   const [row, homeCurrency] = await Promise.all([
@@ -520,7 +521,7 @@ export async function setDefaultAccount(
 
 export async function clearDefaultAccount(
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   await db
     .update(organizationMembers)
@@ -528,7 +529,7 @@ export async function clearDefaultAccount(
     .where(
       and(
         eq(organizationMembers.userId, userId),
-        eq(organizationMembers.organizationId, organizationId),
-      ),
+        eq(organizationMembers.organizationId, organizationId)
+      )
     )
 }

@@ -3,11 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { IconX } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import type {
-  Category,
-  Member,
-  Transaction,
-} from "@workspace/api-contract"
+import type { Category, Member, Transaction } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
 import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { MonthNavigator } from "@/components/spendings/month-navigator"

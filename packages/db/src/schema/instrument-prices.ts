@@ -16,7 +16,7 @@ export const instrumentPrices = appSchema.table(
     primaryKey({ columns: [table.instrumentId, table.date] }),
     index("instrument_prices_instrument_date_desc_idx").on(
       table.instrumentId,
-      table.date.desc(),
+      table.date.desc()
     ),
-  ],
+  ]
 )

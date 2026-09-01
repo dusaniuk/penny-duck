@@ -54,7 +54,7 @@ async function findOrgByUserId(userId: string) {
     .from(organizationMembers)
     .innerJoin(
       organizations,
-      eq(organizations.id, organizationMembers.organizationId),
+      eq(organizations.id, organizationMembers.organizationId)
     )
     .where(eq(organizationMembers.userId, userId))
     .limit(1)
@@ -87,9 +87,7 @@ describe("Auth", () => {
 
   it("signup does not seed any categories", async () => {
     const result = await signupUser()
-    const { listCategories } = await import(
-      "@/modules/categories/service"
-    )
+    const { listCategories } = await import("@/modules/categories/service")
     const categories = await listCategories(result.accessToken.organizationId)
     expect(categories.length).toBe(0)
   })
@@ -113,13 +111,13 @@ describe("Auth", () => {
       password: "correctPassword1",
     })
     await expect(
-      loginService("wrong@example.com", "wrongPassword1"),
+      loginService("wrong@example.com", "wrongPassword1")
     ).rejects.toThrowError(HTTPException)
   })
 
   it("rejects login for non-existent user", async () => {
     await expect(
-      loginService("noone@example.com", "password12345"),
+      loginService("noone@example.com", "password12345")
     ).rejects.toThrowError(HTTPException)
   })
 
@@ -168,7 +166,7 @@ describe("Auth", () => {
       const user = await signupUser()
       const result = await generateInviteCodeService(
         user.user.id,
-        user.accessToken.organizationId,
+        user.accessToken.organizationId
       )
       expect(result.inviteCode).toBeDefined()
       expect(result.inviteCode.length).toBeGreaterThan(10)
@@ -179,11 +177,11 @@ describe("Auth", () => {
       const user = await signupUser()
       const code1 = await generateInviteCodeService(
         user.user.id,
-        user.accessToken.organizationId,
+        user.accessToken.organizationId
       )
       const code2 = await generateInviteCodeService(
         user.user.id,
-        user.accessToken.organizationId,
+        user.accessToken.organizationId
       )
       expect(code1.inviteCode).toBe(code2.inviteCode)
     })
@@ -199,11 +197,11 @@ describe("Auth", () => {
       })
       const memberLogin = await loginService(
         "member@example.com",
-        "password12345678",
+        "password12345678"
       )
 
       await expect(
-        generateInviteCodeService(memberLogin.user.id, orgId),
+        generateInviteCodeService(memberLogin.user.id, orgId)
       ).rejects.toThrowError(HTTPException)
     })
 
@@ -211,7 +209,7 @@ describe("Auth", () => {
       const user = await signupUser()
       const code = await generateInviteCodeService(
         user.user.id,
-        user.accessToken.organizationId,
+        user.accessToken.organizationId
       )
       const org = await findOrgByUserId(user.user.id)
       const result = await getInviteService(code.inviteCode)
@@ -222,7 +220,7 @@ describe("Auth", () => {
       const owner = await signupUser()
       const code = await generateInviteCodeService(
         owner.user.id,
-        owner.accessToken.organizationId,
+        owner.accessToken.organizationId
       )
 
       const result = await signupService({
@@ -235,10 +233,10 @@ describe("Auth", () => {
 
       const login = await loginService(
         "invited@example.com",
-        "password12345678",
+        "password12345678"
       )
       expect(login.accessToken.organizationId).toBe(
-        owner.accessToken.organizationId,
+        owner.accessToken.organizationId
       )
     })
 
@@ -256,7 +254,7 @@ describe("Auth", () => {
       const owner = await signupUser()
       const code = await generateInviteCodeService(
         owner.user.id,
-        owner.accessToken.organizationId,
+        owner.accessToken.organizationId
       )
       await signupService({
         name: "Existing",

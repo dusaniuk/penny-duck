@@ -73,9 +73,7 @@ export async function login(
   email: string,
   password: string,
   deps: {
-    findUserByEmail: (
-      email: string
-    ) => Promise<{
+    findUserByEmail: (email: string) => Promise<{
       id: string
       email: string
       name: string
@@ -244,10 +242,7 @@ export async function generateInviteCode(
   userId: string,
   organizationId: string,
   deps: {
-    getMemberRole: (
-      orgId: string,
-      userId: string
-    ) => Promise<string | null>
+    getMemberRole: (orgId: string, userId: string) => Promise<string | null>
     setInviteCode: (orgId: string) => Promise<string>
   }
 ): Promise<string> {

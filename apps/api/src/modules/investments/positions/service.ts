@@ -1,9 +1,6 @@
 import { HTTPException } from "hono/http-exception"
 import { and, asc, eq } from "drizzle-orm"
-import {
-  type InvestmentsSummary,
-  type Position,
-} from "@workspace/api-contract"
+import { type InvestmentsSummary, type Position } from "@workspace/api-contract"
 import { trades, users } from "@workspace/db"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
@@ -136,12 +133,10 @@ export async function getPositionBySymbol(
   const refreshedInst = refreshed[0] ?? inst
 
   const homeCurrency = await getHomeCurrency(userId)
-  const rate = await getRate(
+  const rate = await getRate(refreshedInst.currency, homeCurrency, new Date(), [
     refreshedInst.currency,
     homeCurrency,
-    new Date(),
-    [refreshedInst.currency, homeCurrency]
-  )
+  ])
 
   return toPositionResponse(state, refreshedInst, accountId, rate)
 }

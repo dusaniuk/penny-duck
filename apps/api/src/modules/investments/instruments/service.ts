@@ -4,7 +4,12 @@ import { type Instrument } from "@workspace/api-contract"
 import { instrumentPrices, instruments } from "@workspace/db"
 import { db } from "@/db"
 import { type InstrumentRow } from "../helpers/mappers"
-import { fetchHistorical, fetchQuotes, RateLimitedError, searchYahoo } from "./yahoo"
+import {
+  fetchHistorical,
+  fetchQuotes,
+  RateLimitedError,
+  searchYahoo,
+} from "./yahoo"
 
 const STALENESS_MS = 15 * 60 * 1000
 
@@ -211,7 +216,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000
 function todayUTC(): Date {
   const now = new Date()
   return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
   )
 }
 
@@ -220,7 +225,7 @@ function isoDate(d: Date): string {
 }
 
 async function getLatestStoredDate(
-  instrumentId: string,
+  instrumentId: string
 ): Promise<string | null> {
   const rows = await db
     .select({ date: instrumentPrices.date })
@@ -234,7 +239,7 @@ async function getLatestStoredDate(
 async function backfillOne(
   inst: InstrumentRow,
   days: number,
-  today: Date,
+  today: Date
 ): Promise<void> {
   const windowStart = new Date(today.getTime() - (days - 1) * ONE_DAY_MS)
   const latest = await getLatestStoredDate(inst.id)
@@ -262,7 +267,7 @@ async function backfillOne(
           instrumentId: inst.id,
           date: p.date,
           close: p.close,
-        })),
+        }))
       )
       .onConflictDoUpdate({
         target: [instrumentPrices.instrumentId, instrumentPrices.date],
@@ -273,7 +278,7 @@ async function backfillOne(
       console.warn(`Yahoo rate-limited fetching history for ${inst.symbol}`)
     } else {
       console.warn(
-        `Yahoo chart failed for ${inst.symbol}: ${(err as Error).message}`,
+        `Yahoo chart failed for ${inst.symbol}: ${(err as Error).message}`
       )
     }
   }
@@ -281,7 +286,7 @@ async function backfillOne(
 
 export async function ensureHistoricalPrices(
   instrumentIds: string[],
-  days: number,
+  days: number
 ): Promise<void> {
   if (instrumentIds.length === 0) return
   const rows = await findInstrumentsByIds(instrumentIds)

@@ -56,7 +56,7 @@ const selectWithUser = {
 
 function toResponse(
   row: TransactionRow | TransactionRowWithUser,
-  homeAmount?: number,
+  homeAmount?: number
 ): Transaction {
   const amount = Math.abs(row.amount)
   const madeByName = "madeByName" in row ? row.madeByName : null
@@ -86,7 +86,7 @@ function toResponse(
 function validateExchangeRate(
   originalAmount?: number | null,
   originalCurrency?: string | null,
-  exchangeRate?: number | null,
+  exchangeRate?: number | null
 ): void {
   const fields = [originalAmount, originalCurrency, exchangeRate]
   const provided = fields.filter((f) => f != null).length
@@ -108,7 +108,7 @@ async function getHomeCurrency(userId: string): Promise<string> {
 
 async function isMemberOfOrg(
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> {
   const rows = await db
     .select({ id: organizationMembers.id })
@@ -116,8 +116,8 @@ async function isMemberOfOrg(
     .where(
       and(
         eq(organizationMembers.userId, userId),
-        eq(organizationMembers.organizationId, organizationId),
-      ),
+        eq(organizationMembers.organizationId, organizationId)
+      )
     )
     .limit(1)
   return rows.length > 0
@@ -125,7 +125,7 @@ async function isMemberOfOrg(
 
 async function findById(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<TransactionRow | null> {
   const rows = await db
     .select()
@@ -133,8 +133,8 @@ async function findById(
     .where(
       and(
         eq(transactions.id, id),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
     .limit(1)
   return rows[0] ?? null
@@ -142,7 +142,7 @@ async function findById(
 
 async function findByIdWithUser(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<TransactionRowWithUser | null> {
   const rows = await db
     .select(selectWithUser)
@@ -151,8 +151,8 @@ async function findByIdWithUser(
     .where(
       and(
         eq(transactions.id, id),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
     .limit(1)
   return rows[0] ?? null
@@ -160,7 +160,7 @@ async function findByIdWithUser(
 
 async function findByTransferId(
   transferId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<TransactionRow[]> {
   return db
     .select()
@@ -168,8 +168,8 @@ async function findByTransferId(
     .where(
       and(
         eq(transactions.transferId, transferId),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
 }
 
@@ -212,7 +212,7 @@ async function insertTransaction(data: InsertData): Promise<TransactionRow> {
 async function updateTransactionRow(
   id: string,
   organizationId: string,
-  data: UpdateData,
+  data: UpdateData
 ): Promise<TransactionRow> {
   const [row] = await db
     .update(transactions)
@@ -220,8 +220,8 @@ async function updateTransactionRow(
     .where(
       and(
         eq(transactions.id, id),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
     .returning()
   return row
@@ -229,13 +229,10 @@ async function updateTransactionRow(
 
 async function insertTransferPair(
   outgoing: InsertData,
-  incoming: InsertData,
+  incoming: InsertData
 ): Promise<[TransactionRow, TransactionRow]> {
   return db.transaction(async (tx) => {
-    const [outRow] = await tx
-      .insert(transactions)
-      .values(outgoing)
-      .returning()
+    const [outRow] = await tx.insert(transactions).values(outgoing).returning()
     const [inRow] = await tx.insert(transactions).values(incoming).returning()
     return [outRow, inRow]
   })
@@ -246,7 +243,7 @@ async function updateTransferPair(
   outgoingData: UpdateData,
   incomingId: string,
   incomingData: UpdateData,
-  organizationId: string,
+  organizationId: string
 ): Promise<[TransactionRow, TransactionRow]> {
   return db.transaction(async (tx) => {
     const [outRow] = await tx
@@ -255,8 +252,8 @@ async function updateTransferPair(
       .where(
         and(
           eq(transactions.id, outgoingId),
-          eq(transactions.organizationId, organizationId),
-        ),
+          eq(transactions.organizationId, organizationId)
+        )
       )
       .returning()
     const [inRow] = await tx
@@ -265,8 +262,8 @@ async function updateTransferPair(
       .where(
         and(
           eq(transactions.id, incomingId),
-          eq(transactions.organizationId, organizationId),
-        ),
+          eq(transactions.organizationId, organizationId)
+        )
       )
       .returning()
     return [outRow, inRow]
@@ -275,15 +272,15 @@ async function updateTransferPair(
 
 async function deleteByTransferId(
   transferId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   await db
     .delete(transactions)
     .where(
       and(
         eq(transactions.transferId, transferId),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
 }
 
@@ -303,7 +300,7 @@ interface ListFilters {
 }
 
 async function findAll(
-  filters: ListFilters,
+  filters: ListFilters
 ): Promise<{ data: TransactionRowWithUser[]; total: number }> {
   const conditions = [eq(transactions.organizationId, filters.organizationId)]
 
@@ -325,7 +322,7 @@ async function findAll(
     // entry on the receiving account. Only the receiving (positive) side
     // should ever appear in an account view.
     conditions.push(
-      or(isNull(transactions.reimbursementId), gt(transactions.amount, 0))!,
+      or(isNull(transactions.reimbursementId), gt(transactions.amount, 0))!
     )
   } else {
     conditions.push(isNull(transactions.reimbursementId))
@@ -334,7 +331,8 @@ async function findAll(
     conditions.push(isNotNull(transactions.transferId))
   if (filters.transfer === false)
     conditions.push(isNull(transactions.transferId))
-  if (filters.dateFrom) conditions.push(gte(transactions.date, filters.dateFrom))
+  if (filters.dateFrom)
+    conditions.push(gte(transactions.date, filters.dateFrom))
   if (filters.dateTo) conditions.push(lte(transactions.date, filters.dateTo))
   if (filters.madeById)
     conditions.push(eq(transactions.madeById, filters.madeById))
@@ -373,8 +371,8 @@ async function findAll(
         r.transferId &&
         !r.reimbursementId &&
         !rows.some(
-          (other) => other.transferId === r.transferId && other.id !== r.id,
-        ),
+          (other) => other.transferId === r.transferId && other.id !== r.id
+        )
     )
     .map((r) => r.transferId!)
 
@@ -387,8 +385,8 @@ async function findAll(
       .where(
         and(
           eq(transactions.organizationId, filters.organizationId),
-          inArray(transactions.transferId, missingTransferIds),
-        ),
+          inArray(transactions.transferId, missingTransferIds)
+        )
       )
     pairedRows = pairedRows.filter((r) => !resultIds.has(r.id))
   }
@@ -412,7 +410,7 @@ export interface CreateTransactionInput {
 }
 
 export async function createTransaction(
-  input: CreateTransactionInput,
+  input: CreateTransactionInput
 ): Promise<Transaction> {
   if (input.amount <= 0)
     throw new HTTPException(400, { message: "Amount must be greater than 0" })
@@ -424,7 +422,7 @@ export async function createTransaction(
   validateExchangeRate(
     input.originalAmount,
     input.originalCurrency,
-    input.exchangeRate,
+    input.exchangeRate
   )
 
   const isMember = await isMemberOfOrg(input.madeById, input.organizationId)
@@ -436,10 +434,9 @@ export async function createTransaction(
   const account = await findAccountById(
     input.accountId,
     input.organizationId,
-    input.madeById,
+    input.madeById
   )
-  if (!account)
-    throw new HTTPException(404, { message: "Account not found" })
+  if (!account) throw new HTTPException(404, { message: "Account not found" })
 
   const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
@@ -478,7 +475,7 @@ export async function updateTransaction(
   id: string,
   organizationId: string,
   userId: string,
-  fields: UpdateTransactionInput,
+  fields: UpdateTransactionInput
 ): Promise<Transaction> {
   const existing = await findById(id, organizationId)
   if (!existing)
@@ -490,14 +487,16 @@ export async function updateTransaction(
 
   const updateData: UpdateData = {}
 
-  if (fields.accountId !== undefined && fields.accountId !== existing.accountId) {
+  if (
+    fields.accountId !== undefined &&
+    fields.accountId !== existing.accountId
+  ) {
     const account = await findAccountById(
       fields.accountId,
       organizationId,
-      userId,
+      userId
     )
-    if (!account)
-      throw new HTTPException(404, { message: "Account not found" })
+    if (!account) throw new HTTPException(404, { message: "Account not found" })
     updateData.accountId = fields.accountId
   }
 
@@ -534,7 +533,7 @@ export async function updateTransaction(
       validateExchangeRate(
         fields.originalAmount,
         fields.originalCurrency,
-        fields.exchangeRate,
+        fields.exchangeRate
       )
       updateData.originalAmount = fields.originalAmount
       updateData.originalCurrency = fields.originalCurrency
@@ -557,7 +556,7 @@ export async function updateTransaction(
 
 export async function deleteTransaction(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   const row = await findById(id, organizationId)
   if (!row) throw new HTTPException(404, { message: "Transaction not found" })
@@ -571,14 +570,14 @@ export async function deleteTransaction(
     .where(
       and(
         eq(transactions.id, id),
-        eq(transactions.organizationId, organizationId),
-      ),
+        eq(transactions.organizationId, organizationId)
+      )
     )
 }
 
 export async function settleTransaction(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<Transaction> {
   const row = await findById(id, organizationId)
   if (!row) throw new HTTPException(404, { message: "Transaction not found" })
@@ -591,7 +590,7 @@ export async function settleTransaction(
 
 export async function getTransaction(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<Transaction> {
   const row = await findByIdWithUser(id, organizationId)
   if (!row) throw new HTTPException(404, { message: "Transaction not found" })
@@ -615,8 +614,13 @@ export interface ListTransactionsInput {
 }
 
 export async function listTransactions(
-  input: ListTransactionsInput,
-): Promise<{ data: Transaction[]; total: number; page: number; limit: number }> {
+  input: ListTransactionsInput
+): Promise<{
+  data: Transaction[]
+  total: number
+  page: number
+  limit: number
+}> {
   const homeCurrency = await getHomeCurrency(input.userId)
 
   const { data, total } = await findAll({
@@ -644,7 +648,7 @@ export async function listTransactions(
     .where(eq(accounts.organizationId, input.organizationId))
 
   const currencyByAccountId = new Map(
-    accountRows.map((a) => [a.id, a.currency]),
+    accountRows.map((a) => [a.id, a.currency])
   )
   const usedCurrencies = [...new Set(accountRows.map((a) => a.currency))]
 
@@ -654,7 +658,12 @@ export async function listTransactions(
     let homeAmount = Math.abs(row.amount)
 
     if (currency && currency !== homeCurrency) {
-      const rate = await getRate(currency, homeCurrency, row.date, usedCurrencies)
+      const rate = await getRate(
+        currency,
+        homeCurrency,
+        row.date,
+        usedCurrencies
+      )
       homeAmount = Math.abs(row.amount) * rate
     }
 
@@ -675,7 +684,7 @@ export interface CreateReimbursementInput {
 }
 
 export async function createReimbursement(
-  input: CreateReimbursementInput,
+  input: CreateReimbursementInput
 ): Promise<Transaction> {
   if (input.amount <= 0)
     throw new HTTPException(400, { message: "Amount must be greater than 0" })
@@ -695,7 +704,7 @@ export async function createReimbursement(
   const receivingAccount = await findAccountById(
     input.accountId,
     input.organizationId,
-    input.madeById,
+    input.madeById
   )
   if (!receivingAccount)
     throw new HTTPException(404, { message: "Account not found" })
@@ -710,7 +719,7 @@ export async function createReimbursement(
     const expenseAccount = await findAccountById(
       expense.accountId,
       input.organizationId,
-      input.madeById,
+      input.madeById
     )
     if (!expenseAccount)
       throw new HTTPException(404, { message: "Account not found" })
@@ -721,7 +730,8 @@ export async function createReimbursement(
     } else {
       if (!input.exchangeRate)
         throw new HTTPException(400, {
-          message: "Exchange rate is required for cross-currency reimbursements",
+          message:
+            "Exchange rate is required for cross-currency reimbursements",
         })
       amountInExpenseCurrency = input.amount * input.exchangeRate
     }
@@ -741,7 +751,7 @@ export async function createReimbursement(
     const updated = await updateTransactionRow(
       input.transactionId,
       input.organizationId,
-      { amount: newExpenseAmount },
+      { amount: newExpenseAmount }
     )
     return toResponse(updated)
   }
@@ -779,13 +789,13 @@ export async function createReimbursement(
       transferId,
       reimbursementId: input.transactionId,
       madeById: input.madeById,
-    },
+    }
   )
 
   const updated = await updateTransactionRow(
     input.transactionId,
     input.organizationId,
-    { amount: newExpenseAmount },
+    { amount: newExpenseAmount }
   )
 
   return toResponse(updated)
@@ -794,7 +804,7 @@ export async function createReimbursement(
 export async function deleteReimbursement(
   expenseId: string,
   reimbursementTransactionId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   const expense = await findById(expenseId, organizationId)
   if (!expense)
@@ -802,7 +812,7 @@ export async function deleteReimbursement(
 
   const reimbursementTx = await findById(
     reimbursementTransactionId,
-    organizationId,
+    organizationId
   )
   if (!reimbursementTx || reimbursementTx.reimbursementId !== expenseId)
     throw new HTTPException(404, { message: "Reimbursement not found" })
@@ -812,7 +822,10 @@ export async function deleteReimbursement(
       message: "Same-account reimbursements cannot be individually deleted",
     })
 
-  const pair = await findByTransferId(reimbursementTx.transferId, organizationId)
+  const pair = await findByTransferId(
+    reimbursementTx.transferId,
+    organizationId
+  )
   const outgoing = pair.find((t) => t.amount < 0)
   if (!outgoing)
     throw new HTTPException(404, { message: "Transfer pair incomplete" })
@@ -841,7 +854,7 @@ export interface CreateTransferInput {
 }
 
 export async function createTransfer(
-  input: CreateTransferInput,
+  input: CreateTransferInput
 ): Promise<[Transaction, Transaction]> {
   if (input.fromAccountId === input.toAccountId) {
     throw new HTTPException(400, {
@@ -853,7 +866,7 @@ export async function createTransfer(
   validateExchangeRate(
     input.originalAmount,
     input.originalCurrency,
-    input.exchangeRate,
+    input.exchangeRate
   )
 
   const [fromAccount, toAccount] = await Promise.all([
@@ -908,7 +921,7 @@ export async function createTransfer(
       transferId,
       reimbursementId: null,
       madeById: input.madeById,
-    },
+    }
   )
 
   return [toResponse(outRow), toResponse(inRow)]
@@ -927,7 +940,7 @@ export interface UpdateTransferInput {
 export async function updateTransfer(
   transferId: string,
   organizationId: string,
-  fields: UpdateTransferInput,
+  fields: UpdateTransferInput
 ): Promise<[Transaction, Transaction]> {
   const pair = await findByTransferId(transferId, organizationId)
   if (pair.length !== 2)
@@ -990,7 +1003,7 @@ export async function updateTransfer(
       validateExchangeRate(
         fields.originalAmount,
         fields.originalCurrency,
-        fields.exchangeRate,
+        fields.exchangeRate
       )
       outgoingUpdate.originalAmount = fields.originalAmount
       outgoingUpdate.originalCurrency = fields.originalCurrency
@@ -1006,7 +1019,7 @@ export async function updateTransfer(
     outgoingUpdate,
     incoming.id,
     incomingUpdate,
-    organizationId,
+    organizationId
   )
 
   return [toResponse(outRow), toResponse(inRow)]
@@ -1014,7 +1027,7 @@ export async function updateTransfer(
 
 export async function deleteTransfer(
   transferId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   const pair = await findByTransferId(transferId, organizationId)
   if (pair.length !== 2)

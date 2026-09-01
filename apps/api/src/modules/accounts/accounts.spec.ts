@@ -1,11 +1,4 @@
-import {
-  beforeAll,
-  afterAll,
-  beforeEach,
-  describe,
-  it,
-  expect,
-} from "bun:test"
+import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { env } from "@workspace/env/api"
 import type { Account } from "@workspace/api-contract"
 import { exchangeRates } from "@workspace/db"
@@ -65,7 +58,7 @@ interface CreateBody {
 async function createAccountHttp(
   body: CreateBody,
   cookieValue: string = cookie,
-  expectedStatus = 201,
+  expectedStatus = 201
 ): Promise<Account> {
   const res = await honoApp.request("/accounts", {
     method: "POST",
@@ -77,7 +70,7 @@ async function createAccountHttp(
 }
 
 async function listAccountsHttp(
-  cookieValue: string = cookie,
+  cookieValue: string = cookie
 ): Promise<Account[]> {
   const res = await honoApp.request("/accounts", {
     headers: { cookie: cookieValue },
@@ -90,7 +83,7 @@ async function listAccountsHttp(
 async function getAccountHttp(
   id: string,
   cookieValue: string = cookie,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Account> {
   const res = await honoApp.request(`/accounts/${id}`, {
     headers: { cookie: cookieValue },
@@ -103,7 +96,7 @@ async function updateAccountHttp(
   id: string,
   body: Record<string, unknown>,
   cookieValue: string = cookie,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Account> {
   const res = await honoApp.request(`/accounts/${id}`, {
     method: "PATCH",
@@ -117,7 +110,7 @@ async function updateAccountHttp(
 async function deleteAccountHttp(
   id: string,
   cookieValue: string = cookie,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(`/accounts/${id}`, {
     method: "DELETE",
@@ -130,7 +123,7 @@ async function deleteAccountHttp(
 async function setDefaultHttp(
   id: string,
   cookieValue: string = cookie,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Account> {
   const res = await honoApp.request(`/accounts/${id}/default`, {
     method: "PUT",
@@ -143,7 +136,7 @@ async function setDefaultHttp(
 async function clearDefaultHttp(
   id: string,
   cookieValue: string = cookie,
-  expectedStatus = 200,
+  expectedStatus = 200
 ): Promise<Response> {
   const res = await honoApp.request(`/accounts/${id}/default`, {
     method: "DELETE",
@@ -293,7 +286,7 @@ describe("Accounts", () => {
     const otherCookie = buildCookie(otherResult.accessToken)
     await createAccountHttp(
       { name: "User2 Bank", type: "bank", currency: "USD" },
-      otherCookie,
+      otherCookie
     )
 
     const user1Accounts = await listAccountsHttp()
@@ -352,7 +345,7 @@ describe("Accounts", () => {
       const otherCookie = buildCookie(otherResult.accessToken)
       const foreign = await createAccountHttp(
         { name: "Foreign", type: "bank", currency: "USD" },
-        otherCookie,
+        otherCookie
       )
 
       const res = await honoApp.request(`/accounts/${foreign.id}/default`, {
@@ -412,7 +405,7 @@ describe("Accounts", () => {
     it("two users in the same org each see their own default", async () => {
       const { inviteCode } = await generateInviteCodeService(
         userId,
-        organizationId,
+        organizationId
       )
       const second = await signupUser({ inviteCode })
       const secondCookie = buildCookie(second.accessToken)
@@ -496,7 +489,7 @@ describe("Accounts — brokerage balance", () => {
     // Cash: 10_000 - (10 × 100) = 9000. Holdings: 10 × 200 (mock) = 2000.
     expect(list.find((a) => a.id === account.id)!.balance).toBeCloseTo(
       11_000,
-      2,
+      2
     )
   })
 
@@ -609,7 +602,7 @@ describe("Accounts — brokerage balance", () => {
     // Cash: 10_000 - 1000 + 2000 = 11_000. No open holdings.
     expect(list.find((a) => a.id === account.id)!.balance).toBeCloseTo(
       11_000,
-      2,
+      2
     )
   })
 
@@ -646,9 +639,9 @@ describe("GET /accounts list shape", () => {
 
   it("returns a wallet as a single entry with nested pockets and a home total", async () => {
     const today = new Date().toISOString().split("T")[0]
-    await db.insert(exchangeRates).values([
-      { date: today, base: "USD", target: "UAH", rate: 41 },
-    ])
+    await db
+      .insert(exchangeRates)
+      .values([{ date: today, base: "USD", target: "UAH", rate: 41 }])
 
     const walletRes = await honoApp.request("/accounts", {
       method: "POST",
@@ -678,9 +671,9 @@ describe("GET /accounts list shape", () => {
 
   it("returns the wallet shape (pockets + home total) when fetched by id", async () => {
     const today = new Date().toISOString().split("T")[0]
-    await db.insert(exchangeRates).values([
-      { date: today, base: "USD", target: "UAH", rate: 41 },
-    ])
+    await db
+      .insert(exchangeRates)
+      .values([{ date: today, base: "USD", target: "UAH", rate: 41 }])
 
     const walletRes = await honoApp.request("/accounts", {
       method: "POST",

@@ -45,7 +45,7 @@ export async function createWallet(input: CreateWalletInput): Promise<Wallet> {
           type: "wallet",
           currency: p.currency,
           initialBalance: p.balance,
-        })),
+        }))
       )
     }
     return walletRow.id
@@ -70,8 +70,8 @@ export async function updateWallet(input: UpdateWalletInput): Promise<Wallet> {
     .where(
       and(
         eq(wallets.id, input.id),
-        eq(wallets.organizationId, input.organizationId),
-      ),
+        eq(wallets.organizationId, input.organizationId)
+      )
     )
     .limit(1)
   if (!existing) throw new HTTPException(404, { message: "Wallet not found" })
@@ -91,7 +91,7 @@ export async function updateWallet(input: UpdateWalletInput): Promise<Wallet> {
 
 export async function deleteWallet(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> {
   // One transaction so a pocket transaction inserted between the count and the
   // delete can't slip past the guard and then be destroyed by the cascade.
@@ -100,7 +100,7 @@ export async function deleteWallet(
       .select()
       .from(wallets)
       .where(
-        and(eq(wallets.id, id), eq(wallets.organizationId, organizationId)),
+        and(eq(wallets.id, id), eq(wallets.organizationId, organizationId))
       )
       .limit(1)
     if (!existing) throw new HTTPException(404, { message: "Wallet not found" })
@@ -143,8 +143,8 @@ export async function addPocket(input: AddPocketInput): Promise<Wallet> {
     .where(
       and(
         eq(wallets.id, input.walletId),
-        eq(wallets.organizationId, input.organizationId),
-      ),
+        eq(wallets.organizationId, input.organizationId)
+      )
     )
     .limit(1)
   if (!walletRow) throw new HTTPException(404, { message: "Wallet not found" })
@@ -155,8 +155,8 @@ export async function addPocket(input: AddPocketInput): Promise<Wallet> {
     .where(
       and(
         eq(accounts.walletId, input.walletId),
-        eq(accounts.currency, input.currency),
-      ),
+        eq(accounts.currency, input.currency)
+      )
     )
     .limit(1)
   if (existingPocket) {
@@ -181,7 +181,7 @@ export async function deletePocket(
   walletId: string,
   currency: string,
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<Wallet> {
   // One transaction so a transaction inserted against the pocket between the
   // count and the delete can't slip past the guard.
@@ -192,8 +192,8 @@ export async function deletePocket(
       .where(
         and(
           eq(wallets.id, walletId),
-          eq(wallets.organizationId, organizationId),
-        ),
+          eq(wallets.organizationId, organizationId)
+        )
       )
       .limit(1)
     if (!walletRow) {
@@ -204,7 +204,7 @@ export async function deletePocket(
       .select({ id: accounts.id })
       .from(accounts)
       .where(
-        and(eq(accounts.walletId, walletId), eq(accounts.currency, currency)),
+        and(eq(accounts.walletId, walletId), eq(accounts.currency, currency))
       )
       .limit(1)
     if (!pocket) throw new HTTPException(404, { message: "Pocket not found" })
@@ -227,16 +227,13 @@ export async function deletePocket(
 export async function loadWallet(
   walletId: string,
   organizationId: string,
-  userId: string,
+  userId: string
 ): Promise<Wallet> {
   const [walletRow] = await db
     .select()
     .from(wallets)
     .where(
-      and(
-        eq(wallets.id, walletId),
-        eq(wallets.organizationId, organizationId),
-      ),
+      and(eq(wallets.id, walletId), eq(wallets.organizationId, organizationId))
     )
     .limit(1)
   if (!walletRow) throw new HTTPException(404, { message: "Wallet not found" })
@@ -267,7 +264,7 @@ export async function loadWallet(
 // to the wallet or the leaf-account handler.
 export async function walletExists(
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> {
   const [row] = await db
     .select({ id: wallets.id })

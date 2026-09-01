@@ -7,12 +7,7 @@ type StandaloneType = "bank" | "brokerage" | "loan"
 
 type GroupKey = "wallet" | StandaloneType
 
-const GROUP_ORDER: Array<GroupKey> = [
-  "wallet",
-  "bank",
-  "brokerage",
-  "loan",
-]
+const GROUP_ORDER: Array<GroupKey> = ["wallet", "bank", "brokerage", "loan"]
 
 const GROUP_LABEL: Record<GroupKey, string> = {
   wallet: "Wallet",

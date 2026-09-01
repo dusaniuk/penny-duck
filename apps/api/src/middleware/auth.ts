@@ -18,7 +18,10 @@ function readCookie(header: string | undefined, name: string): string | null {
   return null
 }
 
-export const honoAuthMiddleware: MiddlewareHandler<AuthedEnv> = async (c, next) => {
+export const honoAuthMiddleware: MiddlewareHandler<AuthedEnv> = async (
+  c,
+  next
+) => {
   const token = readCookie(c.req.header("cookie"), ACCESS_TOKEN_COOKIE)
   if (!token) throw new HTTPException(401, { message: "Unauthorized" })
 

@@ -4,11 +4,7 @@ import { IconFilter, IconPlus } from "@tabler/icons-react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
-import type {
-  Category,
-  Member,
-  Transaction,
-} from "@workspace/api-contract"
+import type { Category, Member, Transaction } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
 import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
