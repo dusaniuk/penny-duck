@@ -11,3 +11,22 @@ export const MonthlySummaryQuerySchema = z.object({
 })
 
 export type MonthlySummaryItem = z.infer<typeof MonthlySummaryItemSchema>
+
+export const SpendingByCategoryItemSchema = z.object({
+  id: z.string().nullable(),
+  name: z.string(),
+  color: z.string().nullable(),
+  amount: z.number(),
+})
+
+export const SpendingByCategoryResponseSchema = z.object({
+  month: z.string(),
+  homeCurrency: z.string(),
+  total: z.number(),
+  categories: z.array(SpendingByCategoryItemSchema),
+})
+
+export type SpendingByCategoryItem = z.infer<typeof SpendingByCategoryItemSchema>
+export type SpendingByCategoryResponse = z.infer<
+  typeof SpendingByCategoryResponseSchema
+>

@@ -77,8 +77,14 @@ export { ExchangeRatesResponseSchema } from "./schemas/exchange-rates"
 export {
   MonthlySummaryItemSchema,
   MonthlySummaryQuerySchema,
+  SpendingByCategoryItemSchema,
+  SpendingByCategoryResponseSchema,
 } from "./schemas/stats"
-export type { MonthlySummaryItem } from "./schemas/stats"
+export type {
+  MonthlySummaryItem,
+  SpendingByCategoryItem,
+  SpendingByCategoryResponse,
+} from "./schemas/stats"
 
 export {
   NetWorthTopAccountSchema,

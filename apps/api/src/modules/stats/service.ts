@@ -1,5 +1,9 @@
 import { sql } from "drizzle-orm"
-import { type MonthlySummaryItem } from "@workspace/api-contract"
+import {
+  type MonthlySummaryItem,
+  type SpendingByCategoryItem,
+  type SpendingByCategoryResponse,
+} from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 
@@ -12,7 +16,7 @@ interface MonthlyCurrencyRow {
 
 async function fetchMonthlyRowsByCurrency(
   organizationId: string,
-  months: number,
+  months: number
 ): Promise<MonthlyCurrencyRow[]> {
   const rows = await db.execute(sql`
     SELECT
@@ -44,7 +48,7 @@ function generateMonthKeys(months: number): string[] {
 export async function getMonthlySummary(
   organizationId: string,
   homeCurrency: string,
-  months: number,
+  months: number
 ): Promise<MonthlySummaryItem[]> {
   const rows = await fetchMonthlyRowsByCurrency(organizationId, months)
 
@@ -56,7 +60,7 @@ export async function getMonthlySummary(
     currencies.map(async (currency) => {
       const rate = await getRate(currency, homeCurrency, today, currencies)
       rates.set(currency, rate)
-    }),
+    })
   )
 
   const monthMap = new Map<string, { income: number; expenses: number }>()
@@ -76,4 +80,83 @@ export async function getMonthlySummary(
       expenses: Math.round((data?.expenses ?? 0) * 100) / 100,
     }
   })
+}
+
+interface CategorySpendRow {
+  categoryId: string | null
+  name: string | null
+  color: string | null
+  currency: string
+  amount: number
+}
+
+// Subcategory spend rolls up to its parent via COALESCE(c.parent_id, c.id);
+// transactions without a category land in a null bucket.
+async function fetchCurrentMonthSpendByCategory(
+  organizationId: string
+): Promise<CategorySpendRow[]> {
+  const rows = await db.execute(sql`
+    SELECT
+      root.id AS "categoryId",
+      root.name AS name,
+      root.color AS color,
+      a.currency,
+      SUM(ABS(t.amount))::float / 100 AS amount
+    FROM app.transactions t
+    JOIN app.accounts a ON a.id = t.account_id
+    LEFT JOIN app.categories c ON c.id = t.category_id
+    LEFT JOIN app.categories root ON root.id = COALESCE(c.parent_id, c.id)
+    WHERE t.organization_id = ${organizationId}
+      AND t.amount < 0
+      AND t.transfer_id IS NULL
+      AND t.reimbursement_id IS NULL
+      AND t.date >= date_trunc('month', NOW())
+      AND t.date < date_trunc('month', NOW()) + interval '1 month'
+    GROUP BY root.id, root.name, root.color, a.currency
+  `)
+
+  return rows.rows as unknown as CategorySpendRow[]
+}
+
+export async function getSpendingByCategory(
+  organizationId: string,
+  homeCurrency: string
+): Promise<SpendingByCategoryResponse> {
+  const rows = await fetchCurrentMonthSpendByCategory(organizationId)
+
+  const currencies = [...new Set(rows.map((r) => r.currency))]
+  const today = new Date()
+  const rates = new Map<string, number>()
+
+  await Promise.all(
+    currencies.map(async (currency) => {
+      const rate = await getRate(currency, homeCurrency, today, currencies)
+      rates.set(currency, rate)
+    })
+  )
+
+  const byCategory = new Map<string | null, SpendingByCategoryItem>()
+  for (const row of rows) {
+    const rate = rates.get(row.currency) ?? 1
+    const existing = byCategory.get(row.categoryId) ?? {
+      id: row.categoryId,
+      name: row.name ?? "Uncategorized",
+      color: row.color,
+      amount: 0,
+    }
+    existing.amount += row.amount * rate
+    byCategory.set(row.categoryId, existing)
+  }
+
+  const categories = [...byCategory.values()]
+    .map((c) => ({ ...c, amount: Math.round(c.amount * 100) / 100 }))
+    .sort((a, b) => b.amount - a.amount)
+
+  return {
+    month: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`,
+    homeCurrency,
+    total:
+      Math.round(categories.reduce((sum, c) => sum + c.amount, 0) * 100) / 100,
+    categories,
+  }
 }

@@ -5,7 +5,7 @@ import { users } from "@workspace/db"
 import { MonthlySummaryQuerySchema } from "@workspace/api-contract"
 import { db } from "@/db"
 import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
-import { getMonthlySummary } from "./service"
+import { getMonthlySummary, getSpendingByCategory } from "./service"
 import { getNetWorth } from "./net-worth/service"
 
 export const statsRoutes = new Hono<AuthedEnv>()
@@ -27,11 +27,27 @@ export const statsRoutes = new Hono<AuthedEnv>()
       const summary = await getMonthlySummary(
         user.organizationId,
         homeCurrency,
-        months,
+        months
       )
       return c.json(summary)
-    },
+    }
   )
+  .get("/spending-by-category", async (c) => {
+    const user = c.get("user")
+
+    const [row] = await db
+      .select({ homeCurrency: users.homeCurrency })
+      .from(users)
+      .where(eq(users.id, user.sub))
+      .limit(1)
+    const homeCurrency = row?.homeCurrency ?? "UAH"
+
+    const result = await getSpendingByCategory(
+      user.organizationId,
+      homeCurrency
+    )
+    return c.json(result)
+  })
   .get("/net-worth", async (c) => {
     const user = c.get("user")
     const result = await getNetWorth(user.organizationId, user.sub)
