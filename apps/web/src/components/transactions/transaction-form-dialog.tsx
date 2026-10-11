@@ -143,12 +143,35 @@ const TYPE_PALETTE: Record<
 }
 
 function todayIso(): string {
-  return new Date().toISOString().split("T")[0]
+  return toLocalIso(new Date())
 }
 function yesterdayIso(): string {
   const d = new Date()
   d.setDate(d.getDate() - 1)
-  return d.toISOString().split("T")[0]
+  return toLocalIso(d)
+}
+
+const LAST_DATE_KEY = "penny-duck:transaction-last-date"
+
+function readLastDate(): string | null {
+  try {
+    const raw = localStorage.getItem(LAST_DATE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { date?: string; savedOn?: string }
+    if (parsed.savedOn !== todayIso() || !parsed.date) return null
+    return parseLocalDate(parsed.date) ? parsed.date : null
+  } catch {
+    return null
+  }
+}
+
+function saveLastDate(date: string) {
+  try {
+    localStorage.setItem(
+      LAST_DATE_KEY,
+      JSON.stringify({ date, savedOn: todayIso() })
+    )
+  } catch {}
 }
 function formatDDMM(iso: string): string {
   const parts = iso.split("-")
@@ -250,7 +273,7 @@ function TransactionModalBody({
     receiveAmount: transaction?.originalAmount?.toString() ?? "",
     date: transaction?.date
       ? new Date(transaction.date).toISOString().split("T")[0]
-      : todayIso(),
+      : (readLastDate() ?? todayIso()),
     note: transaction?.note ?? "",
     unsettled: transaction ? !transaction.settled : false,
     madeById: transaction?.madeBy?.id ?? currentUserId,
@@ -299,6 +322,7 @@ function TransactionModalBody({
             ...(members.length > 1 ? { madeById: value.madeById } : {}),
           })
         }
+        if (!isEdit) saveLastDate(value.date)
         close()
       } catch (err) {
         formApi.setErrorMap({
