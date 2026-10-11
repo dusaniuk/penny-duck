@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
+import { IconTag } from "@tabler/icons-react"
 import { Button } from "@workspace/ui/components/button"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -16,6 +18,7 @@ import {
 } from "@workspace/ui/components/sheet"
 import type { Account, Category, Member } from "@workspace/api-contract"
 import { DatePicker } from "@/components/date-picker"
+import { getIcon } from "@/lib/icons"
 
 type AccountData = Account
 type CategoryData = Category
@@ -116,7 +119,7 @@ export function TransactionFilterSheet({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" align="start" sideOffset={6}>
                   <SelectItem value="__all__">All accounts</SelectItem>
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
@@ -133,7 +136,7 @@ export function TransactionFilterSheet({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" align="start" sideOffset={6}>
                   <SelectItem value="__all__">All types</SelectItem>
                   <SelectItem value="expense">Expense</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
@@ -151,23 +154,25 @@ export function TransactionFilterSheet({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" align="start" sideOffset={6}>
                   <SelectItem value="__all__">All categories</SelectItem>
                   {parents.map((parent) => (
-                    <div key={parent.id}>
+                    <SelectGroup key={parent.id}>
                       <SelectItem value={parent.id}>
-                        {parent.icon ? `${parent.icon} ` : ""}
+                        <CategoryIcon icon={parent.icon} />
                         {parent.name}
                       </SelectItem>
                       {(childrenByParent[parent.id] ?? []).map((child) => (
-                        <SelectItem key={child.id} value={child.id}>
-                          <span className="pl-4">
-                            {child.icon ? `${child.icon} ` : ""}
-                            {child.name}
-                          </span>
+                        <SelectItem
+                          key={child.id}
+                          value={child.id}
+                          className="pl-5.5"
+                        >
+                          <CategoryIcon icon={child.icon} />
+                          {child.name}
                         </SelectItem>
                       ))}
-                    </div>
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
@@ -183,7 +188,7 @@ export function TransactionFilterSheet({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" align="start" sideOffset={6}>
                     <SelectItem value="__all__">All members</SelectItem>
                     {members.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
@@ -233,4 +238,9 @@ export function TransactionFilterSheet({
       </SheetContent>
     </Sheet>
   )
+}
+
+function CategoryIcon({ icon }: { icon: string | null }) {
+  const Icon = getIcon(icon)?.component ?? IconTag
+  return <Icon className="size-4 text-muted-foreground" />
 }
