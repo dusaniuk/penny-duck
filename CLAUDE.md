@@ -66,6 +66,7 @@ This places components in `packages/ui/src/components/`. The shadcn config lives
 - **Utility functions** — `cn()` (clsx + tailwind-merge) and `cva` for component variants
 - **Route files** — `apps/web/src/routes/` using TanStack Router file-based routing. `routeTree.gen.ts` is auto-generated — do not edit manually
 - **Package exports** — `@workspace/ui` uses subpath exports (`./components/*`, `./lib/*`, `./hooks/*`)
+- **No explanatory one-liner comments** — don't add comments narrating a small styling or layout choice (e.g. why a class sits on one element rather than another). Only comment non-obvious logic
 - **Do not commit** files under `docs/superpowers/` (specs, plans) — these are local working documents
 
 ## API Architecture (DDD/CQRS)
