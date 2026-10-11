@@ -1,6 +1,6 @@
+import { useEffect, useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
-import { Input } from "@workspace/ui/components/input"
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from "@workspace/ui/components/sheet"
 import type { Account, Category, Member } from "@workspace/api-contract"
+import { DatePicker } from "@/components/date-picker"
 
 type AccountData = Account
 type CategoryData = Category
@@ -48,6 +49,17 @@ export function TransactionFilterSheet({
   categories,
   members,
 }: TransactionFilterSheetProps) {
+  // The sheet stays mounted while closed, so re-sync the controlled date
+  // fields with the applied filters each time it opens.
+  const [dateFrom, setDateFrom] = useState(filters.dateFrom ?? "")
+  const [dateTo, setDateTo] = useState(filters.dateTo ?? "")
+  useEffect(() => {
+    if (open) {
+      setDateFrom(filters.dateFrom ?? "")
+      setDateTo(filters.dateTo ?? "")
+    }
+  }, [open, filters.dateFrom, filters.dateTo])
+
   const parents = categories.filter((c) => c.parentId === null)
   const childrenByParent = categories.reduce<
     Record<string, Array<CategoryData>>
@@ -72,10 +84,7 @@ export function TransactionFilterSheet({
     const categoryId = form.get("categoryId") as string
     if (categoryId && categoryId !== "__all__") next.categoryId = categoryId
 
-    const dateFrom = form.get("dateFrom") as string
     if (dateFrom) next.dateFrom = dateFrom
-
-    const dateTo = form.get("dateTo") as string
     if (dateTo) next.dateTo = dateTo
 
     const madeById = form.get("madeById") as string
@@ -188,19 +197,21 @@ export function TransactionFilterSheet({
 
             <Field>
               <FieldLabel>Date from</FieldLabel>
-              <Input
-                type="date"
-                name="dateFrom"
-                defaultValue={filters.dateFrom ?? ""}
+              <DatePicker
+                value={dateFrom}
+                onChange={setDateFrom}
+                clearable
+                placeholder="Any date"
               />
             </Field>
 
             <Field>
               <FieldLabel>Date to</FieldLabel>
-              <Input
-                type="date"
-                name="dateTo"
-                defaultValue={filters.dateTo ?? ""}
+              <DatePicker
+                value={dateTo}
+                onChange={setDateTo}
+                clearable
+                placeholder="Any date"
               />
             </Field>
 

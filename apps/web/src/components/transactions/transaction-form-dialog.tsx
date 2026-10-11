@@ -59,6 +59,7 @@ import type {
   Transaction,
   Wallet,
 } from "@workspace/api-contract"
+import { parseLocalDate, toLocalIso } from "@/lib/dates"
 
 type TransactionType = "expense" | "income" | "transfer"
 type View = "form" | "picker"
@@ -153,19 +154,6 @@ function formatDDMM(iso: string): string {
   const parts = iso.split("-")
   if (parts.length !== 3) return iso
   return `${parts[2]}.${parts[1]}`
-}
-// Parse a YYYY-MM-DD string as a local-time Date. Using `new Date(iso)`
-// parses as UTC midnight, which shifts the day for users west of UTC.
-function parseLocalDate(iso: string): Date | undefined {
-  const parts = iso.split("-").map(Number)
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined
-  return new Date(parts[0], parts[1] - 1, parts[2])
-}
-function toLocalIso(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
 }
 
 // Section labels in this file get a bottom margin the shared field label does

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import type { Account, Member, Transaction } from "@workspace/api-contract"
+import { DatePicker } from "@/components/date-picker"
 
 interface ReimbursementDialogProps {
   open: boolean
@@ -236,12 +237,7 @@ export function ReimbursementDialog({
 
             <Field>
               <FieldLabel>Date</FieldLabel>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
+              <DatePicker value={date} onChange={setDate} />
             </Field>
 
             {members.length > 1 && (

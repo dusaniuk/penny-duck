@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { InstrumentAutocomplete } from "./instrument-autocomplete"
 import type { FormEvent } from "react"
 import type { Account, Instrument, Trade } from "@workspace/api-contract"
+import { DatePicker } from "@/components/date-picker"
 
 type TradeType = "buy" | "sell" | "dividend"
 
@@ -187,12 +188,10 @@ export function TradeFormDialog({
 
             <Field>
               <FieldLabel>Date</FieldLabel>
-              <Input
-                type="date"
+              <DatePicker
                 value={date}
+                onChange={setDate}
                 max={new Date().toISOString().slice(0, 10)}
-                onChange={(e) => setDate(e.target.value)}
-                required
               />
             </Field>
 
