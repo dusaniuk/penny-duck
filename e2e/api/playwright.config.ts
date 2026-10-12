@@ -11,6 +11,7 @@ export default defineConfig({
     baseURL: env.API_BASE_URL,
     extraHTTPHeaders: {
       "Content-Type": "application/json",
+      Origin: env.WEB_BASE_URL,
     },
   },
   webServer: {

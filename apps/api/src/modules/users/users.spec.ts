@@ -1,11 +1,8 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
 import { eq } from "drizzle-orm"
 import { type DbClient, organizations, users } from "@workspace/db"
-import { env } from "@workspace/env/api"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import { generateInviteCodeService } from "@/modules/auth/service"
+import { generateInviteCode } from "@/modules/invites/service"
 import {
   closeTestApp,
   createTestApp,
@@ -20,15 +17,6 @@ let userId: string
 let userEmail: string
 let organizationId: string
 
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
 beforeAll(async () => {
   const ctx = await createTestApp()
   db = ctx.db
@@ -40,10 +28,10 @@ beforeEach(async () => {
   await flushEvents()
   await truncateAll()
   const result = await signupUser({ name: "Owner", email: "owner@test.com" })
-  userId = result.user.id
-  userEmail = result.user.email
-  organizationId = result.accessToken.organizationId
-  cookie = buildCookie(result.accessToken)
+  userId = result.userId
+  userEmail = result.email
+  organizationId = result.organizationId
+  cookie = result.cookie
 })
 
 describe("Users (Hono)", () => {
@@ -155,9 +143,8 @@ describe("Users (Hono)", () => {
       expect(res.status).toBe(200)
       const setCookies = res.headers.getSetCookie()
       expect(
-        setCookies.some((c) => c.startsWith(`${ACCESS_TOKEN_COOKIE}=;`))
+        setCookies.some((c) => c.startsWith("penny-duck.session_token=;"))
       ).toBe(true)
-      expect(setCookies.some((c) => c.startsWith("refresh_token=;"))).toBe(true)
     })
 
     it("rejects with wrong email", async () => {
@@ -170,17 +157,14 @@ describe("Users (Hono)", () => {
     })
 
     it("removes membership but keeps org when not sole owner", async () => {
-      const inviteResult = await generateInviteCodeService(
-        userId,
-        organizationId
-      )
+      const inviteResult = await generateInviteCode(userId, organizationId)
 
       const member = await signupUser({
         name: "Member",
         email: "member@test.com",
         inviteCode: inviteResult.inviteCode,
       })
-      const memberCookie = buildCookie(member.accessToken)
+      const memberCookie = member.cookie
 
       const res = await honoApp.request("/users/me", {
         method: "DELETE",
@@ -195,7 +179,7 @@ describe("Users (Hono)", () => {
       const memberRows = await db
         .select()
         .from(users)
-        .where(eq(users.id, member.user.id))
+        .where(eq(users.id, member.userId))
         .limit(1)
       expect(memberRows).toHaveLength(0)
 
@@ -254,10 +238,7 @@ describe("Users (Hono)", () => {
     })
 
     it("returns owner + invited member", async () => {
-      const inviteResult = await generateInviteCodeService(
-        userId,
-        organizationId
-      )
+      const inviteResult = await generateInviteCode(userId, organizationId)
       const member = await signupUser({
         name: "Member",
         email: "member@test.com",
@@ -271,9 +252,7 @@ describe("Users (Hono)", () => {
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body).toHaveLength(2)
-      const memberRow = body.find(
-        (m: { id: string }) => m.id === member.user.id
-      )
+      const memberRow = body.find((m: { id: string }) => m.id === member.userId)
       expect(memberRow).toBeDefined()
       expect(memberRow.role).toBe("member")
     })

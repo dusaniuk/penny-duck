@@ -1,12 +1,9 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { env } from "@workspace/env/api"
 import type { Account } from "@workspace/api-contract"
 import { exchangeRates } from "@workspace/db"
 import { honoApp } from "@/app"
 import { db } from "@/db"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import { generateInviteCodeService } from "@/modules/auth/service"
+import { generateInviteCode } from "@/modules/invites/service"
 import { createCategory } from "@/modules/categories/service"
 import { createTransaction } from "@/modules/transactions/service"
 import { quoteMock } from "@/test/yahoo-mock"
@@ -21,19 +18,6 @@ let cookie: string
 let organizationId: string
 let userId: string
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return cookieHeader(jwt)
-}
-
 beforeAll(async () => {
   await createTestApp()
 })
@@ -43,9 +27,9 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
-  cookie = buildCookie(result.accessToken)
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
 })
 
 interface CreateBody {
@@ -283,7 +267,7 @@ describe("Accounts", () => {
     })
 
     const otherResult = await signupUser()
-    const otherCookie = buildCookie(otherResult.accessToken)
+    const otherCookie = otherResult.cookie
     await createAccountHttp(
       { name: "User2 Bank", type: "bank", currency: "USD" },
       otherCookie
@@ -342,7 +326,7 @@ describe("Accounts", () => {
 
     it("rejects setting default for an account in another org", async () => {
       const otherResult = await signupUser()
-      const otherCookie = buildCookie(otherResult.accessToken)
+      const otherCookie = otherResult.cookie
       const foreign = await createAccountHttp(
         { name: "Foreign", type: "bank", currency: "USD" },
         otherCookie
@@ -403,13 +387,10 @@ describe("Accounts", () => {
     })
 
     it("two users in the same org each see their own default", async () => {
-      const { inviteCode } = await generateInviteCodeService(
-        userId,
-        organizationId
-      )
+      const { inviteCode } = await generateInviteCode(userId, organizationId)
       const second = await signupUser({ inviteCode })
-      const secondCookie = buildCookie(second.accessToken)
-      expect(second.accessToken.organizationId).toBe(organizationId)
+      const secondCookie = second.cookie
+      expect(second.organizationId).toBe(organizationId)
 
       const a = await createAccountHttp({
         name: "Bank A",

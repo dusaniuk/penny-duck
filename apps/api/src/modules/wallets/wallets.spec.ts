@@ -1,10 +1,7 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { env } from "@workspace/env/api"
 import { exchangeRates } from "@workspace/db"
 import { honoApp } from "@/app"
 import { db } from "@/db"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import {
   closeTestApp,
   createTestApp,
@@ -13,15 +10,6 @@ import {
 } from "@/test/setup"
 
 let cookie: string
-
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
 
 async function seedRates() {
   const today = new Date().toISOString().split("T")[0]
@@ -68,7 +56,7 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  cookie = buildCookie(result.accessToken)
+  cookie = result.cookie
   await seedRates()
 })
 

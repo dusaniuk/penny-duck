@@ -87,11 +87,12 @@ apps/api/src/<module>/
 
 ## Auth
 
-- JWT access token (15min, httpOnly cookie) + opaque refresh token (7d, httpOnly cookie) with rotation
-- Cookies set with `secure: true` in production, `sameSite: "lax"`
+- Better Auth 1.7 (self-hosted) in the Hono API: DB sessions in the `auth` schema, httpOnly `penny-duck.session_token` cookie (7d sliding) + 5 min `session_data` cookie cache
+- `apps/api/src/modules/auth/auth.ts` is the single auth config; organization provisioning lives in its `databaseHooks`
+- Mounted at `/auth/*`; the handler rewrites the path to `/api/auth/*` because the Nitro proxy strips `/api`
+- Google sign-in when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; redirect URI `${WEB_URL}/api/auth/callback/google`
 - Frontend proxies API calls through Nitro (`/api/**` → `API_PROXY_TARGET`) for same-origin cookies
-- SSR auth checks use `createServerFn` + `getCookie` from `@tanstack/react-start/server`
-- Auth helper: `apps/web/src/lib/auth.ts` — `getAuthUser()` server function, uses `API_URL` env var at runtime
+- SSR auth check: `getAuthUser()` in `apps/web/src/lib/auth.ts` forwards the request cookie to `/users/me`
 
 ## Deployment (Railway)
 
@@ -113,7 +114,7 @@ Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup
 
 ### Environment Variables
 
-- **API service**: `DATABASE_URL` (Neon direct connection string), `JWT_SECRET`, `WEB_URL`, `PORT=3030`
+- **API service**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`, `PORT=3030`
 - **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
 - **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
 

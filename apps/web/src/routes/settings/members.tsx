@@ -93,7 +93,7 @@ function InviteButton() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth["invite-code"].$post()
+      const res = await api.invites.$post()
       if (!res.ok) throw await res.json()
       return res.json()
     },

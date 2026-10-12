@@ -11,10 +11,8 @@ export function createUserData() {
 
 export async function signupAndLogin(request: APIRequestContext) {
   const user = createUserData()
-  await request.post("/auth/signup", { data: user })
-  await request.post("/auth/login", {
-    data: { email: user.email, password: user.password },
-  })
+  const res = await request.post("/auth/sign-up/email", { data: user })
+  expect(res.status()).toBe(200)
   return user
 }
 
@@ -28,20 +26,12 @@ export async function signupAndLoginViaPage(page: Page) {
   await page.getByLabel("Password").fill(user.password)
   await page.getByRole("button", { name: "Sign up" }).click()
 
-  // Signup shows success page with link to login
-  await page.getByRole("link", { name: "login" }).click()
-  await expect(page).toHaveURL(/\/login/)
-
-  await page.getByLabel("Email").fill(user.email)
-  await page.getByLabel("Password").fill(user.password)
-  await page.getByRole("button", { name: "Login" }).click()
-
   await expect(page).toHaveURL(/\/dashboard/)
   return user
 }
 
 export async function generateInviteLink(request: APIRequestContext) {
-  const res = await request.post("/auth/invite-code")
+  const res = await request.post("/invites")
   expect(res.status()).toBe(200)
   const body = await res.json()
   return body as { inviteCode: string; inviteUrl: string }

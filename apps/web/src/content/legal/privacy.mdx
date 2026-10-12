@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: August 16, 2026**
+**Last updated: October 12, 2026**
 
 Penny Duck ("we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share your personal data when you use our service.
 
@@ -10,10 +10,10 @@ This policy is aligned with the General Data Protection Regulation (GDPR) and ap
 
 We collect the following data when you use Penny Duck:
 
-- **Account data**: email address and hashed password
+- **Account data**: name, email address, and a hashed password (if you sign up with email and password) and/or your Google account identifier (if you sign in with Google)
 - **Financial data**: transactions, account balances, categories, and related notes you enter into the platform
 - **Workspace data**: workspace membership, roles, and invitations
-- **Technical data**: IP address, browser type, and access timestamps (for security and troubleshooting)
+- **Technical data**: IP address, browser type, and access timestamps (for security and troubleshooting), including the IP address and browser type recorded with each sign-in session
 
 We do not collect data from third-party sources. All financial data in Penny Duck is entered by you directly.
 
@@ -49,14 +49,15 @@ We do **not**:
 
 - **Railway** (application hosting infrastructure)
 - **Neon** (database hosting; data stored in the EU, Frankfurt region)
+- **Google** (optional sign-in provider, only if you choose "Continue with Google"; see section 6)
 
-These providers process data on our behalf under data processing agreements and do not have independent access to your data.
+Railway and Neon process data on our behalf under data processing agreements and do not have independent access to your data. Google acts as an independent identity provider for sign-in and handles your data under its own privacy policy.
 
 **We do not share your data with any other third parties** unless required by law.
 
 ## 5. Cookies and Authentication
 
-Penny Duck uses **httpOnly cookies** strictly for authentication (JWT access token and refresh token). These are essential cookies required for the service to function.
+When you sign in, Penny Duck creates a session. Sessions are server-side records stored in our database, and your browser holds only an **httpOnly cookie** that references the session. A session expires after 7 days of inactivity. To reduce database lookups, a second short-lived (5-minute), signed httpOnly cookie caches basic session details. These are essential cookies required for the service to function.
 
 We do **not** use:
 
@@ -66,18 +67,28 @@ We do **not** use:
 
 No cookie consent banner is needed because we only use strictly necessary cookies.
 
-## 6. Data Storage and Security
+## 6. Signing in with Google
+
+You can choose to sign in with "Continue with Google". Google is a third party, and its handling of your data is governed by Google's own privacy policy.
+
+- If you choose "Continue with Google", Google shares your name, email address, and Google account identifier with Penny Duck.
+- We do not store your Google profile photo.
+- Google sign-in tokens are stored encrypted and are used only to sign you in. We do not access any other Google data.
+- You can keep signing in with email and password instead. If you already have a Penny Duck account with the same email address, signing in with Google may link to it; otherwise sign in with your email and password.
+
+## 7. Data Storage and Security
 
 Your data is stored in a PostgreSQL database hosted on Neon, located in the EU (Frankfurt region). We protect your data with:
 
 - **Row-Level Security (RLS)** to isolate data between workspaces
 - **Encrypted connections** (TLS) for all data in transit
 - **Hashed passwords** (never stored in plain text)
-- **httpOnly, secure cookies** to prevent token theft
+- **Encrypted Google sign-in tokens** at rest
+- **httpOnly, secure cookies** to prevent session theft
 
 While we take reasonable measures to protect your data, no system is completely secure. We encourage you to use a strong, unique password.
 
-## 7. Your Rights
+## 8. Your Rights
 
 Under the GDPR, you have the right to:
 
@@ -93,25 +104,25 @@ To exercise any of these rights, contact us at [ravineduck@duck.com](mailto:ravi
 
 You also have the right to lodge a complaint with the Polish Data Protection Authority (Urząd Ochrony Danych Osobowych, UODO) or your local supervisory authority.
 
-## 8. Data Retention
+## 9. Data Retention
 
 - **Active accounts**: Your data is retained as long as your account exists.
 - **Deleted accounts**: Upon account deletion, your personal data is removed within 30 days. Some anonymized data may be retained for service improvement.
 - **Technical logs**: Access logs are retained for up to 90 days for security purposes.
 
-## 9. Children's Privacy
+## 10. Children's Privacy
 
 Penny Duck is not directed at children under 16 years of age. We do not knowingly collect data from children. If we become aware that we have collected data from a child under 16, we will delete it promptly.
 
-## 10. International Data Transfers
+## 11. International Data Transfers
 
 Your data is stored in a database located in the European Economic Area (EEA) and processed within application infrastructure provided by Railway and Neon. If data is transferred outside the EEA, it will be subject to appropriate safeguards as required by the GDPR.
 
-## 11. Changes to This Policy
+## 12. Changes to This Policy
 
 We may update this Privacy Policy from time to time. If we make material changes, we will notify you by email or through the service. The "Last updated" date at the top of this page indicates when the policy was last revised.
 
-## 12. Contact
+## 13. Contact
 
 If you have questions about this Privacy Policy or how we handle your data, contact us at [ravineduck@duck.com](mailto:ravineduck@duck.com).
 

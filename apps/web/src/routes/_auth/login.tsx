@@ -13,24 +13,40 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { useMutation } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { GoogleButton } from "@/components/auth/google-button"
+import { TermsNotice } from "@/components/auth/terms-notice"
+import { authClient } from "@/lib/auth-client"
+import { authErrorMessage } from "@/lib/auth-errors"
 
 export const Route = createFileRoute("/_auth/login")({
+  validateSearch: (search: Record<string, unknown>): { error?: string } =>
+    typeof search.error === "string" ? { error: search.error } : {},
   component: LoginPage,
 })
 
+function oauthErrorMessage(code: string | undefined) {
+  if (!code) return null
+  if (code === "account_not_linked") {
+    return "This email already has a password account. Log in with your password."
+  }
+  return "Google sign-in failed. Please try again."
+}
+
 function LoginPage() {
   const navigate = useNavigate()
-  const [error, setError] = useState<string | null>(null)
+  const { error: oauthError } = Route.useSearch()
+  const [error, setError] = useState<string | null>(
+    oauthErrorMessage(oauthError)
+  )
 
   const loginMutation = useMutation({
     mutationFn: async (body: { email: string; password: string }) => {
-      const res = await api.auth.login.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
+      const { error: authError } = await authClient.signIn.email(body)
+      if (authError) throw authError
     },
   })
 
@@ -46,11 +62,7 @@ function LoginPage() {
       await loginMutation.mutateAsync({ email, password })
       navigate({ to: "/dashboard" })
     } catch (err) {
-      if (err && typeof err === "object" && "message" in err) {
-        setError((err as { message?: string }).message || "Login failed")
-      } else {
-        setError("Login failed")
-      }
+      setError(authErrorMessage(err as { code?: string }, "Login failed"))
     }
   }
 
@@ -67,6 +79,12 @@ function LoginPage() {
           <form onSubmit={handleSubmit}>
             <FieldGroup>
               {error && <p className="text-sm text-destructive">{error}</p>}
+              <Field>
+                <GoogleButton onError={setError} />
+              </Field>
+              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                or
+              </FieldSeparator>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input
@@ -85,6 +103,7 @@ function LoginPage() {
                 <Button type="submit" disabled={loginMutation.isPending}>
                   {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
+                <TermsNotice action="continuing" />
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <Link to="/signup">Sign up</Link>
                 </FieldDescription>

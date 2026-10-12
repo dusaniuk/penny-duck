@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "bun:test"
-import { env } from "@workspace/env/api"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
 import {
   closeTestApp,
@@ -18,25 +15,16 @@ beforeAll(async () => {
 afterAll(() => closeTestApp())
 beforeEach(() => truncateAll())
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
 async function authedCookie(): Promise<{
   cookie: string
   organizationId: string
   userId: string
 }> {
   const result = await signupUser()
-  const jwt = signAccessToken(
-    result.accessToken,
-    env.JWT_SECRET,
-    env.JWT_EXPIRATION
-  )
   return {
-    cookie: cookieHeader(jwt),
-    organizationId: result.accessToken.organizationId,
-    userId: result.accessToken.sub,
+    cookie: result.cookie,
+    organizationId: result.organizationId,
+    userId: result.userId,
   }
 }
 
@@ -50,7 +38,7 @@ describe("GET /exchange-rates/latest", () => {
 
   it("returns 401 with an invalid cookie", async () => {
     const res = await honoApp.request("/exchange-rates/latest", {
-      headers: { cookie: cookieHeader("not-a-real-jwt") },
+      headers: { cookie: "penny-duck.session_token=not-a-real-session" },
     })
     expect(res.status).toBe(401)
   })

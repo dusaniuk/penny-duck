@@ -1,35 +1,35 @@
 import { test, expect } from "@playwright/test"
+import { env } from "../../shared/env"
 import { createUserData } from "../../shared/factories"
 
-test.describe("POST /auth/login", () => {
-  test("logs in with valid credentials and sets cookies", async ({
-    request,
+test.describe("POST /auth/sign-in/email", () => {
+  test("signs in with valid credentials and sets a session cookie", async ({
+    playwright,
   }) => {
     const userData = createUserData()
-    // Create user first
-    await request.post("/auth/signup", { data: userData })
+    const signupCtx = await playwright.request.newContext()
+    await signupCtx.post(`${env.API_BASE_URL}/auth/sign-up/email`, {
+      data: userData,
+    })
+    await signupCtx.dispose()
 
-    const res = await request.post("/auth/login", {
+    const ctx = await playwright.request.newContext()
+    const res = await ctx.post(`${env.API_BASE_URL}/auth/sign-in/email`, {
       data: { email: userData.email, password: userData.password },
     })
 
     expect(res.status()).toBe(200)
-
     const body = await res.json()
-    expect(body).toHaveProperty("id")
-    expect(body.email).toBe(userData.email.toLowerCase())
-
-    const cookies = res.headers()["set-cookie"]
-    expect(cookies).toBeDefined()
-    expect(cookies).toContain("access_token=")
-    expect(cookies).toContain("refresh_token=")
+    expect(body.user.email).toBe(userData.email.toLowerCase())
+    expect(res.headers()["set-cookie"]).toContain("penny-duck.session_token=")
+    await ctx.dispose()
   })
 
   test("returns 401 for wrong password", async ({ request }) => {
     const userData = createUserData()
-    await request.post("/auth/signup", { data: userData })
+    await request.post("/auth/sign-up/email", { data: userData })
 
-    const res = await request.post("/auth/login", {
+    const res = await request.post("/auth/sign-in/email", {
       data: { email: userData.email, password: "wrong-password" },
     })
 
@@ -37,18 +37,14 @@ test.describe("POST /auth/login", () => {
   })
 
   test("returns 401 for non-existent email", async ({ request }) => {
-    const res = await request.post("/auth/login", {
+    const res = await request.post("/auth/sign-in/email", {
       data: { email: "nobody@example.com", password: "password123456" },
     })
-
     expect(res.status()).toBe(401)
   })
 
   test("returns 400 for missing fields", async ({ request }) => {
-    const res = await request.post("/auth/login", {
-      data: {},
-    })
-
+    const res = await request.post("/auth/sign-in/email", { data: {} })
     expect(res.status()).toBe(400)
   })
 })

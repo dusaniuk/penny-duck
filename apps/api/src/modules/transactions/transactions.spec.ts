@@ -1,9 +1,6 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { env } from "@workspace/env/api"
 import type { Account, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createCategory } from "@/modules/categories/service"
 import { createAccount, getAccount } from "@/modules/accounts/service"
 import {
@@ -20,19 +17,6 @@ let userId: string
 let accountId: string
 let categoryId: string
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return cookieHeader(jwt)
-}
-
 beforeAll(async () => {
   await createTestApp()
 })
@@ -42,9 +26,9 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
-  cookie = buildCookie(result.accessToken)
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
   await flushEvents()
 
   const account = await createAccount({
@@ -764,8 +748,8 @@ describe("Transactions — cross-tenant isolation", () => {
   async function otherOrgAccount(): Promise<string> {
     const victim = await signupUser()
     const account = await createAccount({
-      organizationId: victim.accessToken.organizationId,
-      userId: victim.accessToken.sub,
+      organizationId: victim.organizationId,
+      userId: victim.userId,
       name: "Victim Bank",
       type: "bank",
       currency: "UAH",

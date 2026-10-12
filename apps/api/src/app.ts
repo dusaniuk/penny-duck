@@ -10,7 +10,7 @@ import {
   type ApiError,
 } from "@workspace/shared/errors"
 import { accountsRoutes } from "./modules/accounts/routes"
-import { authRoutes } from "./modules/auth/routes"
+import { auth } from "./modules/auth/auth"
 import { categoriesRoutes } from "./modules/categories/routes"
 import { exchangeRatesRoutes } from "./modules/exchange-rates/routes"
 import {
@@ -19,6 +19,7 @@ import {
   positionsRoutes,
   tradesRoutes,
 } from "./modules/investments/routes"
+import { invitesRoutes } from "./modules/invites/routes"
 import { statsRoutes } from "./modules/stats/routes"
 import { transactionsRoutes } from "./modules/transactions/routes"
 import { usersRoutes } from "./modules/users/routes"
@@ -76,7 +77,11 @@ export const honoApp = attachErrorHandlers(
     )
     .get("/healthz", (c) => c.json({ status: "ok" }))
     .route("/accounts", accountsRoutes)
-    .route("/auth", authRoutes)
+    .on(["GET", "POST"], "/auth/*", (c) => {
+      const url = new URL(c.req.url)
+      url.pathname = `/api${url.pathname}`
+      return auth.handler(new Request(url, c.req.raw))
+    })
     .route("/categories", categoriesRoutes)
     .route("/exchange-rates", exchangeRatesRoutes)
     .route("/stats", statsRoutes)
@@ -84,6 +89,7 @@ export const honoApp = attachErrorHandlers(
     .route("/positions", positionsRoutes)
     .route("/trades", tradesRoutes)
     .route("/investments", investmentsRoutes)
+    .route("/invites", invitesRoutes)
     .route("/transactions", transactionsRoutes)
     .route("/users", usersRoutes)
 )

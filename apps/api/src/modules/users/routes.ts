@@ -1,15 +1,10 @@
 import { Hono } from "hono"
-import { deleteCookie } from "hono/cookie"
 import { zValidator } from "@hono/zod-validator"
 import {
   DeleteAccountSchema,
   UpdateProfileSchema,
 } from "@workspace/api-contract"
-import {
-  ACCESS_TOKEN_COOKIE,
-  COOKIE_PATH,
-  REFRESH_TOKEN_COOKIE,
-} from "@/modules/auth/core/cookies"
+import { clearSessionCookies } from "@/modules/auth/cookies"
 import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
 import { listMembersForOrganization } from "@/modules/organizations/service"
 import {
@@ -34,8 +29,7 @@ export const usersRoutes = new Hono<AuthedEnv>()
     const user = c.get("user")
     const body = c.req.valid("json")
     const result = await deleteAccount(user.sub, body.email)
-    deleteCookie(c, ACCESS_TOKEN_COOKIE, { path: COOKIE_PATH })
-    deleteCookie(c, REFRESH_TOKEN_COOKIE, { path: COOKIE_PATH })
+    await clearSessionCookies(c)
     return c.json(result)
   })
   .get("/me/export", async (c) => {

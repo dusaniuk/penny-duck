@@ -21,18 +21,16 @@
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/shared": "workspace:^",
+    "better-auth": "1.7.7",
     "csv-parse": "^6.2.1",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.2",
-    "jsonwebtoken": "^9.0.3",
     "yahoo-finance2": "^3.14.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/bun": "^1.4.0",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/ms": "^2.1.0",
     "@types/node": "^25.1.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.0"

@@ -3,11 +3,8 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { eq } from "drizzle-orm"
 import { type DbClient, accounts as accountsTable } from "@workspace/db"
-import { env } from "@workspace/env/api"
 import { quoteMock, searchMock } from "@/test/yahoo-mock"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import {
   createAccount,
   deleteAccount,
@@ -26,10 +23,6 @@ let db: DbClient
 let cookie: string
 let organizationId: string
 let userId: string
-
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
 
 beforeAll(async () => {
   const ctx = await createTestApp()
@@ -52,14 +45,9 @@ beforeEach(async () => {
     },
   ])
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
-  const jwt = signAccessToken(
-    result.accessToken,
-    env.JWT_SECRET,
-    env.JWT_EXPIRATION
-  )
-  cookie = cookieHeader(jwt)
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
 })
 
 async function makeBrokerage(currency = "USD", initial = 10_000) {
@@ -89,7 +77,7 @@ describe("Investments routes (auth)", () => {
 
   it("GET /trades returns 401 with an invalid cookie", async () => {
     const res = await honoApp.request("/trades", {
-      headers: { cookie: cookieHeader("not-a-jwt") },
+      headers: { cookie: "penny-duck.session_token=not-a-real-session" },
     })
     expect(res.status).toBe(401)
   })
@@ -395,12 +383,10 @@ describe("GET /positions and /investments/summary", () => {
   it("does not leak another org's position via /positions/:accountId/:symbol", async () => {
     // Victim org holds a real AAPL position in its own brokerage account.
     const victim = await signupUser()
-    const victimCookie = cookieHeader(
-      signAccessToken(victim.accessToken, env.JWT_SECRET, env.JWT_EXPIRATION)
-    )
+    const victimCookie = victim.cookie
     const victimAccount = await createAccount({
-      organizationId: victim.accessToken.organizationId,
-      userId: victim.accessToken.sub,
+      organizationId: victim.organizationId,
+      userId: victim.userId,
       name: "Victim IBKR",
       type: "brokerage",
       currency: "USD",

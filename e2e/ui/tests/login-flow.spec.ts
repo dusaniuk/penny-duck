@@ -6,7 +6,9 @@ test.describe("Login flow", () => {
   test("logs in and redirects to dashboard", async ({ page, request }) => {
     const userData = createUserData()
     // Create user via API
-    await request.post(`${env.API_BASE_URL}/auth/signup`, { data: userData })
+    await request.post(`${env.API_BASE_URL}/auth/sign-up/email`, {
+      data: userData,
+    })
 
     await page.goto("/login")
     await page.waitForLoadState("networkidle")
@@ -20,7 +22,9 @@ test.describe("Login flow", () => {
 
   test("shows error for wrong password", async ({ page, request }) => {
     const userData = createUserData()
-    await request.post(`${env.API_BASE_URL}/auth/signup`, { data: userData })
+    await request.post(`${env.API_BASE_URL}/auth/sign-up/email`, {
+      data: userData,
+    })
 
     await page.goto("/login")
     await page.waitForLoadState("networkidle")
@@ -54,5 +58,13 @@ test.describe("Login flow", () => {
       (el: HTMLInputElement) => !el.validity.valid
     )
     expect(isInvalid).toBe(true)
+  })
+
+  test("offers Google sign-in with the terms notice", async ({ page }) => {
+    await page.goto("/login")
+    await expect(
+      page.getByRole("button", { name: "Continue with Google" })
+    ).toBeVisible()
+    await expect(page.getByText(/agree to our/i)).toBeVisible()
   })
 })

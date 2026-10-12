@@ -1,11 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test"
 import { eq } from "drizzle-orm"
 import { exchangeRates, users } from "@workspace/db"
-import { env } from "@workspace/env/api"
 import { db } from "@/db"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
 import { createWallet } from "@/modules/wallets/service"
 import { createTransaction } from "@/modules/transactions/service"
@@ -23,29 +20,20 @@ beforeAll(async () => {
 afterAll(() => closeTestApp())
 beforeEach(() => truncateAll())
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
 async function authed(): Promise<{
   cookie: string
   organizationId: string
   userId: string
 }> {
   const result = await signupUser()
-  const jwt = signAccessToken(
-    result.accessToken,
-    env.JWT_SECRET,
-    env.JWT_EXPIRATION
-  )
   await db
     .update(users)
     .set({ homeCurrency: "UAH" })
-    .where(eq(users.id, result.accessToken.sub))
+    .where(eq(users.id, result.userId))
   return {
-    cookie: cookieHeader(jwt),
-    organizationId: result.accessToken.organizationId,
-    userId: result.accessToken.sub,
+    cookie: result.cookie,
+    organizationId: result.organizationId,
+    userId: result.userId,
   }
 }
 

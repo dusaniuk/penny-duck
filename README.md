@@ -8,7 +8,7 @@ A monorepo web application built with TanStack Start and NestJS.
 - **UI**: shadcn/ui (Radix Mira style) with @tabler/icons-react
 - **Backend**: NestJS with DDD/CQRS architecture
 - **Database**: PostgreSQL 17, Drizzle ORM
-- **Auth**: JWT access tokens + refresh token rotation with per-family reuse detection
+- **Auth**: Better Auth sessions (httpOnly cookie, stored in Postgres) with optional Google sign-in
 - **Monorepo**: pnpm workspaces + Turborepo
 
 ## Project Structure
@@ -45,11 +45,13 @@ pnpm install
 cp .env.example .env
 ```
 
-Edit `.env` if needed. Defaults work out of the box for local development. For production, generate a proper `JWT_SECRET`:
+Edit `.env` if needed. Defaults work out of the box for local development. For production, generate a proper `BETTER_AUTH_SECRET` (at least 32 characters):
 
 ```bash
-openssl rand -base64 64
+openssl rand -base64 32
 ```
+
+Google sign-in is optional and is enabled only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
 
 Note: `DATABASE_URL` must be a full URL (no shell variable interpolation):
 

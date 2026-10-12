@@ -1,11 +1,8 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { env } from "@workspace/env/api"
 import { exchangeRates, transactions } from "@workspace/db"
 import type { Category } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { db } from "@/db"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount } from "@/modules/accounts/service"
 import { createCategory, getCategoryUsage } from "@/modules/categories/service"
 import {
@@ -19,10 +16,6 @@ let cookie: string
 let organizationId: string
 let userId: string
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
 beforeAll(async () => {
   await createTestApp()
 })
@@ -32,14 +25,9 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
-  const jwt = signAccessToken(
-    result.accessToken,
-    env.JWT_SECRET,
-    env.JWT_EXPIRATION
-  )
-  cookie = cookieHeader(jwt)
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
 })
 
 async function listCategoriesHttp(): Promise<Category[]> {
@@ -384,12 +372,7 @@ describe("Categories", () => {
     })
 
     const other = await signupUser()
-    const otherJwt = signAccessToken(
-      other.accessToken,
-      env.JWT_SECRET,
-      env.JWT_EXPIRATION
-    )
-    const otherCookie = cookieHeader(otherJwt)
+    const otherCookie = other.cookie
 
     const otherCreate = await honoApp.request("/categories", {
       method: "POST",

@@ -16,7 +16,8 @@ import {
 } from "@workspace/ui/components/sidebar"
 import { IconLogout, IconSelector, IconSettings } from "@tabler/icons-react"
 import { useMutation } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { queryClient } from "@/lib/api"
+import { authClient } from "@/lib/auth-client"
 
 function getInitials(name: string): string {
   return name
@@ -39,14 +40,14 @@ export function NavUser({
   const navigate = useNavigate()
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.auth.logout.$post()
-      if (!res.ok) throw await res.json()
-      return res.json()
+      const { error } = await authClient.signOut()
+      if (error) throw error
     },
   })
 
   async function handleLogout() {
     await logoutMutation.mutateAsync()
+    queryClient.clear()
     navigate({ to: "/login" })
   }
 

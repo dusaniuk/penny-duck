@@ -19,7 +19,7 @@ export async function truncateAll(): Promise<void> {
   }
   const db = getDb()
   await db.execute(
-    sql`TRUNCATE app.trades, app.instruments, app.transactions, app.categories, app.accounts, app.refresh_tokens, app.users CASCADE`,
+    sql`TRUNCATE app.trades, app.instruments, app.transactions, app.categories, app.accounts, auth.verifications, app.users CASCADE`,
   )
 }
 

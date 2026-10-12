@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -13,29 +13,31 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { useMutation } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { GoogleButton } from "@/components/auth/google-button"
+import { TermsNotice } from "@/components/auth/terms-notice"
+import { authClient } from "@/lib/auth-client"
+import { authErrorMessage } from "@/lib/auth-errors"
 
 export const Route = createFileRoute("/_auth/signup")({
   component: SignupPage,
 })
 
 function SignupPage() {
+  const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
   const signupMutation = useMutation({
     mutationFn: async (body: {
       name: string
       email: string
       password: string
-      inviteCode?: string
     }) => {
-      const res = await api.auth.signup.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
+      const { error: authError } = await authClient.signUp.email(body)
+      if (authError) throw authError
     },
   })
 
@@ -50,34 +52,10 @@ function SignupPage() {
 
     try {
       await signupMutation.mutateAsync({ name, email, password })
-      setSuccess(true)
+      navigate({ to: "/dashboard" })
     } catch (err) {
-      if (err && typeof err === "object" && "message" in err) {
-        setError((err as { message?: string }).message || "Signup failed")
-      } else {
-        setError("Signup failed")
-      }
+      setError(authErrorMessage(err as { code?: string }, "Signup failed"))
     }
-  }
-
-  if (success) {
-    return (
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account created!</CardTitle>
-            <CardDescription>
-              And now pretend that you verified your account via email. Real
-              verification will be added soon. For now, just go to{" "}
-              <Link to="/login" className="underline">
-                login
-              </Link>
-              .
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
   }
 
   return (
@@ -94,12 +72,19 @@ function SignupPage() {
             <FieldGroup>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Field>
+                <GoogleButton onError={setError} />
+              </Field>
+              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                or
+              </FieldSeparator>
+              <Field>
                 <FieldLabel htmlFor="name">Name</FieldLabel>
                 <Input
                   id="name"
                   name="name"
                   type="text"
                   placeholder="John Doe"
+                  maxLength={100}
                   required
                 />
               </Field>
@@ -121,23 +106,7 @@ function SignupPage() {
                 <Button type="submit" disabled={signupMutation.isPending}>
                   {signupMutation.isPending ? "Creating account..." : "Sign up"}
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
-                  By creating an account, you agree to our{" "}
-                  <Link
-                    to="/legal/terms"
-                    className="underline hover:text-foreground"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    to="/legal/privacy"
-                    className="underline hover:text-foreground"
-                  >
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
+                <TermsNotice action="creating an account" />
                 <FieldDescription className="text-center">
                   Already have an account? <Link to="/login">Log in</Link>
                 </FieldDescription>

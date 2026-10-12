@@ -26,8 +26,8 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
+  organizationId = result.organizationId
+  userId = result.userId
   await flushEvents()
 })
 

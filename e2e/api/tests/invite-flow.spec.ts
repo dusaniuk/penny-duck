@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { env } from "../../shared/env"
 import {
   createUserData,
   generateInviteLink,
@@ -6,65 +7,57 @@ import {
 } from "../../shared/factories"
 
 test.describe("Invite flow", () => {
-  test("GET /auth/invite returns org name for valid code", async ({
+  test("GET /invites/:code returns org name for valid code", async ({
     request,
   }) => {
     await signupAndLogin(request)
     const { inviteCode } = await generateInviteLink(request)
 
-    const res = await request.get(`/auth/invite?code=${inviteCode}`)
+    const res = await request.get(`/invites/${inviteCode}`)
     expect(res.status()).toBe(200)
-
-    const body = await res.json()
-    expect(body.organizationName).toBeDefined()
+    expect((await res.json()).organizationName).toBeDefined()
   })
 
-  test("GET /auth/invite returns 404 for invalid code", async ({
+  test("GET /invites/:code returns 404 for invalid code", async ({
     request,
   }) => {
-    const res = await request.get("/auth/invite?code=invalidcode123")
+    const res = await request.get("/invites/invalidcode123")
     expect(res.status()).toBe(404)
   })
 
-  test("POST /auth/invite-code requires authentication", async ({
-    request,
-  }) => {
-    const res = await request.post("/auth/invite-code")
+  test("POST /invites requires authentication", async ({ request }) => {
+    const res = await request.post("/invites")
     expect(res.status()).toBe(401)
   })
 
-  test("signup with valid invite code adds user to org", async ({
+  test("sign-up with a valid invite code joins the org", async ({
     request,
+    playwright,
   }) => {
     await signupAndLogin(request)
     const { inviteCode } = await generateInviteLink(request)
 
-    // Signup new user with invite code
-    const newUser = createUserData()
-    const signupRes = await request.post("/auth/signup", {
-      data: { ...newUser, inviteCode },
+    const invitedCtx = await playwright.request.newContext({
+      baseURL: env.API_BASE_URL,
+      extraHTTPHeaders: { Origin: env.WEB_BASE_URL },
     })
-    expect(signupRes.status()).toBe(201)
-
-    // Login as new user and check they can see members
-    const loginRes = await request.post("/auth/login", {
-      data: { email: newUser.email, password: newUser.password },
+    const signupRes = await invitedCtx.post("/auth/sign-up/email", {
+      data: { ...createUserData(), inviteCode },
     })
-    expect(loginRes.status()).toBe(200)
+    expect(signupRes.status()).toBe(200)
 
-    const membersRes = await request.get("/users/members")
-    expect(membersRes.status()).toBe(200)
-    const members = await membersRes.json()
-    expect(members.length).toBe(2) // owner + invited
+    const members = await (await invitedCtx.get("/users/members")).json()
+    expect(members.length).toBe(2)
+    await invitedCtx.dispose()
   })
 
-  test("signup with invalid invite code returns 201 (no leak)", async ({
+  test("sign-up with an invalid invite code is rejected", async ({
     request,
   }) => {
-    const user = createUserData()
-    const res = await request.post("/auth/signup", {
-      data: { ...user, inviteCode: "invalidcode123" },
+    const res = await request.post("/auth/sign-up/email", {
+      data: { ...createUserData(), inviteCode: "invalidcode123" },
     })
-    expect(res.status()).toBe(201)
+    expect(res.status()).toBe(400)
+    expect((await res.json()).code).toBe("INVALID_INVITE")
   })
 })

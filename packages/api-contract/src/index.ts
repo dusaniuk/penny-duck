@@ -4,8 +4,6 @@ export {
   PaginatedResponseSchema,
 } from "./schemas/common"
 
-export { SignupSchema, LoginSchema } from "./schemas/auth"
-
 export {
   UserSchema,
   UpdateProfileSchema,

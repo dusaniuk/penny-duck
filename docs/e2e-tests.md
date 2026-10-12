@@ -36,9 +36,9 @@ e2e/
     tests/
       auth-signup.spec.ts
       auth-login.spec.ts
-      auth-me.spec.ts
-      auth-refresh.spec.ts
       auth-logout.spec.ts
+      users-me.spec.ts
+      invite-flow.spec.ts
       accounts-crud.spec.ts
       categories-crud.spec.ts
   ui/
@@ -59,11 +59,11 @@ Direct HTTP requests via Playwright's request API. Base URL defaults to `http://
 
 | File | Covers |
 |------|--------|
-| `auth-signup.spec.ts` | Signup, duplicate email (409), validation (400) |
-| `auth-login.spec.ts` | Login, wrong password (401), missing fields (400) |
-| `auth-me.spec.ts` | Authenticated user retrieval, 401 without token |
-| `auth-refresh.spec.ts` | Token rotation, 401 without refresh token |
-| `auth-logout.spec.ts` | Cookie clearing, token invalidation |
+| `auth-signup.spec.ts` | `POST /auth/sign-up/email`: signup, auto sign-in, duplicate email (422), validation (400) |
+| `auth-login.spec.ts` | `POST /auth/sign-in/email`: login, wrong password / unknown email (401), missing fields (400) |
+| `auth-logout.spec.ts` | `POST /auth/sign-out`: session stops working after sign-out |
+| `users-me.spec.ts` | `GET /users/me`: authenticated user retrieval, 401 without a session |
+| `invite-flow.spec.ts` | `GET /invites/:code`, `POST /invites`, signup with an invite code |
 | `accounts-crud.spec.ts` | Full CRUD, validation, 401 without auth |
 | `categories-crud.spec.ts` | Seeded categories, hierarchy, CRUD, cascade delete |
 
@@ -80,7 +80,8 @@ Browser tests using Chromium. Base URL defaults to `http://localhost:4000`.
 
 ## Data Isolation
 
-- **Global setup** runs migrations and truncates `app.refresh_tokens` and `app.users` before the suite starts
+- **Global setup** runs migrations and truncates the app tables and `auth.verifications` before the suite starts
+  (`auth.sessions` and `auth.accounts` cascade from `app.users`)
 - **Per-test setup** uses `beforeEach` hooks to create fresh users/data via factories
 - **Factories** generate random data with faker to avoid collisions between parallel tests
 

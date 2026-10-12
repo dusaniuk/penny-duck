@@ -1,33 +1,36 @@
 import type { MiddlewareHandler } from "hono"
 import { HTTPException } from "hono/http-exception"
-import { env } from "@workspace/env/api"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import {
-  verifyAccessToken,
-  type AccessTokenPayload,
-} from "@/modules/auth/core/jwt"
+import { auth } from "@/modules/auth/auth"
 
-export type AuthedEnv = { Variables: { user: AccessTokenPayload } }
-
-function readCookie(header: string | undefined, name: string): string | null {
-  if (!header) return null
-  for (const part of header.split(";")) {
-    const [k, ...rest] = part.trim().split("=")
-    if (k === name) return decodeURIComponent(rest.join("="))
-  }
-  return null
+export type AuthedUser = {
+  sub: string
+  email: string
+  organizationId: string
 }
+
+export type AuthedEnv = { Variables: { user: AuthedUser } }
 
 export const honoAuthMiddleware: MiddlewareHandler<AuthedEnv> = async (
   c,
   next
 ) => {
-  const token = readCookie(c.req.header("cookie"), ACCESS_TOKEN_COOKIE)
-  if (!token) throw new HTTPException(401, { message: "Unauthorized" })
+  const { headers, response } = await auth.api.getSession({
+    headers: c.req.raw.headers,
+    returnHeaders: true,
+  })
+  for (const cookie of headers.getSetCookie()) {
+    c.header("set-cookie", cookie, { append: true })
+  }
 
-  const payload = verifyAccessToken(token, env.JWT_SECRET)
-  if (!payload) throw new HTTPException(401, { message: "Unauthorized" })
+  const organizationId = response?.session.activeOrganizationId
+  if (!response || typeof organizationId !== "string") {
+    throw new HTTPException(401, { message: "Unauthorized" })
+  }
 
-  c.set("user", payload)
+  c.set("user", {
+    sub: response.user.id,
+    email: response.user.email,
+    organizationId,
+  })
   await next()
 }

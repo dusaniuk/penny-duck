@@ -18,12 +18,10 @@ import {
 import { chartMock } from "@/test/yahoo-mock"
 import { carryForwardRates, computeAccountSeries } from "./series"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
-import { env } from "@workspace/env/api"
 
 let organizationId: string
 let userId: string
+let cookie: string
 
 beforeAll(async () => {
   await createTestApp()
@@ -34,8 +32,9 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
 })
 
 function daysAgo(n: number): Date {
@@ -492,15 +491,6 @@ describe("carryForwardRates", () => {
   })
 })
 
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
 describe("GET /accounts/series", () => {
   it("requires auth", async () => {
     const res = await honoApp.request("/accounts/series?days=30")
@@ -513,11 +503,6 @@ describe("GET /accounts/series", () => {
       type: "bank",
       currency: "USD",
       initialBalance: 100,
-    })
-    const cookie = buildCookie({
-      sub: userId,
-      email: "x@y.z",
-      organizationId,
     })
     const res = await honoApp.request("/accounts/series?days=30", {
       headers: { cookie },
@@ -545,11 +530,6 @@ describe("GET /accounts/series", () => {
       currency: "USD",
       initialBalance: 0,
     })
-    const cookie = buildCookie({
-      sub: userId,
-      email: "x@y.z",
-      organizationId,
-    })
     const res = await honoApp.request("/accounts/series", {
       headers: { cookie },
     })
@@ -561,11 +541,6 @@ describe("GET /accounts/series", () => {
   })
 
   it("rejects days=0", async () => {
-    const cookie = buildCookie({
-      sub: userId,
-      email: "x@y.z",
-      organizationId,
-    })
     const res = await honoApp.request("/accounts/series?days=0", {
       headers: { cookie },
     })
@@ -573,11 +548,6 @@ describe("GET /accounts/series", () => {
   })
 
   it("rejects days=91", async () => {
-    const cookie = buildCookie({
-      sub: userId,
-      email: "x@y.z",
-      organizationId,
-    })
     const res = await honoApp.request("/accounts/series?days=91", {
       headers: { cookie },
     })

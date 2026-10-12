@@ -1,11 +1,12 @@
-import { timestamp, uuid, varchar } from "drizzle-orm/pg-core"
+import { boolean, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 
 export const users = appSchema.table("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 100 }).notNull(),
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
   homeCurrency: varchar("home_currency", { length: 3 })
     .notNull()
     .default("UAH"),

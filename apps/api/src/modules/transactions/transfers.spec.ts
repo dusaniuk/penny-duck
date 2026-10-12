@@ -1,9 +1,6 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { env } from "@workspace/env/api"
 import type { Account, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
-import { signAccessToken } from "@/modules/auth/core/jwt"
-import { ACCESS_TOKEN_COOKIE } from "@/modules/auth/core/cookies"
 import { createAccount, getAccount } from "@/modules/accounts/service"
 import {
   closeTestApp,
@@ -16,19 +13,6 @@ let cookie: string
 let organizationId: string
 let userId: string
 
-function cookieHeader(jwt: string): string {
-  return `${ACCESS_TOKEN_COOKIE}=${jwt}`
-}
-
-function buildCookie(payload: {
-  sub: string
-  email: string
-  organizationId: string
-}): string {
-  const jwt = signAccessToken(payload, env.JWT_SECRET, env.JWT_EXPIRATION)
-  return cookieHeader(jwt)
-}
-
 beforeAll(async () => {
   await createTestApp()
 })
@@ -38,9 +22,9 @@ afterAll(() => closeTestApp())
 beforeEach(async () => {
   await truncateAll()
   const result = await signupUser()
-  organizationId = result.accessToken.organizationId
-  userId = result.accessToken.sub
-  cookie = buildCookie(result.accessToken)
+  organizationId = result.organizationId
+  userId = result.userId
+  cookie = result.cookie
 })
 
 interface TransferBody {

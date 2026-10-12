@@ -1,65 +1,36 @@
 import { test, expect } from "@playwright/test"
-import { createUserData } from "../../shared/factories"
+import { env } from "../../shared/env"
+import { createUserData, signupAndLoginViaPage } from "../../shared/factories"
 
 test.describe("Signup flow", () => {
-  test("signs up and shows success with login link", async ({ page }) => {
-    const user = createUserData()
-
-    await page.goto("/signup")
-    await page.waitForLoadState("networkidle")
-
-    await page.getByLabel("Name").fill(user.name)
-    await page.getByLabel("Email").fill(user.email)
-    await page.getByLabel("Password").fill(user.password)
-    await page.getByRole("button", { name: "Sign up" }).click()
-
-    await expect(page.getByText("Account created!")).toBeVisible()
-    await expect(page.getByRole("link", { name: "login" })).toBeVisible()
+  test("signs up and lands on the dashboard", async ({ page }) => {
+    await signupAndLoginViaPage(page)
   })
 
-  test("can login after signup", async ({ page }) => {
+  test("shows an error for a duplicate email", async ({ page, request }) => {
     const user = createUserData()
+    await request.post(`${env.API_BASE_URL}/auth/sign-up/email`, {
+      data: user,
+    })
 
-    await page.goto("/signup")
-    await page.waitForLoadState("networkidle")
-
-    await page.getByLabel("Name").fill(user.name)
-    await page.getByLabel("Email").fill(user.email)
-    await page.getByLabel("Password").fill(user.password)
-    await page.getByRole("button", { name: "Sign up" }).click()
-
-    await page.getByRole("link", { name: "login" }).click()
-    await expect(page).toHaveURL(/\/login/)
-
-    await page.getByLabel("Email").fill(user.email)
-    await page.getByLabel("Password").fill(user.password)
-    await page.getByRole("button", { name: "Login" }).click()
-
-    await expect(page).toHaveURL(/\/dashboard/)
-  })
-
-  test("shows success for duplicate email (no error exposure)", async ({
-    page,
-  }) => {
-    const user = createUserData()
-
-    // Signup once
-    await page.goto("/signup")
-    await page.waitForLoadState("networkidle")
-    await page.getByLabel("Name").fill(user.name)
-    await page.getByLabel("Email").fill(user.email)
-    await page.getByLabel("Password").fill(user.password)
-    await page.getByRole("button", { name: "Sign up" }).click()
-    await expect(page.getByText("Account created!")).toBeVisible()
-
-    // Signup again with same email — should still show success (no email enumeration)
     await page.goto("/signup")
     await page.waitForLoadState("networkidle")
     await page.getByLabel("Name").fill("Different Name")
     await page.getByLabel("Email").fill(user.email)
     await page.getByLabel("Password").fill(user.password)
     await page.getByRole("button", { name: "Sign up" }).click()
-    await expect(page.getByText("Account created!")).toBeVisible()
+
+    await expect(
+      page.getByText("An account with this email already exists")
+    ).toBeVisible()
+  })
+
+  test("offers Google sign-up with the terms notice", async ({ page }) => {
+    await page.goto("/signup")
+    await expect(
+      page.getByRole("button", { name: "Continue with Google" })
+    ).toBeVisible()
+    await expect(page.getByText(/agree to our/i)).toBeVisible()
   })
 
   test("shows validation error for invalid email", async ({ page }) => {

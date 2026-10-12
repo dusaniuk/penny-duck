@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -13,10 +13,15 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { useMutation } from "@tanstack/react-query"
+import { GoogleButton } from "@/components/auth/google-button"
+import { TermsNotice } from "@/components/auth/terms-notice"
 import { api } from "@/lib/api"
+import { authClient } from "@/lib/auth-client"
+import { authErrorMessage } from "@/lib/auth-errors"
 
 export const Route = createFileRoute("/invite")({
   validateSearch: (search: Record<string, unknown>): { code: string } => ({
@@ -27,8 +32,8 @@ export const Route = createFileRoute("/invite")({
 
 function InvitePage() {
   const { code } = Route.useSearch()
+  const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [orgName, setOrgName] = useState<string | null>(null)
   const [inviteLoading, setInviteLoading] = useState(true)
   const [inviteInvalid, setInviteInvalid] = useState(false)
@@ -40,7 +45,8 @@ function InvitePage() {
       return
     }
 
-    fetch(`/api/auth/invite?code=${encodeURIComponent(code)}`)
+    api.invites[":code"]
+      .$get({ param: { code } })
       .then((res) => {
         if (res.ok) return res.json()
         setInviteInvalid(true)
@@ -62,11 +68,12 @@ function InvitePage() {
       name: string
       email: string
       password: string
-      inviteCode?: string
     }) => {
-      const res = await api.auth.signup.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
+      const { error: authError } = await authClient.signUp.email({
+        ...body,
+        inviteCode: code,
+      } as Parameters<typeof authClient.signUp.email>[0])
+      if (authError) throw authError
     },
   })
 
@@ -80,15 +87,15 @@ function InvitePage() {
     const password = formData.get("password") as string
 
     try {
-      await signupMutation.mutateAsync({
-        name,
-        email,
-        password,
-        inviteCode: code,
-      })
-      setSuccess(true)
-    } catch {
-      setError("Something went wrong, please try again")
+      await signupMutation.mutateAsync({ name, email, password })
+      navigate({ to: "/dashboard" })
+    } catch (err) {
+      setError(
+        authErrorMessage(
+          err as { code?: string },
+          "Something went wrong, please try again"
+        )
+      )
     }
   }
 
@@ -123,28 +130,6 @@ function InvitePage() {
     )
   }
 
-  if (success) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
-        <div className="flex w-full max-w-sm flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account created!</CardTitle>
-              <CardDescription>
-                And now pretend that you verified your account via email. Real
-                verification will be added soon. For now, just go to{" "}
-                <Link to="/login" className="underline">
-                  login
-                </Link>
-                .
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-svh items-center justify-center bg-muted/40 p-4">
       <div className="flex w-full max-w-sm flex-col gap-6">
@@ -162,12 +147,19 @@ function InvitePage() {
               <FieldGroup>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Field>
+                  <GoogleButton inviteCode={code} onError={setError} />
+                </Field>
+                <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                  or
+                </FieldSeparator>
+                <Field>
                   <FieldLabel htmlFor="name">Name</FieldLabel>
                   <Input
                     id="name"
                     name="name"
                     type="text"
                     placeholder="John Doe"
+                    maxLength={100}
                     required
                   />
                 </Field>
@@ -200,6 +192,7 @@ function InvitePage() {
                       ? "Creating account..."
                       : `Join ${orgName}`}
                   </Button>
+                  <TermsNotice action={`joining ${orgName}`} />
                   <FieldDescription className="text-center">
                     Already have an account? <Link to="/login">Log in</Link>
                   </FieldDescription>

@@ -1,137 +1,125 @@
 # Authentication
 
-JWT-based authentication with refresh token rotation and per-family reuse detection.
+Self-hosted [Better Auth](https://www.better-auth.com) 1.7 running inside the Hono API. Sessions are database records referenced by an httpOnly cookie. Email + password and (optionally) Google sign-in are supported.
 
 ## Overview
 
-- All auth logic lives in the NestJS API (`apps/api/src/auth/`)
-- Frontend is a pure consumer — calls API through Nitro proxy (`/api/**`)
-- Tokens stored in httpOnly cookies (not accessible to JS)
-- SSR auth checks forward cookies from the incoming request to the API
+- The single auth config is `apps/api/src/modules/auth/auth.ts`; organization provisioning lives in its `databaseHooks`
+- `honoAuthMiddleware` (`apps/api/src/middleware/auth.ts`) calls `auth.api.getSession()` for protected routes and answers 401 when there is no session or the session has no active organization
+- The frontend is a pure consumer: `apps/web/src/lib/auth-client.ts` (`better-auth/react`, `basePath: "/api/auth"`) talks to the API through the Nitro proxy
+- SSR auth checks forward the incoming request cookie to the API
 
-## Tokens
+## Mounting and the `/api` rewrite
 
-| Token | Type | Lifetime | Storage |
-|-------|------|----------|---------|
-| Access token | JWT (`{ sub, email }`) | 15 minutes | httpOnly cookie, Path=/ |
-| Refresh token | Opaque random string | 7 days | httpOnly cookie, Path=/ |
+Better Auth is mounted in `apps/api/src/app.ts` at `/auth/*` (GET and POST). The handler rewrites the path to `/api/auth/*` before passing the request on.
 
-Both tokens are `Secure` in production and `SameSite=Lax`.
-
-## Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/signup` | POST | Create user, issue token pair |
-| `/auth/login` | POST | Verify credentials, issue token pair |
-| `/auth/refresh` | POST | Rotate refresh token, issue new pair |
-| `/auth/logout` | POST | Clear cookies, revoke token family (background) |
-| `/auth/me` | GET | Return current user from access token |
-
-## Token Rotation
-
-Each login creates a **token family** (a UUID grouping all refresh tokens from one session).
-
-**Refresh flow:**
-1. Client sends refresh token (via cookie)
-2. API finds the matching token by bcrypt comparison
-3. If the token is revoked — **reuse detected** (see below)
-4. Otherwise: revoke old token, issue new access + refresh token with the same family ID
-
-**Reuse detection:**
-When a revoked refresh token is used, it means the token was stolen and used after the legitimate user already rotated it. The API revokes **all tokens in that family**, killing that session entirely. Other sessions (other families) are unaffected.
-
-## Password Storage
-
-Passwords are hashed with bcrypt (12 rounds) via the `Password` value object. Raw passwords are never stored or logged.
-
-## Frontend Integration
-
-### API Proxy
-
-The frontend proxies all API calls through Nitro to avoid cross-origin cookie issues:
+Why: Better Auth's router matches `baseURL + basePath`, i.e. `/api/auth`. The browser calls `/api/auth/...`, but the Nitro proxy strips the `/api` prefix, so the Hono API only sees `/auth/...`. Re-adding the prefix lets Better Auth match its routes.
 
 ```
-Browser → localhost:3000/api/** → Nitro proxy → localhost:3030/**
+Browser -> /api/auth/sign-in/email -> Nitro proxy -> API /auth/sign-in/email -> rewritten to /api/auth/sign-in/email
 ```
 
-Configured in `apps/web/vite.config.ts` via Nitro `routeRules`.
-
-### Auth Check
-
-`apps/web/src/lib/auth.ts` exports `getAuthUser()` — a TanStack Start server function that:
-- On SSR: reads `access_token` cookie via `getCookie()` and calls the API directly
-- On client: called via RPC, which forwards browser cookies to the server function
-
-Used in route `beforeLoad` hooks:
-- `/_app` layout — redirects to `/login` if not authenticated
-- `/_auth` layout — redirects to `/dashboard` if already authenticated
-- `/` index — redirects to `/dashboard` or `/login`
-
-### Token Refresh
-
-`apps/web/src/lib/api.ts` wraps `fetch` with automatic retry: if a request returns 401, it calls `/api/auth/refresh` first, then retries the original request.
-
-### Logout
-
-Logout clears cookies immediately and responds to the client. Token revocation (bcrypt-heavy) runs in the background without blocking the response.
-
-## DDD Structure
-
-```
-apps/api/src/auth/
-  domain/
-    entities/         User, RefreshToken
-    value-objects/    Email, Password, TokenFamily
-    events/           UserRegistered, UserLoggedIn, TokensRefreshed, TokenReuseDetected
-    repositories/     UserRepository, RefreshTokenRepository (abstract ports)
-    errors/           InvalidCredentials, EmailAlreadyExists, TokenReuseDetected, etc.
-  application/
-    commands/         Signup, Login, RefreshTokens, Logout
-    queries/          GetCurrentUser
-    event-handlers/   TokenReuseDetectedHandler (logs warning)
-  infrastructure/
-    repositories/     Drizzle implementations of domain ports
-    services/         JwtService, CookieService
-    mappers/          DB row <-> domain entity
-  presentation/
-    auth.controller   5 endpoints, delegates to CommandBus/QueryBus
-    auth.guard        Reads access_token cookie, verifies JWT
-    auth.decorator    @CurrentUser() param decorator
-    auth-exception    Maps domain errors to HTTP responses
-    dto/              LoginDto, SignupDto (class-validator)
-```
+Common endpoints (relative to the API): `POST /auth/sign-up/email`, `POST /auth/sign-in/email`, `POST /auth/sign-out`, `POST /auth/sign-in/social`, `GET /auth/callback/google`. The current user is returned by `GET /users/me`.
 
 ## Database
 
-### `app.users`
+Better Auth tables live in the Postgres schema `auth`:
 
-| Column | Type |
-|--------|------|
-| id | uuid PK |
-| email | varchar(255) unique |
-| name | varchar(100) |
-| password_hash | varchar(255) |
-| created_at | timestamptz |
-| updated_at | timestamptz |
+| Table | Purpose |
+|-------|---------|
+| `auth.sessions` | One row per session: `token`, `expires_at`, `ip_address`, `user_agent`, `active_organization_id` (FK to `app.organizations`, `ON DELETE SET NULL`). Cascades from `app.users` |
+| `auth.accounts` | Credential password hashes (`provider_id = 'credential'`) and Google accounts. OAuth tokens are stored encrypted. Cascades from `app.users` |
+| `auth.verifications` | Short-lived verification/OAuth state records |
 
-### `app.refresh_tokens`
+`app.users` is the Better Auth user table. Additional fields on top of the standard ones:
 
-| Column | Type |
-|--------|------|
-| id | uuid PK |
-| user_id | uuid FK -> users (cascade delete) |
-| token_hash | varchar(255) — bcrypt hash of raw token |
-| family_id | uuid — groups tokens from one session |
-| revoked | boolean |
-| expires_at | timestamptz |
-| created_at | timestamptz |
+- `homeCurrency` (`home_currency`) and `agreedToTermsAt` (`agreed_to_terms_at`); neither is settable from client input
+- `email_verified` and `image` exist for Better Auth but `image` is always null (Google profile photos are not stored)
 
-## Environment Variables
+Schema definitions: `packages/db/src/schema/auth.ts` and `users.ts`. Migration `0023_better-auth` copied existing password hashes into `auth.accounts` and marked existing users email-verified; `0024_drop-legacy-auth` dropped `app.users.password_hash` and `app.refresh_tokens`.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `JWT_SECRET` | — | Signing key (min 32 chars) |
-| `JWT_EXPIRATION` | `15m` | Access token lifetime |
-| `REFRESH_TOKEN_EXPIRATION` | `7d` | Refresh token lifetime |
-| `WEB_URL` | `http://localhost:3000` | Frontend origin for CORS |
+## Sessions
+
+| Setting | Value |
+|---------|-------|
+| Cookie | `penny-duck.session_token`, httpOnly (`__Secure-` prefix over https) |
+| Lifetime | 7 days (`expiresIn`) |
+| Sliding refresh | Expiry is extended at most once a day (`updateAge` = 1 day) |
+| Cookie cache | 5-minute signed `penny-duck.session_data` cookie (`cookieCache.maxAge` = 300) |
+
+The cookie cache avoids a database lookup on every request. Caveat: a session that is revoked (for example by signing out on another device) can keep working on a device that still holds a valid cache cookie for up to 5 minutes.
+
+Sign-out is handled by Better Auth's `/auth/sign-out`, which clears the session cookies. `clearSessionCookies` (`apps/api/src/modules/auth/cookies.ts`) is only used by `DELETE /users/me`.
+
+Better Auth's `/update-user` endpoint is disabled (`disabledPaths`); profiles are edited through `PATCH /users/me`, which applies the app's validation.
+
+## Organization provisioning
+
+Every session must have an `activeOrganizationId`.
+
+- `databaseHooks.session.create.before` looks up the user's membership. If there is none it provisions one: join the invited organization as `member` when an invite code is present, otherwise create a `"<name>'s Space"` organization with the user as `owner`. The organization id is stored on the session as `activeOrganizationId`
+- `databaseHooks.user.create.before` validates the name (at most 100 characters, error `NAME_TOO_LONG`) and the invite code (error `INVALID_INVITE`), and sets `agreedToTermsAt`
+
+## Invite codes
+
+- `GET /invites/:code` looks up an invite (404 for an invalid code); `POST /invites` generates an invite code for the caller's organization (owner only)
+- The invite code is passed as `inviteCode` in the email sign-up body, or, for Google, as `additionalData.inviteCode` on the OAuth sign-in request. Both are read by `readInviteCode` in `apps/api/src/modules/auth/organization.ts`
+
+## Passwords
+
+New passwords are hashed with scrypt (Better Auth's default). Legacy bcrypt hashes migrated from the old system (prefix `$2`) still verify through the custom `verify` in `apps/api/src/modules/auth/password.ts`.
+
+## Google sign-in
+
+- Enabled only when both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set
+- Redirect URI to register in Google Cloud Console: `${WEB_URL}/api/auth/callback/google` (locally `http://localhost:3000/api/auth/callback/google`)
+- `prompt: select_account`
+- The profile photo is not stored (`mapGoogleProfile` in `google.ts` drops it); a missing name falls back to "Google user" and names are truncated to 100 characters
+- Account linking: signing in with Google links to an existing user with the same email only when that account's email is verified. Existing and migrated users are; users who signed up with email after the migration are not, so linking is refused (`account_not_linked`) and the login page tells them to use their password
+- OAuth tokens are stored encrypted (`account.encryptOAuthTokens`)
+- API errors redirect to `${WEB_URL}/login` (`onAPIError.errorURL`)
+
+## Rate limits
+
+Enabled in production only, in-memory storage, per client IP (taken from `x-forwarded-for`):
+
+| Endpoint | Limit |
+|----------|-------|
+| `/sign-in/email` | 5 per minute |
+| `/sign-up/email` | 3 per minute |
+
+Because storage is in memory, limits are per API process and reset on restart.
+
+Better Auth 1.7.7 reads the client IP from `x-forwarded-for` only when the header holds a single value. With several values (a proxy chain) and no `trustedProxies` configured, it cannot determine the IP and the request falls into a shared bucket. After deploying, check the production logs for "Rate limiting could not determine a client IP".
+
+## Frontend integration
+
+### API proxy
+
+```
+Browser -> localhost:3000/api/** -> Nitro proxy -> localhost:3030/**
+```
+
+Configured in `apps/web/vite.config.ts` via Nitro `routeRules`, so cookies stay same-origin. The rule sets `fetchOptions: { redirect: "manual" }` so upstream redirects (the Google OAuth callback's `302` plus `Set-Cookie`) reach the browser instead of being followed by the proxy.
+
+### Auth check
+
+`apps/web/src/lib/auth.ts` exports `getAuthUser()`, a TanStack Start server function that forwards the request cookie to `/users/me` and forwards any `Set-Cookie` header from the response back to the browser.
+
+Used in route `beforeLoad` hooks:
+- `/_app` layout redirects to `/login` if not authenticated
+- `/_auth` layout redirects to `/dashboard` if already authenticated
+- `/` index redirects to `/dashboard` or `/login`
+
+## Environment variables (API)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | yes | Postgres connection string |
+| `BETTER_AUTH_SECRET` | yes | Signing/encryption secret, at least 32 characters (`openssl rand -base64 32`) |
+| `WEB_URL` | yes | Public web origin; used as Better Auth `baseURL`, trusted origin and CORS origin |
+| `PORT` | no | API port (3030) |
+| `GOOGLE_CLIENT_ID` | no | Enables Google sign-in together with the secret |
+| `GOOGLE_CLIENT_SECRET` | no | See above |
+
+`JWT_SECRET`, `JWT_EXPIRATION` and `REFRESH_TOKEN_EXPIRATION` are no longer used.

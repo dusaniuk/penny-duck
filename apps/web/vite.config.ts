@@ -20,7 +20,10 @@ const config = defineConfig({
       preset: "bun",
       routeRules: {
         "/api/**": {
-          proxy: `${apiUrl}/**`,
+          proxy: {
+            to: `${apiUrl}/**`,
+            fetchOptions: { redirect: "manual" },
+          },
         },
         "/**": {
           headers: {
