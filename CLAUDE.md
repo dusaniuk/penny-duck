@@ -132,10 +132,14 @@ When features change (e.g., new data collected, third-party integrations, auth c
 git checkout v0.2.0
 git rebase main
 git checkout main
-git merge --ff-only v0.2.0
-git tag v0.2.0
-git push origin main --tags
+git merge --ff-only refs/heads/v0.2.0
+git tag -m "v0.2.0" v0.2.0
+git push origin main refs/tags/v0.2.0
 ```
+
+- Tags must be annotated (`tag.gpgsign` is on): always `git tag -m "<version>" <version>`; a bare `git tag` fails with "no tag message?"
+- Push only the release tag, never `--tags` (it publishes every stray local tag)
+- Version branch and tag share a name — use `refs/heads/` / `refs/tags/` where a ref could be ambiguous
 
 - **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users
 - While on `0.x`, no need to bump major for breaking changes
