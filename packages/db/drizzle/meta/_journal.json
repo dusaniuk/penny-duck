@@ -190,6 +190,13 @@
       "when": 1791892008837,
       "tag": "0026_add-wallet-inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791901819890,
+      "tag": "0027_optional-inbox-currency",
+      "breakpoints": true
     }
   ]
 }

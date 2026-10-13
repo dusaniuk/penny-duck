@@ -7,7 +7,7 @@ export const InboxItemSchema = z.object({
   merchant: z.string().nullable(),
   description: z.string().nullable(),
   amount: z.number(),
-  currency: z.string(),
+  currency: z.string().nullable(),
   occurredAt: z.string(),
   accountId: z.uuid().nullable(),
   transactionId: z.uuid().nullable(),
@@ -16,8 +16,16 @@ export const InboxItemSchema = z.object({
 
 export const WalletIngestSchema = z.object({
   card: z.string().trim().min(1).max(100),
-  amount: z.number().positive().max(1_000_000),
-  currency: z.string().trim().length(3).toUpperCase(),
+  amount: z.union([z.number(), z.string().trim().min(1).max(40)]),
+  currency: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .optional()
+    .transform((v) => (v ? v : undefined))
+    .refine((v) => v === undefined || v.length === 3, {
+      message: "Currency must be a 3-letter code",
+    }),
   merchant: z
     .string()
     .trim()

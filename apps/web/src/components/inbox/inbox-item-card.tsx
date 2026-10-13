@@ -84,7 +84,8 @@ export function InboxItemCard({
           </p>
         </div>
         <p className="shrink-0 text-base font-semibold text-red-400 tabular-nums">
-          -{item.amount.toFixed(2)} {item.currency}
+          -{item.amount.toFixed(2)}
+          {item.currency ? ` ${item.currency}` : ""}
         </p>
       </div>
 

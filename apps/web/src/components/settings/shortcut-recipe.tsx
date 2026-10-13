@@ -4,8 +4,7 @@ const BODY_EXAMPLE = `{
   "card": <Card>,
   "merchant": <Merchant>,
   "description": <Name>,
-  "amount": <Amount as Number>,
-  "currency": <Amount currency code>,
+  "amount": <Amount>,
   "occurredAt": <Current Date, ISO 8601>
 }`
 
@@ -31,8 +30,9 @@ export function ShortcutRecipe() {
         <li>
           Add a <strong>Date</strong> action (current date, format ISO 8601 with
           time), then a <strong>Dictionary</strong> action with these keys. The
-          first five come from the Shortcut Input (the transaction); the last
-          one is that Date:
+          first four come from the Shortcut Input (the transaction); the last
+          one is that Date. The currency is taken from the account the card is
+          mapped to, so there is no currency key:
           <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-sm">
             {BODY_EXAMPLE}
           </pre>

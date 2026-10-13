@@ -204,6 +204,19 @@ describe("POST /inbox/:id/accept", () => {
     )
   }, 15_000)
 
+  it("uses the chosen account's currency when the row has none", async () => {
+    const item = await seedTap({ card: "Wise Card", currency: undefined })
+    expect(item.currency).toBeNull()
+    const res = await accept(item.id, { accountId: usdAccountId, categoryId })
+    expect(res.status).toBe(200)
+    const { transaction } = (await res.json()) as { transaction: Transaction }
+    expect(transaction.amount).toBe(123.45)
+    expect(transaction.accountId).toBe(usdAccountId)
+    expect(transaction.originalAmount).toBeNull()
+    expect(transaction.originalCurrency).toBeNull()
+    expect(transaction.exchangeRate).toBeNull()
+  })
+
   it("returns 422 and keeps the row pending when no rate exists", async () => {
     const item = await seedTap({ currency: "XXX" })
     const res = await accept(item.id, { accountId: uahAccountId, categoryId })

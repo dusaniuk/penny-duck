@@ -40,6 +40,9 @@ const tap = {
   occurredAt: "2026-10-13T10:15:00+03:00",
 }
 
+const tapWithoutCurrency: Partial<typeof tap> = { ...tap }
+delete tapWithoutCurrency.currency
+
 beforeEach(async () => {
   await truncateAll()
   user = await signupUser()
@@ -139,6 +142,57 @@ describe("POST /inbox/wallet", () => {
   it("rounds amounts to cents", async () => {
     const res = await ingest({ ...tap, amount: 12.345 })
     expect(((await res.json()) as InboxItem).amount).toBe(12.35)
+  })
+
+  it("takes the currency from the matched account when none is sent", async () => {
+    const res = await ingest(tapWithoutCurrency)
+    expect(res.status).toBe(201)
+    const item = (await res.json()) as InboxItem
+    expect(item.accountId).toBe(accountId)
+    expect(item.currency).toBe("UAH")
+  })
+
+  it("stores no currency when the card is unknown and none is sent", async () => {
+    const res = await ingest({ ...tapWithoutCurrency, card: "Unknown Card" })
+    expect(res.status).toBe(201)
+    const item = (await res.json()) as InboxItem
+    expect(item.accountId).toBeNull()
+    expect(item.currency).toBeNull()
+  })
+
+  it("dedupes rows that have no currency", async () => {
+    const body = { ...tapWithoutCurrency, card: "Unknown Card" }
+    const first = (await (await ingest(body)).json()) as InboxItem
+    const res = await ingest(body)
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as InboxItem).id).toBe(first.id)
+  })
+
+  it("parses locale-formatted amount strings", async () => {
+    const cases: Array<[string, number]> = [
+      ["$1,234.56", 1234.56],
+      ["6,75 €", 6.75],
+      ["1.234,56", 1234.56],
+      ["6.750", 6750],
+      ["12", 12],
+      ["0.5", 0.5],
+    ]
+    for (const [text, expected] of cases) {
+      const res = await ingest({
+        ...tap,
+        amount: text,
+        occurredAt: `2026-10-13T10:${String(cases.findIndex(([t]) => t === text)).padStart(2, "0")}:00+03:00`,
+      })
+      expect(res.status).toBe(201)
+      expect(((await res.json()) as InboxItem).amount).toBe(expected)
+    }
+  })
+
+  it("rejects amount strings that are not a positive number", async () => {
+    expect((await ingest({ ...tap, amount: "abc" })).status).toBe(400)
+    expect((await ingest({ ...tap, amount: "-5.00" })).status).toBe(400)
+    expect((await ingest({ ...tap, amount: "" })).status).toBe(400)
+    expect(await db.select().from(walletInbox)).toHaveLength(0)
   })
 
   it("rejects an invalid body", async () => {

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, sql } from "drizzle-orm"
+import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
 import { accounts, categories, walletInbox } from "@workspace/db"
 import type { InboxItem, Transaction } from "@workspace/api-contract"
@@ -27,9 +27,9 @@ export function toResponse(row: InboxRow): InboxItem {
 export async function matchAccountByCardLabel(
   organizationId: string,
   card: string
-): Promise<string | null> {
+): Promise<{ id: string; currency: string } | null> {
   const rows = await db
-    .select({ id: accounts.id })
+    .select({ id: accounts.id, currency: accounts.currency })
     .from(accounts)
     .where(
       and(
@@ -39,15 +39,46 @@ export async function matchAccountByCardLabel(
     )
     .orderBy(asc(accounts.createdAt))
     .limit(1)
-  return rows[0]?.id ?? null
+  return rows[0] ?? null
+}
+
+const MAX_AMOUNT = 1_000_000
+
+// Shortcuts hands the Wallet amount over as locale-formatted text such as
+// "$1,234.56", "6,75 €" or "1.234,56". The last separator is the decimal one
+// unless it is followed by exactly three digits with no other separator.
+export function parseAmount(value: number | string): number {
+  let amount: number
+  if (typeof value === "number") {
+    amount = value
+  } else {
+    const cleaned = value.replace(/[^\d.,-]/g, "")
+    const lastDot = cleaned.lastIndexOf(".")
+    const lastComma = cleaned.lastIndexOf(",")
+    const last = Math.max(lastDot, lastComma)
+    const separators = (cleaned.match(/[.,]/g) ?? []).length
+    const digitsAfter = cleaned.length - last - 1
+    const isThousands = separators === 1 && digitsAfter === 3
+    const normalized =
+      last === -1 || isThousands
+        ? cleaned.replace(/[.,]/g, "")
+        : `${cleaned.slice(0, last).replace(/[.,]/g, "")}.${cleaned.slice(last + 1)}`
+    amount = Number(normalized)
+  }
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) {
+    throw new HTTPException(400, {
+      message: `Amount must be a positive number up to ${MAX_AMOUNT}`,
+    })
+  }
+  return Math.round(amount * 100) / 100
 }
 
 export interface IngestWalletTapInput {
   organizationId: string
   userId: string
   card: string
-  amount: number
-  currency: string
+  amount: number | string
+  currency?: string
   merchant?: string
   description?: string
   occurredAt?: Date
@@ -56,11 +87,14 @@ export interface IngestWalletTapInput {
 export async function ingestWalletTap(
   input: IngestWalletTapInput
 ): Promise<{ item: InboxItem; created: boolean }> {
+  const amount = parseAmount(input.amount)
   const occurredAt = input.occurredAt ?? new Date()
-  const accountId = await matchAccountByCardLabel(
+  const account = await matchAccountByCardLabel(
     input.organizationId,
     input.card
   )
+  const accountId = account?.id ?? null
+  const currency = input.currency ?? account?.currency ?? null
 
   const inserted = await db
     .insert(walletInbox)
@@ -71,8 +105,8 @@ export async function ingestWalletTap(
       card: input.card,
       merchant: input.merchant ?? null,
       description: input.description ?? null,
-      amount: input.amount,
-      currency: input.currency,
+      amount,
+      currency,
       occurredAt,
     })
     .onConflictDoNothing({
@@ -95,8 +129,10 @@ export async function ingestWalletTap(
       and(
         eq(walletInbox.organizationId, input.organizationId),
         eq(walletInbox.card, input.card),
-        eq(walletInbox.amount, input.amount),
-        eq(walletInbox.currency, input.currency),
+        eq(walletInbox.amount, amount),
+        currency === null
+          ? isNull(walletInbox.currency)
+          : eq(walletInbox.currency, currency),
         eq(walletInbox.occurredAt, occurredAt)
       )
     )
@@ -212,7 +248,7 @@ export async function acceptInboxItem(
     exchangeRate: number
   } | null = null
 
-  if (row.currency !== account.currency) {
+  if (row.currency !== null && row.currency !== account.currency) {
     const rate = await lookupRate(
       row.currency,
       account.currency,

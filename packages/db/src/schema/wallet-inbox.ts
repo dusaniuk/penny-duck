@@ -1,10 +1,4 @@
-import {
-  index,
-  timestamp,
-  uniqueIndex,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core"
+import { index, timestamp, unique, uuid, varchar } from "drizzle-orm/pg-core"
 import { appSchema } from "./schema"
 import { organizations } from "./organizations"
 import { users } from "./users"
@@ -29,7 +23,7 @@ export const walletInbox = appSchema.table(
     merchant: varchar("merchant", { length: 200 }),
     description: varchar("description", { length: 500 }),
     amount: money("amount").notNull(),
-    currency: varchar("currency", { length: 3 }).notNull(),
+    currency: varchar("currency", { length: 3 }),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
     status: varchar("status", { length: 20 }).notNull().default("pending"),
     transactionId: uuid("transaction_id").references(() => transactions.id, {
@@ -48,12 +42,14 @@ export const walletInbox = appSchema.table(
       table.status,
       table.createdAt
     ),
-    uniqueIndex("wallet_inbox_dedupe_uq").on(
-      table.organizationId,
-      table.card,
-      table.amount,
-      table.currency,
-      table.occurredAt
-    ),
+    unique("wallet_inbox_dedupe_uq")
+      .on(
+        table.organizationId,
+        table.card,
+        table.amount,
+        table.currency,
+        table.occurredAt
+      )
+      .nullsNotDistinct(),
   ]
 )
