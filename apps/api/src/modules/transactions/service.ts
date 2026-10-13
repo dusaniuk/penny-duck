@@ -22,7 +22,7 @@ import {
   users,
 } from "@workspace/db"
 import { type Transaction } from "@workspace/api-contract"
-import { db } from "@/db"
+import { db, type Executor } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 import { findById as findAccountById } from "@/modules/accounts/service"
 
@@ -204,8 +204,11 @@ interface UpdateData {
   madeById?: string | null
 }
 
-async function insertTransaction(data: InsertData): Promise<TransactionRow> {
-  const [row] = await db.insert(transactions).values(data).returning()
+async function insertTransaction(
+  data: InsertData,
+  executor: Executor = db
+): Promise<TransactionRow> {
+  const [row] = await executor.insert(transactions).values(data).returning()
   return row
 }
 
@@ -410,7 +413,8 @@ export interface CreateTransactionInput {
 }
 
 export async function createTransaction(
-  input: CreateTransactionInput
+  input: CreateTransactionInput,
+  executor: Executor = db
 ): Promise<Transaction> {
   if (input.amount <= 0)
     throw new HTTPException(400, { message: "Amount must be greater than 0" })
@@ -440,21 +444,24 @@ export async function createTransaction(
 
   const dbAmount = input.type === "expense" ? -input.amount : input.amount
 
-  const row = await insertTransaction({
-    organizationId: input.organizationId,
-    accountId: input.accountId,
-    amount: dbAmount,
-    categoryId: input.categoryId ?? null,
-    note: input.note ?? null,
-    date: input.date,
-    settled: input.settled ?? true,
-    originalAmount: input.originalAmount ?? null,
-    originalCurrency: input.originalCurrency ?? null,
-    exchangeRate: input.exchangeRate ?? null,
-    transferId: null,
-    reimbursementId: null,
-    madeById: input.madeById,
-  })
+  const row = await insertTransaction(
+    {
+      organizationId: input.organizationId,
+      accountId: input.accountId,
+      amount: dbAmount,
+      categoryId: input.categoryId ?? null,
+      note: input.note ?? null,
+      date: input.date,
+      settled: input.settled ?? true,
+      originalAmount: input.originalAmount ?? null,
+      originalCurrency: input.originalCurrency ?? null,
+      exchangeRate: input.exchangeRate ?? null,
+      transferId: null,
+      reimbursementId: null,
+      madeById: input.madeById,
+    },
+    executor
+  )
 
   return toResponse(row)
 }
@@ -613,9 +620,7 @@ export interface ListTransactionsInput {
   madeById?: string
 }
 
-export async function listTransactions(
-  input: ListTransactionsInput
-): Promise<{
+export async function listTransactions(input: ListTransactionsInput): Promise<{
   data: Transaction[]
   total: number
   page: number

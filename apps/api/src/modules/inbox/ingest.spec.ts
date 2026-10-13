@@ -177,6 +177,25 @@ describe("POST /inbox/wallet", () => {
     expect((await ingest(tap, created.key)).status).toBe(401)
   })
 
+  it("returns 429 once the key's rate limit is exhausted", async () => {
+    const created = await auth.api.createApiKey({
+      body: {
+        name: "Throttled",
+        userId: user.userId,
+        rateLimitEnabled: true,
+        rateLimitMax: 1,
+        rateLimitTimeWindow: 60_000,
+      },
+    })
+    expect((await ingest(tap, created.key)).status).toBe(201)
+    const res = await ingest(
+      { ...tap, occurredAt: "2026-10-13T11:00:00+03:00" },
+      created.key
+    )
+    expect(res.status).toBe(429)
+    expect(await db.select().from(walletInbox)).toHaveLength(1)
+  })
+
   it("rejects a key whose owner has no organization", async () => {
     await db
       .delete(organizationMembers)

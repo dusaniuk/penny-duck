@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
-import { accounts, walletInbox } from "@workspace/db"
+import { accounts, categories, walletInbox } from "@workspace/db"
 import type { InboxItem, Transaction } from "@workspace/api-contract"
 import { db } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
@@ -191,6 +191,20 @@ export async function acceptInboxItem(
     .limit(1)
   if (!account) throw new HTTPException(404, { message: "Account not found" })
 
+  const [category] = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.id, input.categoryId),
+        eq(categories.organizationId, input.organizationId)
+      )
+    )
+    .limit(1)
+  if (!category) {
+    throw new HTTPException(404, { message: "Category not found" })
+  }
+
   let amount = row.amount
   let fx: {
     originalAmount: number
@@ -212,58 +226,50 @@ export async function acceptInboxItem(
     }
   }
 
-  const [claimed] = await db
-    .update(walletInbox)
-    .set({ status: "accepted", accountId: account.id, updatedAt: new Date() })
-    .where(and(eq(walletInbox.id, row.id), eq(walletInbox.status, "pending")))
-    .returning()
-  if (!claimed) {
-    throw new HTTPException(409, { message: "Inbox item is not pending" })
-  }
-
-  let transaction: Transaction
-  try {
-    transaction = await createTransaction({
-      organizationId: input.organizationId,
-      accountId: account.id,
-      type: "expense",
-      amount,
-      categoryId: input.categoryId,
-      date: row.occurredAt,
-      note: row.merchant ?? row.description ?? null,
-      madeById: input.userId,
-      ...fx,
-    })
-  } catch (err) {
-    await db
+  return db.transaction(async (tx) => {
+    const [claimed] = await tx
       .update(walletInbox)
-      .set({
-        status: "pending",
-        accountId: row.accountId,
-        updatedAt: new Date(),
-      })
+      .set({ status: "accepted", accountId: account.id, updatedAt: new Date() })
+      .where(and(eq(walletInbox.id, row.id), eq(walletInbox.status, "pending")))
+      .returning()
+    if (!claimed) {
+      throw new HTTPException(409, { message: "Inbox item is not pending" })
+    }
+
+    const transaction = await createTransaction(
+      {
+        organizationId: input.organizationId,
+        accountId: account.id,
+        type: "expense",
+        amount,
+        categoryId: input.categoryId,
+        date: row.occurredAt,
+        note: row.merchant ?? row.description ?? null,
+        madeById: input.userId,
+        ...fx,
+      },
+      tx
+    )
+
+    const [updated] = await tx
+      .update(walletInbox)
+      .set({ transactionId: transaction.id, updatedAt: new Date() })
       .where(eq(walletInbox.id, row.id))
-    throw err
-  }
+      .returning()
 
-  const [updated] = await db
-    .update(walletInbox)
-    .set({ transactionId: transaction.id, updatedAt: new Date() })
-    .where(eq(walletInbox.id, row.id))
-    .returning()
+    if (
+      input.saveCardLabel &&
+      account.type === "bank" &&
+      account.cardLabel === null
+    ) {
+      await tx
+        .update(accounts)
+        .set({ cardLabel: row.card, updatedAt: new Date() })
+        .where(eq(accounts.id, account.id))
+    }
 
-  if (
-    input.saveCardLabel &&
-    account.type === "bank" &&
-    account.cardLabel === null
-  ) {
-    await db
-      .update(accounts)
-      .set({ cardLabel: row.card, updatedAt: new Date() })
-      .where(eq(accounts.id, account.id))
-  }
-
-  return { item: toResponse(updated), transaction }
+    return { item: toResponse(updated), transaction }
+  })
 }
 
 // getRate answers 1 when the pair is unknown instead of throwing; two

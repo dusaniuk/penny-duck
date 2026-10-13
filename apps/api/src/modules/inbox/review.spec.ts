@@ -1,11 +1,17 @@
-import { beforeEach, describe, expect, it } from "bun:test"
+import { beforeEach, describe, expect, it, spyOn } from "bun:test"
 import { eq } from "drizzle-orm"
-import { accounts, walletInbox } from "@workspace/db"
+import {
+  accounts,
+  exchangeRates,
+  transactions,
+  walletInbox,
+} from "@workspace/db"
 import type { InboxItem, Transaction } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { db } from "@/db"
 import { createAccount } from "@/modules/accounts/service"
 import { createCategory } from "@/modules/categories/service"
+import * as transactionsService from "@/modules/transactions/service"
 import { signupUser, truncateAll, type TestUser } from "@/test/setup"
 import { ingestWalletTap } from "./service"
 
@@ -277,6 +283,83 @@ describe("POST /inbox/:id/accept", () => {
     expect(row.transactionId).toBeNull()
     const again = await accept(item.id, { accountId: uahAccountId, categoryId })
     expect(again.status).toBe(200)
+  })
+
+  it("returns 422 when the only known rate is exactly 1", async () => {
+    await db.insert(exchangeRates).values({
+      date: "2026-10-13",
+      base: "UAH",
+      target: "USD",
+      rate: 1,
+    })
+    const item = await seedTap()
+    const res = await accept(item.id, { accountId: usdAccountId, categoryId })
+    expect(res.status).toBe(422)
+    const [row] = await db
+      .select()
+      .from(walletInbox)
+      .where(eq(walletInbox.id, item.id))
+    expect(row.status).toBe("pending")
+    expect(await db.select().from(transactions)).toHaveLength(0)
+  })
+
+  it("rejects a category from another organization", async () => {
+    const other = await signupUser()
+    const foreign = await createCategory({
+      organizationId: other.organizationId,
+      name: "Theirs",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
+    const item = await seedTap()
+    const res = await accept(item.id, {
+      accountId: uahAccountId,
+      categoryId: foreign.id,
+    })
+    expect(res.status).toBe(404)
+    expect(((await res.json()) as { message: string }).message).toBe(
+      "Category not found"
+    )
+    const [row] = await db
+      .select()
+      .from(walletInbox)
+      .where(eq(walletInbox.id, item.id))
+    expect(row.status).toBe("pending")
+    expect(await db.select().from(transactions)).toHaveLength(0)
+  })
+
+  it("books nothing when a step after the transaction insert fails", async () => {
+    const item = await seedTap()
+    const real = transactionsService.createTransaction
+    const spy = spyOn(
+      transactionsService,
+      "createTransaction"
+    ).mockImplementation(async (...args) => {
+      await real(...args)
+      throw new Error("link step failed")
+    })
+    try {
+      const res = await accept(item.id, {
+        accountId: uahAccountId,
+        categoryId,
+      })
+      expect(res.status).toBe(500)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await db.select().from(transactions)).toHaveLength(0)
+    const [row] = await db
+      .select()
+      .from(walletInbox)
+      .where(eq(walletInbox.id, item.id))
+    expect(row.status).toBe("pending")
+    expect(row.transactionId).toBeNull()
+
+    const again = await accept(item.id, { accountId: uahAccountId, categoryId })
+    expect(again.status).toBe(200)
+    expect(await db.select().from(transactions)).toHaveLength(1)
   })
 
   it("rejects a row that is not pending", async () => {
