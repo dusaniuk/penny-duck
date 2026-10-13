@@ -240,6 +240,7 @@ function AccountsPage() {
           color: input.color,
           icon: input.icon,
           isDefault: input.isDefault,
+          cardLabel: input.cardLabel,
         },
       })
     } else {
@@ -252,6 +253,7 @@ function AccountsPage() {
         icon: input.icon,
         balance: input.balance,
         isDefault: input.isDefault,
+        cardLabel: input.cardLabel ?? undefined,
       })
     }
   }

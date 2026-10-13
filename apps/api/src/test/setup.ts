@@ -22,7 +22,7 @@ export async function truncateAll() {
     )
   }
   await db.execute(
-    sql`TRUNCATE app.trades, app.instrument_prices, app.instruments, app.exchange_rates, app.transactions, app.categories, app.accounts, app.organization_members, app.organizations, auth.verifications, app.users CASCADE`
+    sql`TRUNCATE app.wallet_inbox, app.trades, app.instrument_prices, app.instruments, app.exchange_rates, app.transactions, app.categories, app.accounts, app.organization_members, app.organizations, auth.verifications, auth.apikeys, app.users CASCADE`
   )
 }
 

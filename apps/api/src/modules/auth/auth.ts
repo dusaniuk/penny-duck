@@ -1,7 +1,14 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth"
 import { APIError, getOAuthState } from "better-auth/api"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { authAccounts, sessions, users, verifications } from "@workspace/db"
+import { apiKey } from "@better-auth/api-key"
+import {
+  apikeys,
+  authAccounts,
+  sessions,
+  users,
+  verifications,
+} from "@workspace/db"
 import { env, isProduction } from "@workspace/env/api"
 import { db } from "@/db"
 import {
@@ -55,6 +62,7 @@ export const authOptions = {
       session: sessions,
       account: authAccounts,
       verification: verifications,
+      apikey: apikeys,
     },
   }),
   emailAndPassword: {
@@ -139,6 +147,14 @@ export const authOptions = {
       },
     },
   },
+  plugins: [
+    apiKey({
+      defaultPrefix: "pd_",
+      requireName: true,
+      rateLimit: { enabled: true, timeWindow: 60_000, maxRequests: 60 },
+      permissions: { defaultPermissions: { inbox: ["write"] } },
+    }),
+  ],
   disabledPaths: ["/update-user"],
   telemetry: { enabled: false },
 } satisfies BetterAuthOptions

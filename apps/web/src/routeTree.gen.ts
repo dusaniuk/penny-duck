@@ -18,6 +18,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
 import { Route as AppCategoriesRouteImport } from './routes/_app/categories'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppIncomeExpensesRouteImport } from './routes/_app/income-expenses'
 import { Route as AppInvestmentsRouteImport } from './routes/_app/investments'
 import { Route as AppSpendingsRouteImport } from './routes/_app/spendings'
@@ -27,6 +28,7 @@ import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsMembersRouteImport } from './routes/settings/members'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsShortcutsRouteImport } from './routes/settings/shortcuts'
 import { Route as AppInvestmentsIndexRouteImport } from './routes/_app/investments/index'
 import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments/$accountId'
 import { Route as PublicLegalPrivacyRouteImport } from './routes/_public/legal/privacy'
@@ -75,6 +77,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInboxRoute = AppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIncomeExpensesRoute = AppIncomeExpensesRouteImport.update({
   id: '/income-expenses',
   path: '/income-expenses',
@@ -120,6 +127,11 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsShortcutsRoute = SettingsShortcutsRouteImport.update({
+  id: '/shortcuts',
+  path: '/shortcuts',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const AppInvestmentsIndexRoute = AppInvestmentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -154,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AppAccountsRoute
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/inbox': typeof AppInboxRoute
   '/income-expenses': typeof AppIncomeExpensesRoute
   '/investments': typeof AppInvestmentsRouteWithChildren
   '/spendings': typeof AppSpendingsRoute
@@ -162,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings/': typeof SettingsIndexRoute
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
@@ -175,6 +189,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AppAccountsRoute
   '/categories': typeof AppCategoriesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/inbox': typeof AppInboxRoute
   '/income-expenses': typeof AppIncomeExpensesRoute
   '/spendings': typeof AppSpendingsRoute
   '/transactions': typeof AppTransactionsRoute
@@ -182,6 +197,7 @@ export interface FileRoutesByTo {
   '/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings': typeof SettingsIndexRoute
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/legal/privacy': typeof PublicLegalPrivacyRoute
@@ -200,6 +216,7 @@ export interface FileRoutesById {
   '/_app/accounts': typeof AppAccountsRoute
   '/_app/categories': typeof AppCategoriesRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/inbox': typeof AppInboxRoute
   '/_app/income-expenses': typeof AppIncomeExpensesRoute
   '/_app/investments': typeof AppInvestmentsRouteWithChildren
   '/_app/spendings': typeof AppSpendingsRoute
@@ -208,6 +225,7 @@ export interface FileRoutesById {
   '/_auth/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings/': typeof SettingsIndexRoute
   '/_app/investments/$accountId': typeof AppInvestmentsAccountIdRoute
   '/_public/legal/privacy': typeof PublicLegalPrivacyRoute
@@ -224,6 +242,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/categories'
     | '/dashboard'
+    | '/inbox'
     | '/income-expenses'
     | '/investments'
     | '/spendings'
@@ -232,6 +251,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/shortcuts'
     | '/settings/'
     | '/investments/$accountId'
     | '/legal/privacy'
@@ -245,6 +265,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/categories'
     | '/dashboard'
+    | '/inbox'
     | '/income-expenses'
     | '/spendings'
     | '/transactions'
@@ -252,6 +273,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/shortcuts'
     | '/settings'
     | '/investments/$accountId'
     | '/legal/privacy'
@@ -269,6 +291,7 @@ export interface FileRouteTypes {
     | '/_app/accounts'
     | '/_app/categories'
     | '/_app/dashboard'
+    | '/_app/inbox'
     | '/_app/income-expenses'
     | '/_app/investments'
     | '/_app/spendings'
@@ -277,6 +300,7 @@ export interface FileRouteTypes {
     | '/_auth/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/shortcuts'
     | '/settings/'
     | '/_app/investments/$accountId'
     | '/_public/legal/privacy'
@@ -359,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/inbox': {
+      id: '/_app/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/income-expenses': {
       id: '/_app/income-expenses'
       path: '/income-expenses'
@@ -422,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/shortcuts': {
+      id: '/settings/shortcuts'
+      path: '/shortcuts'
+      fullPath: '/settings/shortcuts'
+      preLoaderRoute: typeof SettingsShortcutsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/_app/investments/': {
       id: '/_app/investments/'
       path: '/'
@@ -480,6 +518,7 @@ interface AppRouteChildren {
   AppAccountsRoute: typeof AppAccountsRoute
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppInboxRoute: typeof AppInboxRoute
   AppIncomeExpensesRoute: typeof AppIncomeExpensesRoute
   AppInvestmentsRoute: typeof AppInvestmentsRouteWithChildren
   AppSpendingsRoute: typeof AppSpendingsRoute
@@ -490,6 +529,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountsRoute: AppAccountsRoute,
   AppCategoriesRoute: AppCategoriesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppInboxRoute: AppInboxRoute,
   AppIncomeExpensesRoute: AppIncomeExpensesRoute,
   AppInvestmentsRoute: AppInvestmentsRouteWithChildren,
   AppSpendingsRoute: AppSpendingsRoute,
@@ -526,12 +566,14 @@ const PublicRouteWithChildren =
 interface SettingsRouteChildren {
   SettingsMembersRoute: typeof SettingsMembersRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsShortcutsRoute: typeof SettingsShortcutsRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsMembersRoute: SettingsMembersRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsShortcutsRoute: SettingsShortcutsRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 

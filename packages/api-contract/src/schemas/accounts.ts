@@ -2,6 +2,7 @@ import { z } from "zod"
 
 export const AccountColorSchema = z.string().trim().min(1).max(20)
 export const AccountIconSchema = z.string().trim().min(1).max(50)
+export const AccountCardLabelSchema = z.string().trim().min(1).max(100)
 
 // A leaf account (bank/brokerage), and also the synthesized representation of a
 // wallet pocket on the client (type "wallet", walletId set). `type` stays a
@@ -17,6 +18,7 @@ export const AccountSchema = z.object({
   homeBalance: z.number(),
   isDefault: z.boolean(),
   walletId: z.uuid().nullable(),
+  cardLabel: z.string().nullable(),
 })
 
 export const WalletPocketSchema = z.object({
@@ -57,6 +59,7 @@ export const CreateStandaloneAccountSchema = z.object({
   icon: AccountIconSchema.optional(),
   balance: z.number().optional(),
   isDefault: z.boolean().optional(),
+  cardLabel: AccountCardLabelSchema.optional(),
 })
 
 export const CreateWalletAccountSchema = z.object({
@@ -81,6 +84,7 @@ export const UpdateAccountSchema = z.object({
   color: AccountColorSchema.optional(),
   icon: AccountIconSchema.optional(),
   isDefault: z.boolean().optional(),
+  cardLabel: AccountCardLabelSchema.nullable().optional(),
 })
 
 export const AddPocketSchema = CreatePocketInputSchema

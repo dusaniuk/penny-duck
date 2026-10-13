@@ -13,6 +13,7 @@ import { accountsRoutes } from "./modules/accounts/routes"
 import { auth } from "./modules/auth/auth"
 import { categoriesRoutes } from "./modules/categories/routes"
 import { exchangeRatesRoutes } from "./modules/exchange-rates/routes"
+import { inboxRoutes } from "./modules/inbox/routes"
 import {
   instrumentsRoutes,
   investmentsRoutes,
@@ -72,7 +73,7 @@ export const honoApp = attachErrorHandlers(
         origin: env.WEB_URL,
         credentials: true,
         allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-        allowHeaders: ["Content-Type"],
+        allowHeaders: ["Content-Type", "x-api-key"],
       })
     )
     .get("/healthz", (c) => c.json({ status: "ok" }))
@@ -84,6 +85,7 @@ export const honoApp = attachErrorHandlers(
     })
     .route("/categories", categoriesRoutes)
     .route("/exchange-rates", exchangeRatesRoutes)
+    .route("/inbox", inboxRoutes)
     .route("/stats", statsRoutes)
     .route("/instruments", instrumentsRoutes)
     .route("/positions", positionsRoutes)

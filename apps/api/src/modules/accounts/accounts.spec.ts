@@ -415,6 +415,55 @@ describe("Accounts", () => {
       expect(userTwoList.find((x) => x.id === b.id)!.isDefault).toBe(true)
     })
   })
+
+  it("stores and returns a wallet card name", async () => {
+    const createRes = await honoApp.request("/accounts", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        type: "bank",
+        name: "Mono",
+        currency: "UAH",
+        cardLabel: "Mono Black",
+      }),
+    })
+    expect(createRes.status).toBe(201)
+    const created = (await createRes.json()) as {
+      id: string
+      cardLabel: string | null
+    }
+    expect(created.cardLabel).toBe("Mono Black")
+
+    const clearRes = await honoApp.request(`/accounts/${created.id}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ cardLabel: null }),
+    })
+    expect(clearRes.status).toBe(200)
+    expect(
+      ((await clearRes.json()) as { cardLabel: string | null }).cardLabel
+    ).toBeNull()
+
+    const setRes = await honoApp.request(`/accounts/${created.id}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ cardLabel: "  Mono Black  " }),
+    })
+    expect(
+      ((await setRes.json()) as { cardLabel: string | null }).cardLabel
+    ).toBe("Mono Black")
+  })
+
+  it("defaults cardLabel to null", async () => {
+    const res = await honoApp.request("/accounts", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ type: "bank", name: "Plain", currency: "UAH" }),
+    })
+    expect(
+      ((await res.json()) as { cardLabel: string | null }).cardLabel
+    ).toBeNull()
+  })
 })
 
 describe("Accounts — brokerage balance", () => {

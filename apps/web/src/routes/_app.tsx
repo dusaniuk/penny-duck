@@ -10,6 +10,7 @@ import {
   IconCashBanknote,
   IconCategory,
   IconChartLine,
+  IconInbox,
   IconLayoutDashboard,
   IconReceipt,
   IconWallet,
@@ -30,12 +31,14 @@ import {
 import { ThemeToggle } from "@workspace/ui/components/theme-toggle"
 import type { NavItem } from "@/components/app-sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { useInboxPendingCount } from "@/components/inbox/use-inbox-pending-count"
 import { NavUser } from "@/components/nav-user"
 import { getAuthUser } from "@/lib/auth"
 
 const mainNav: Array<NavItem> = [
   { title: "Dashboard", url: "/dashboard", icon: IconLayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: IconReceipt },
+  { title: "Inbox", url: "/inbox", icon: IconInbox },
   { title: "Accounts", url: "/accounts", icon: IconWallet },
   { title: "Investments", url: "/investments", icon: IconChartLine },
   { title: "Categories", url: "/categories", icon: IconCategory },
@@ -60,6 +63,10 @@ function AppLayout() {
       m.staticData.breadcrumb ||
       (m.loaderData as Record<string, unknown> | undefined)?.crumb
   )
+  const pendingCount = useInboxPendingCount()
+  const nav = mainNav.map((item) =>
+    item.url === "/inbox" ? { ...item, badge: pendingCount } : item
+  )
 
   return (
     <SidebarProvider>
@@ -69,7 +76,7 @@ function AppLayout() {
           url: "/dashboard",
           icon: IconCashBanknote,
         }}
-        nav={mainNav}
+        nav={nav}
         footer={<NavUser user={user} />}
       />
       <SidebarInset>

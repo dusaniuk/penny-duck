@@ -36,6 +36,7 @@ export function walletPocketsAsAccounts(
       homeBalance: p.homeBalance,
       isDefault: false,
       walletId: w.id,
+      cardLabel: null,
     }))
   )
 }

@@ -82,6 +82,7 @@ export const accountsRoutes = new Hono<AuthedEnv>()
           icon: body.icon,
           balance: body.balance,
           isDefault: body.isDefault,
+          cardLabel: body.cardLabel,
         })
         return c.json(account, 201)
       default:
@@ -128,6 +129,7 @@ export const accountsRoutes = new Hono<AuthedEnv>()
         color: body.color,
         icon: body.icon,
         isDefault: body.isDefault,
+        cardLabel: body.cardLabel,
       })
       return c.json(account)
     }

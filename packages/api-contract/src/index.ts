@@ -123,3 +123,10 @@ export type {
   ImportTradesResponse,
   ImportTradesParseError,
 } from "./schemas/investments"
+export {
+  InboxItemSchema,
+  WalletIngestSchema,
+  ListInboxQuerySchema,
+  AcceptInboxItemSchema,
+} from "./schemas/inbox"
+export type { InboxItem } from "./schemas/inbox"

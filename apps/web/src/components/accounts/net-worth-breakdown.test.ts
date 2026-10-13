@@ -13,6 +13,7 @@ function account(over: Partial<Account>): Account {
     balance: 0,
     homeBalance: 0,
     isDefault: false,
+    cardLabel: null,
     walletId: null,
     ...over,
   }

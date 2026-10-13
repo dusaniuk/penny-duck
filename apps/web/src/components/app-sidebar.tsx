@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Link, useMatchRoute } from "@tanstack/react-router"
+import { Badge } from "@workspace/ui/components/badge"
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +20,7 @@ export type NavItem = {
   title: string
   url: string
   icon: React.ComponentType<{ className?: string }>
+  badge?: number
 }
 
 export function AppSidebar({
@@ -67,6 +69,11 @@ export function AppSidebar({
                   <Link to={item.url} onClick={() => setOpenMobile(false)}>
                     <item.icon />
                     <span>{item.title}</span>
+                    {item.badge ? (
+                      <Badge variant="secondary" className="ml-auto">
+                        {item.badge}
+                      </Badge>
+                    ) : null}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

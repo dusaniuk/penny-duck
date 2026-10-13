@@ -29,6 +29,7 @@ export const accounts = appSchema.table(
     icon: varchar("icon", { length: 50 }),
     initialBalance: money("initial_balance").notNull().default(0),
     externalAccountId: text("external_account_id"),
+    cardLabel: varchar("card_label", { length: 100 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

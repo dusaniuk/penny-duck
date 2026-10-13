@@ -23,7 +23,7 @@ interface DateGroup {
   transactions: Array<Transaction>
 }
 
-function formatDateLabel(dateStr: string): string {
+export function formatDateLabel(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())

@@ -33,6 +33,7 @@ function walletToAccountData(w: Wallet, homeCurrency: string): AccountData {
     balance: w.totalHomeBalance,
     homeBalance: w.totalHomeBalance,
     isDefault: false,
+    cardLabel: null,
     walletId: null,
     pockets: w.pockets,
   }

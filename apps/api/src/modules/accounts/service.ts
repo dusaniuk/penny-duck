@@ -75,6 +75,7 @@ function selectAccountRow(userId: string) {
       icon: accounts.icon,
       initialBalance: accounts.initialBalance,
       externalAccountId: accounts.externalAccountId,
+      cardLabel: accounts.cardLabel,
       walletId: accounts.walletId,
       createdAt: accounts.createdAt,
       updatedAt: accounts.updatedAt,
@@ -138,6 +139,7 @@ function toResponse(row: AccountRow, rate: number, holdings = 0): Account {
     homeBalance: total * rate,
     isDefault: row.isDefault,
     walletId: row.walletId,
+    cardLabel: row.cardLabel,
   }
 }
 
@@ -342,6 +344,7 @@ export interface CreateAccountInput {
   icon?: string
   balance?: number
   isDefault?: boolean
+  cardLabel?: string
 }
 
 export async function createAccount(
@@ -357,6 +360,7 @@ export async function createAccount(
         currency: input.currency,
         color: input.color ?? null,
         icon: input.icon ?? null,
+        cardLabel: input.cardLabel ?? null,
         initialBalance:
           input.type === "loan"
             ? -Math.abs(input.balance ?? 0)
@@ -399,6 +403,7 @@ export interface UpdateAccountInput {
   color?: string
   icon?: string
   isDefault?: boolean
+  cardLabel?: string | null
 }
 
 export async function updateAccount(
@@ -415,6 +420,9 @@ export async function updateAccount(
         ...(input.type !== undefined ? { type: input.type } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
         ...(input.icon !== undefined ? { icon: input.icon } : {}),
+        ...(input.cardLabel !== undefined
+          ? { cardLabel: input.cardLabel }
+          : {}),
         updatedAt: new Date(),
       })
       .where(

@@ -176,6 +176,20 @@
       "when": 1791811919615,
       "tag": "0024_drop-legacy-auth",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791891555899,
+      "tag": "0025_add-api-keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791892008837,
+      "tag": "0026_add-wallet-inbox",
+      "breakpoints": true
     }
   ]
 }

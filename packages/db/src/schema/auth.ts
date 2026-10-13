@@ -1,4 +1,12 @@
-import { index, text, timestamp, unique, uuid } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  index,
+  integer,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core"
 import { authSchema } from "./schema"
 import { organizations } from "./organizations"
 import { users } from "./users"
@@ -70,4 +78,37 @@ export const verifications = authSchema.table(
     ...timestamps,
   },
   (table) => [index("verifications_identifier_idx").on(table.identifier)]
+)
+
+export const apikeys = authSchema.table(
+  "apikeys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name"),
+    start: text("start"),
+    prefix: text("prefix"),
+    key: text("key").notNull(),
+    referenceId: uuid("reference_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    configId: text("config_id").notNull().default("default"),
+    refillInterval: integer("refill_interval"),
+    refillAmount: integer("refill_amount"),
+    lastRefillAt: timestamp("last_refill_at", { withTimezone: true }),
+    enabled: boolean("enabled").notNull().default(true),
+    rateLimitEnabled: boolean("rate_limit_enabled").notNull().default(true),
+    rateLimitTimeWindow: integer("rate_limit_time_window"),
+    rateLimitMax: integer("rate_limit_max"),
+    requestCount: integer("request_count").notNull().default(0),
+    remaining: integer("remaining"),
+    lastRequest: timestamp("last_request", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    permissions: text("permissions"),
+    metadata: text("metadata"),
+    ...timestamps,
+  },
+  (table) => [
+    index("apikeys_reference_id_idx").on(table.referenceId),
+    index("apikeys_key_idx").on(table.key),
+  ]
 )

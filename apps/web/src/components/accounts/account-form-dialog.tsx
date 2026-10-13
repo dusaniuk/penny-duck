@@ -27,6 +27,7 @@ import {
   FormDialogFooter,
   FormDialogHeader,
 } from "@workspace/ui/components/form-dialog"
+import { Input } from "@workspace/ui/components/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -131,6 +132,7 @@ interface FormValues {
   isDefault: boolean
   color: string
   icon: string
+  cardLabel: string
 }
 
 const baseSchema = z.object({
@@ -144,6 +146,7 @@ const baseSchema = z.object({
   isDefault: z.boolean(),
   color: z.string().trim().min(1, "Pick a color").max(20),
   icon: z.string().trim().min(1, "Pick an icon").max(50),
+  cardLabel: z.string().trim().max(100, "100 characters or fewer"),
 })
 
 const createFormSchema = baseSchema
@@ -168,6 +171,7 @@ export interface AccountSubmitData {
   icon: string
   balance: number
   isDefault: boolean
+  cardLabel: string | null
 }
 
 export interface WalletSubmitData {
@@ -274,6 +278,7 @@ function AccountModalBody({
     currency: account?.currency ?? "",
     balance: "",
     isDefault: account?.isDefault ?? false,
+    cardLabel: account?.cardLabel ?? "",
     color:
       asPaletteColor(account?.color) ??
       pickRandomUnusedColor(existingAccountColors ?? []),
@@ -360,6 +365,8 @@ function AccountModalBody({
             icon: value.icon,
             balance: balanceNum,
             isDefault: value.isDefault,
+            cardLabel:
+              value.type === "bank" ? value.cardLabel.trim() || null : null,
           })
         }
         close()
@@ -705,6 +712,47 @@ function AccountModalBody({
                   </FieldContent>
                 </Field>
               )}
+            </form.Field>
+          ) : null
+        }
+      </form.Subscribe>
+
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) =>
+          type === "bank" ? (
+            <form.Field name="cardLabel">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel
+                      htmlFor={field.name}
+                      className={FORM_FIELD_LABEL}
+                    >
+                      Wallet card name
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      placeholder="e.g. Mono Black"
+                      maxLength={100}
+                      className="text-base"
+                    />
+                    <FieldDescription className="text-[11.5px]">
+                      Must match the card name shown in Apple Wallet. Used to
+                      route Apple Pay taps to this account.
+                    </FieldDescription>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
           ) : null
         }
