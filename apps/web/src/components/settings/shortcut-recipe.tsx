@@ -6,7 +6,7 @@ const BODY_EXAMPLE = `{
   "description": <Name>,
   "amount": <Amount as Number>,
   "currency": <Amount currency code>,
-  "occurredAt": <Date, ISO 8601>
+  "occurredAt": <Current Date, ISO 8601>
 }`
 
 export function ShortcutRecipe() {
@@ -19,15 +19,20 @@ export function ShortcutRecipe() {
       <ol className="list-decimal space-y-2 pl-5">
         <li>
           Open the Shortcuts app, go to <strong>Automation</strong>, tap{" "}
-          <strong>New Automation</strong>, choose <strong>Transaction</strong>.
+          <strong>New Automation</strong>, choose <strong>Wallet</strong>{" "}
+          (called <strong>Transaction</strong> before iOS 26). It only appears
+          when a payment card is set up in Apple Wallet.
         </li>
         <li>
-          Select the cards to capture. Choose <strong>Run Immediately</strong>{" "}
-          and turn off <strong>Notify When Run</strong>.
+          Expand <strong>When Any Card is tapped</strong> to pick the cards to
+          capture. Choose <strong>Run Immediately</strong> and turn off{" "}
+          <strong>Notify When Run</strong>.
         </li>
         <li>
-          Add a <strong>Dictionary</strong> action with these keys, filled from
-          the Transaction input (all six, including the date):
+          Add a <strong>Date</strong> action (current date, format ISO 8601 with
+          time), then a <strong>Dictionary</strong> action with these keys. The
+          first five come from the Shortcut Input (the transaction); the last
+          one is that Date:
           <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-3 text-sm">
             {BODY_EXAMPLE}
           </pre>
