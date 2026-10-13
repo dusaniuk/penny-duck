@@ -21,10 +21,12 @@ import { GoogleButton } from "@/components/auth/google-button"
 import { TermsNotice } from "@/components/auth/terms-notice"
 import { authClient } from "@/lib/auth-client"
 import { authErrorMessage } from "@/lib/auth-errors"
+import { getSignupOpen } from "@/lib/signup"
 
 export const Route = createFileRoute("/_auth/login")({
   validateSearch: (search: Record<string, unknown>): { error?: string } =>
     typeof search.error === "string" ? { error: search.error } : {},
+  loader: () => getSignupOpen(),
   component: LoginPage,
 })
 
@@ -33,11 +35,15 @@ function oauthErrorMessage(code: string | undefined) {
   if (code === "account_not_linked") {
     return "This email already has a password account. Log in with your password."
   }
+  if (code === "signup_disabled") {
+    return "Sign-up is closed. Only existing accounts can sign in."
+  }
   return "Google sign-in failed. Please try again."
 }
 
 function LoginPage() {
   const navigate = useNavigate()
+  const signupOpen = Route.useLoaderData()
   const { error: oauthError } = Route.useSearch()
   const [error, setError] = useState<string | null>(
     oauthErrorMessage(oauthError)
@@ -104,9 +110,12 @@ function LoginPage() {
                   {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
                 <TermsNotice action="continuing" />
-                <FieldDescription className="text-center">
-                  Don&apos;t have an account? <Link to="/signup">Sign up</Link>
-                </FieldDescription>
+                {signupOpen && (
+                  <FieldDescription className="text-center">
+                    Don&apos;t have an account?{" "}
+                    <Link to="/signup">Sign up</Link>
+                  </FieldDescription>
+                )}
               </Field>
             </FieldGroup>
           </form>

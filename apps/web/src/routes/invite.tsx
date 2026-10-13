@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -22,11 +27,15 @@ import { TermsNotice } from "@/components/auth/terms-notice"
 import { api } from "@/lib/api"
 import { authClient } from "@/lib/auth-client"
 import { authErrorMessage } from "@/lib/auth-errors"
+import { getSignupOpen } from "@/lib/signup"
 
 export const Route = createFileRoute("/invite")({
   validateSearch: (search: Record<string, unknown>): { code: string } => ({
     code: String(search.code ?? ""),
   }),
+  beforeLoad: async () => {
+    if (!(await getSignupOpen())) throw redirect({ to: "/login" })
+  },
   component: InvitePage,
 })
 

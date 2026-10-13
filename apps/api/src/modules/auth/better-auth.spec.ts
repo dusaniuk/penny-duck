@@ -127,4 +127,51 @@ describe("better-auth mount", () => {
     }
     expect((await attempt()).status).toBe(429)
   })
+
+  it("keeps sign-up open outside production", () => {
+    expect(authOptions.emailAndPassword.disableSignUp).toBe(false)
+  })
+
+  describe("with sign-up closed", () => {
+    const closed = betterAuth({
+      ...authOptions,
+      emailAndPassword: {
+        ...authOptions.emailAndPassword,
+        disableSignUp: true,
+      },
+    })
+    const post = (path: string, body: unknown) =>
+      closed.handler(
+        new Request(`http://localhost/api/auth${path}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        })
+      )
+
+    it("rejects email sign-up without creating a user", async () => {
+      const res = await post("/sign-up/email", {
+        name: "Stranger",
+        email: "stranger@example.com",
+        password: "a-long-password",
+      })
+
+      expect(res.status).toBe(400)
+      expect(((await res.json()) as { code: string }).code).toBe(
+        "EMAIL_PASSWORD_SIGN_UP_DISABLED"
+      )
+      expect(await db.select().from(users)).toHaveLength(0)
+    })
+
+    it("still signs in existing users", async () => {
+      await insertLegacyUser("friend@example.com", "friend-password")
+
+      const res = await post("/sign-in/email", {
+        email: "friend@example.com",
+        password: "friend-password",
+      })
+
+      expect(res.status).toBe(200)
+    })
+  })
 })

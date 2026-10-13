@@ -6,6 +6,7 @@ const MESSAGES: Record<string, string> = {
   NAME_REQUIRED: "Name is required",
   NAME_TOO_LONG: "Name must be at most 100 characters",
   PROVIDER_NOT_FOUND: "Google sign-in isn't configured",
+  EMAIL_PASSWORD_SIGN_UP_DISABLED: "Sign-up is closed",
 }
 
 export function authErrorMessage(

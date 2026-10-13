@@ -25,11 +25,11 @@ Common endpoints (relative to the API): `POST /auth/sign-up/email`, `POST /auth/
 
 Better Auth tables live in the Postgres schema `auth`:
 
-| Table | Purpose |
-|-------|---------|
-| `auth.sessions` | One row per session: `token`, `expires_at`, `ip_address`, `user_agent`, `active_organization_id` (FK to `app.organizations`, `ON DELETE SET NULL`). Cascades from `app.users` |
-| `auth.accounts` | Credential password hashes (`provider_id = 'credential'`) and Google accounts. OAuth tokens are stored encrypted. Cascades from `app.users` |
-| `auth.verifications` | Short-lived verification/OAuth state records |
+| Table                | Purpose                                                                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.sessions`      | One row per session: `token`, `expires_at`, `ip_address`, `user_agent`, `active_organization_id` (FK to `app.organizations`, `ON DELETE SET NULL`). Cascades from `app.users` |
+| `auth.accounts`      | Credential password hashes (`provider_id = 'credential'`) and Google accounts. OAuth tokens are stored encrypted. Cascades from `app.users`                                   |
+| `auth.verifications` | Short-lived verification/OAuth state records                                                                                                                                  |
 
 `app.users` is the Better Auth user table. Additional fields on top of the standard ones:
 
@@ -40,18 +40,26 @@ Schema definitions: `packages/db/src/schema/auth.ts` and `users.ts`. Migration `
 
 ## Sessions
 
-| Setting | Value |
-|---------|-------|
-| Cookie | `penny-duck.session_token`, httpOnly (`__Secure-` prefix over https) |
-| Lifetime | 7 days (`expiresIn`) |
-| Sliding refresh | Expiry is extended at most once a day (`updateAge` = 1 day) |
-| Cookie cache | 5-minute signed `penny-duck.session_data` cookie (`cookieCache.maxAge` = 300) |
+| Setting         | Value                                                                         |
+| --------------- | ----------------------------------------------------------------------------- |
+| Cookie          | `penny-duck.session_token`, httpOnly (`__Secure-` prefix over https)          |
+| Lifetime        | 7 days (`expiresIn`)                                                          |
+| Sliding refresh | Expiry is extended at most once a day (`updateAge` = 1 day)                   |
+| Cookie cache    | 5-minute signed `penny-duck.session_data` cookie (`cookieCache.maxAge` = 300) |
 
 The cookie cache avoids a database lookup on every request. Caveat: a session that is revoked (for example by signing out on another device) can keep working on a device that still holds a valid cache cookie for up to 5 minutes.
 
 Sign-out is handled by Better Auth's `/auth/sign-out`, which clears the session cookies. `clearSessionCookies` (`apps/api/src/modules/auth/cookies.ts`) is only used by `DELETE /users/me`.
 
 Better Auth's `/update-user` endpoint is disabled (`disabledPaths`); profiles are edited through `PATCH /users/me`, which applies the app's validation.
+
+## Sign-up availability
+
+Sign-up is closed in production (`RAILWAY_ENVIRONMENT_NAME === "production"`) and open everywhere else (local dev, unit tests, e2e).
+
+- API: `emailAndPassword.disableSignUp` and the Google provider's `disableSignUp` (not `disableImplicitSignUp`, which a client can bypass with `requestSignUp`). Email sign-up returns 400 `EMAIL_PASSWORD_SIGN_UP_DISABLED`; a Google sign-in for an unknown email redirects to `/login?error=signup_disabled`. Existing users can still sign in, and Google still links to an existing account with a verified email
+- Web: `getSignupOpen()` (`apps/web/src/lib/signup.ts`) reads the same env var at runtime. `/signup` and `/invite` redirect to `/login`, and the "Sign up" link and the members page Invite button are hidden
+- To reopen sign-up in production, change `signUpDisabled` in `apps/api/src/modules/auth/auth.ts` and `getSignupOpen`
 
 ## Organization provisioning
 
@@ -83,8 +91,8 @@ New passwords are hashed with scrypt (Better Auth's default). Legacy bcrypt hash
 
 Enabled in production only, in-memory storage, per client IP (taken from `x-forwarded-for`):
 
-| Endpoint | Limit |
-|----------|-------|
+| Endpoint         | Limit        |
+| ---------------- | ------------ |
 | `/sign-in/email` | 5 per minute |
 | `/sign-up/email` | 3 per minute |
 
@@ -107,19 +115,18 @@ Configured in `apps/web/vite.config.ts` via Nitro `routeRules`, so cookies stay 
 `apps/web/src/lib/auth.ts` exports `getAuthUser()`, a TanStack Start server function that forwards the request cookie to `/users/me` and forwards any `Set-Cookie` header from the response back to the browser.
 
 Used in route `beforeLoad` hooks:
+
 - `/_app` layout redirects to `/login` if not authenticated
 - `/_auth` layout redirects to `/dashboard` if already authenticated
 - `/` index redirects to `/dashboard` or `/login`
 
 ## Environment variables (API)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | yes | Postgres connection string |
-| `BETTER_AUTH_SECRET` | yes | Signing/encryption secret, at least 32 characters (`openssl rand -base64 32`) |
-| `WEB_URL` | yes | Public web origin; used as Better Auth `baseURL`, trusted origin and CORS origin |
-| `PORT` | no | API port (3030) |
-| `GOOGLE_CLIENT_ID` | no | Enables Google sign-in together with the secret |
-| `GOOGLE_CLIENT_SECRET` | no | See above |
-
-`JWT_SECRET`, `JWT_EXPIRATION` and `REFRESH_TOKEN_EXPIRATION` are no longer used.
+| Variable               | Required | Description                                                                      |
+| ---------------------- | -------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`         | yes      | Postgres connection string                                                       |
+| `BETTER_AUTH_SECRET`   | yes      | Signing/encryption secret, at least 32 characters (`openssl rand -base64 32`)    |
+| `WEB_URL`              | yes      | Public web origin; used as Better Auth `baseURL`, trusted origin and CORS origin |
+| `PORT`                 | no       | API port (3030)                                                                  |
+| `GOOGLE_CLIENT_ID`     | no       | Enables Google sign-in together with the secret                                  |
+| `GOOGLE_CLIENT_SECRET` | no       | See above                                                                        |

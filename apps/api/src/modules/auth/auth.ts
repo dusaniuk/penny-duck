@@ -15,6 +15,7 @@ import { mapGoogleProfile } from "./google"
 import { verifyPassword } from "./password"
 
 const DAY_SECONDS = 60 * 60 * 24
+const signUpDisabled = isProduction
 
 async function currentOAuthState(): Promise<unknown> {
   try {
@@ -37,6 +38,7 @@ const googleProvider =
           clientId: env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
           prompt: "select_account" as const,
+          disableSignUp: signUpDisabled,
           mapProfileToUser: mapGoogleProfile,
         },
       }
@@ -57,6 +59,7 @@ export const authOptions = {
   }),
   emailAndPassword: {
     enabled: true,
+    disableSignUp: signUpDisabled,
     autoSignIn: true,
     password: { verify: verifyPassword },
   },

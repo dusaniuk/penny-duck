@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router"
 import { useState } from "react"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -21,8 +26,12 @@ import { GoogleButton } from "@/components/auth/google-button"
 import { TermsNotice } from "@/components/auth/terms-notice"
 import { authClient } from "@/lib/auth-client"
 import { authErrorMessage } from "@/lib/auth-errors"
+import { getSignupOpen } from "@/lib/signup"
 
 export const Route = createFileRoute("/_auth/signup")({
+  beforeLoad: async () => {
+    if (!(await getSignupOpen())) throw redirect({ to: "/login" })
+  },
   component: SignupPage,
 })
 

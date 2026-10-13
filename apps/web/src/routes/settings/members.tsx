@@ -14,12 +14,15 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { getSignupOpen } from "@/lib/signup"
 
 export const Route = createFileRoute("/settings/members")({
+  loader: () => getSignupOpen(),
   component: MembersPage,
 })
 
 function MembersPage() {
+  const signupOpen = Route.useLoaderData()
   const { data, isLoading } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
@@ -53,7 +56,7 @@ function MembersPage() {
             People in your organization
           </p>
         </div>
-        {isOwner && <InviteButton />}
+        {isOwner && signupOpen && <InviteButton />}
       </div>
 
       {isLoading ? (
