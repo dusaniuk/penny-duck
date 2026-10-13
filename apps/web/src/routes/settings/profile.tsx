@@ -59,7 +59,7 @@ function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="mb-6">
         <h2 className="text-xl font-semibold">Profile</h2>
         <p className="text-base text-muted-foreground">

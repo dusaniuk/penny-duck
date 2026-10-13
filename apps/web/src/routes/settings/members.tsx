@@ -48,7 +48,7 @@ function MembersPage() {
   const isOwner = currentMember?.role === "owner"
 
   return (
-    <div className="max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Members</h2>
