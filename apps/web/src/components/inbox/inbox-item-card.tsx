@@ -51,7 +51,7 @@ export function InboxItemCard({
 
   const byId = new Map(categories.map((c) => [c.id, c]))
   const expenseCategories = categories
-    .filter((c) => c.type === "expense")
+    .filter((c) => c.type === "expense" && c.parentId !== null)
     .sort((a, b) =>
       categoryLabel(a, byId).localeCompare(categoryLabel(b, byId))
     )

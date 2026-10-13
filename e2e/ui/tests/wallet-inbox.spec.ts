@@ -20,11 +20,20 @@ test.describe("Wallet inbox", () => {
     )
     expect(accountRes.status()).toBe(201)
 
-    const categoryName = `Wallet ${Date.now()}`
+    const parentRes = await page.request.post(
+      `${env.WEB_BASE_URL}/api/categories`,
+      {
+        data: { name: `Wallet ${Date.now()}`, type: "expense", color: "red" },
+      }
+    )
+    expect(parentRes.status()).toBe(201)
+    const parent = await parentRes.json()
+
+    const categoryName = `Taps ${Date.now()}`
     const categoryRes = await page.request.post(
       `${env.WEB_BASE_URL}/api/categories`,
       {
-        data: { name: categoryName, type: "expense", color: "red" },
+        data: { name: categoryName, type: "expense", parentId: parent.id },
       }
     )
     expect(categoryRes.status()).toBe(201)
