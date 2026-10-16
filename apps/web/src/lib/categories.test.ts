@@ -3,6 +3,7 @@ import {
   activeCategories,
   isArchivedCategory,
   pickableCategories,
+  pickerGroups,
 } from "./categories"
 import type { Category } from "@workspace/api-contract"
 
@@ -74,5 +75,41 @@ describe("category helpers — archived filtering", () => {
       "Travel",
       "Lisbon 2024",
     ])
+  })
+})
+
+describe("pickerGroups", () => {
+  const empty = cat({ name: "Empty parent" })
+  const foodParent = cat({ name: "Food" })
+  const groceries = cat({
+    name: "Groceries",
+    parentId: foodParent.id,
+    color: null,
+  })
+  const dining = cat({ name: "Dining", parentId: foodParent.id, color: null })
+  const list = [empty, foodParent, groceries, dining]
+
+  it("skips a parent that has no children in the list", () => {
+    const groups = pickerGroups(list, "")
+    expect(groups.map((g) => g.parent.name)).toEqual(["Food"])
+    expect(groups[0].children.map((c) => c.name)).toEqual([
+      "Groceries",
+      "Dining",
+    ])
+  })
+
+  it("skips a parent whose only children were filtered out upstream", () => {
+    const groups = pickerGroups(
+      pickableCategories([...list, oldTrip, travel], null),
+      ""
+    )
+    expect(groups.map((g) => g.parent.name)).toEqual(["Food"])
+  })
+
+  it("filters children by the query and drops parents with no match", () => {
+    const groups = pickerGroups(list, "din")
+    expect(groups).toHaveLength(1)
+    expect(groups[0].children.map((c) => c.name)).toEqual(["Dining"])
+    expect(pickerGroups(list, "food")).toEqual([])
   })
 })

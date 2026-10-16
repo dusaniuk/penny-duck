@@ -16,6 +16,7 @@ import {
 import { useIsDark } from "@workspace/ui/hooks/use-is-dark"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Category } from "@workspace/api-contract"
+import { pickerGroups } from "@/lib/categories"
 import { paletteColor } from "@/lib/palette"
 import { getIcon } from "@/lib/icons"
 
@@ -60,24 +61,11 @@ export function TransactionCategoryPicker({
     () => new Map(categories.map((c) => [c.id, c])),
     [categories]
   )
-  const parents = useMemo(
-    () => categories.filter((c) => c.parentId === null),
-    [categories]
-  )
-  const childrenByParent = useMemo(() => {
-    const map = new Map<string, Array<Category>>()
-    for (const c of categories) {
-      if (c.parentId !== null) {
-        const list = map.get(c.parentId) ?? []
-        list.push(c)
-        map.set(c.parentId, list)
-      }
-    }
-    return map
-  }, [categories])
-
   const q = search.trim().toLowerCase()
-  const matches = (c: Category) => q === "" || c.name.toLowerCase().includes(q)
+  const groups = useMemo(
+    () => pickerGroups(categories, search),
+    [categories, search]
+  )
 
   const gridCols = variant === "mobile" ? "grid-cols-2" : "grid-cols-3"
   const bodyMaxH = variant === "mobile" ? "max-h-[600px]" : "max-h-[540px]"
@@ -184,15 +172,7 @@ export function TransactionCategoryPicker({
           </div>
         )}
 
-        {parents.map((parent) => {
-          const children = childrenByParent.get(parent.id) ?? []
-          const visibleChildren = children.filter(matches)
-          // During search, only show the parent header when at least one
-          // child matches — a parent-name match alone would render a label
-          // with nothing selectable beneath it.
-          if (q !== "" && visibleChildren.length === 0) {
-            return null
-          }
+        {groups.map(({ parent, children }) => {
           const fg = paletteColor(parent.color, fgOpts)
           const parentIcon = getIcon(parent.icon)
           return (
@@ -209,58 +189,54 @@ export function TransactionCategoryPicker({
                     {parentIcon ? <parentIcon.component size={15} /> : null}
                   </span>
                   <span className="flex-1">{parent.name}</span>
-                  {children.length > 0 && (
-                    <Badge
-                      size="sm"
-                      variant="secondary"
-                      className="border-0 bg-foreground/[0.05] text-foreground/40"
-                    >
-                      {children.length}
-                    </Badge>
-                  )}
+                  <Badge
+                    size="sm"
+                    variant="secondary"
+                    className="border-0 bg-foreground/[0.05] text-foreground/40"
+                  >
+                    {children.length}
+                  </Badge>
                 </div>
               </div>
-              {visibleChildren.length > 0 && (
-                <div
-                  className={cn(
-                    "relative grid gap-1 pl-[22px] before:absolute before:top-1 before:bottom-1 before:left-[10px] before:w-px before:bg-foreground/[0.07] before:content-['']",
-                    gridCols
-                  )}
-                >
-                  {visibleChildren.map((child) => {
-                    const active = child.id === selectedId
-                    const childIcon = getIcon(child.icon)
-                    const childFg = paletteColor(child.color, fgOpts)
-                    const childBg = paletteColor(child.color, bgOpts)
-                    return (
-                      <button
-                        key={child.id}
-                        type="button"
-                        onClick={() => onSelect(child.id)}
-                        aria-pressed={active}
-                        className={cn(CHIP_CLASS, "text-[11px]")}
-                        style={
-                          active
-                            ? {
-                                background: childBg,
-                                borderColor: childFg,
-                                color: childFg,
-                              }
-                            : undefined
-                        }
+              <div
+                className={cn(
+                  "relative grid gap-1 pl-[22px] before:absolute before:top-1 before:bottom-1 before:left-[10px] before:w-px before:bg-foreground/[0.07] before:content-['']",
+                  gridCols
+                )}
+              >
+                {children.map((child) => {
+                  const active = child.id === selectedId
+                  const childIcon = getIcon(child.icon)
+                  const childFg = paletteColor(child.color, fgOpts)
+                  const childBg = paletteColor(child.color, bgOpts)
+                  return (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onClick={() => onSelect(child.id)}
+                      aria-pressed={active}
+                      className={cn(CHIP_CLASS, "text-[11px]")}
+                      style={
+                        active
+                          ? {
+                              background: childBg,
+                              borderColor: childFg,
+                              color: childFg,
+                            }
+                          : undefined
+                      }
+                    >
+                      <span
+                        className="grid size-[18px] shrink-0 place-items-center"
+                        style={{ color: childFg }}
                       >
-                        <span
-                          className="grid size-[18px] shrink-0 place-items-center"
-                          style={{ color: childFg }}
-                        >
-                          {childIcon ? <childIcon.component size={13} /> : null}
-                        </span>
-                        <span className="truncate">{child.name}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+                        {childIcon ? <childIcon.component size={13} /> : null}
+                      </span>
+                      <span className="truncate">{child.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )
         })}
