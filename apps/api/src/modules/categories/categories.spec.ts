@@ -63,6 +63,30 @@ async function updateCategoryHttp(
   return res.json()
 }
 
+async function archiveCategoryHttp(
+  id: string,
+  expectedStatus = 200
+): Promise<Category> {
+  const res = await honoApp.request(`/categories/${id}/archive`, {
+    method: "PUT",
+    headers: { cookie },
+  })
+  expect(res.status).toBe(expectedStatus)
+  return res.json()
+}
+
+async function unarchiveCategoryHttp(
+  id: string,
+  expectedStatus = 200
+): Promise<Category> {
+  const res = await honoApp.request(`/categories/${id}/archive`, {
+    method: "DELETE",
+    headers: { cookie },
+  })
+  expect(res.status).toBe(expectedStatus)
+  return res.json()
+}
+
 describe("Categories — auth", () => {
   it("rejects unauthenticated list", async () => {
     const res = await honoApp.request("/categories")
@@ -395,6 +419,106 @@ describe("Categories", () => {
     expect(user2Cats.find((c) => c.name === "User2 Cat")).toBeDefined()
     expect(user1Cats.find((c) => c.name === "User2 Cat")).toBeUndefined()
     expect(user2Cats.find((c) => c.name === "User1 Cat")).toBeUndefined()
+  })
+})
+
+describe("Categories — archiving", () => {
+  async function tripsWithWarsaw() {
+    const trips = await createCategoryHttp({
+      name: "Trips",
+      type: "expense",
+      color: "blue",
+    })
+    const warsaw = await createCategoryHttp({
+      name: "Warsaw 2026",
+      parentId: trips.id,
+    })
+    return { trips, warsaw }
+  }
+
+  it("returns archivedAt null on a fresh category", async () => {
+    const c = await createCategoryHttp({ name: "Food", color: "red" })
+    expect(c.archivedAt).toBeNull()
+  })
+
+  it("archives a subcategory on its own and keeps the parent active", async () => {
+    const { trips, warsaw } = await tripsWithWarsaw()
+
+    const archived = await archiveCategoryHttp(warsaw.id)
+    expect(archived.archivedAt).not.toBeNull()
+
+    const list = await listCategoriesHttp()
+    expect(list.find((c) => c.id === warsaw.id)!.archivedAt).not.toBeNull()
+    expect(list.find((c) => c.id === trips.id)!.archivedAt).toBeNull()
+  })
+
+  it("archiving a parent archives its subcategories", async () => {
+    const { trips, warsaw } = await tripsWithWarsaw()
+
+    await archiveCategoryHttp(trips.id)
+
+    const list = await listCategoriesHttp()
+    expect(list.find((c) => c.id === trips.id)!.archivedAt).not.toBeNull()
+    expect(list.find((c) => c.id === warsaw.id)!.archivedAt).not.toBeNull()
+  })
+
+  it("unarchiving a parent unarchives its subcategories", async () => {
+    const { trips, warsaw } = await tripsWithWarsaw()
+    await archiveCategoryHttp(trips.id)
+
+    const restored = await unarchiveCategoryHttp(trips.id)
+    expect(restored.archivedAt).toBeNull()
+
+    const list = await listCategoriesHttp()
+    expect(list.find((c) => c.id === warsaw.id)!.archivedAt).toBeNull()
+  })
+
+  it("unarchiving a subcategory also unarchives its parent", async () => {
+    const { trips, warsaw } = await tripsWithWarsaw()
+    await archiveCategoryHttp(trips.id)
+
+    await unarchiveCategoryHttp(warsaw.id)
+
+    const list = await listCategoriesHttp()
+    expect(list.find((c) => c.id === warsaw.id)!.archivedAt).toBeNull()
+    expect(list.find((c) => c.id === trips.id)!.archivedAt).toBeNull()
+  })
+
+  it("keeps transactions attached to an archived category", async () => {
+    const { warsaw } = await tripsWithWarsaw()
+    const account = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    await db.insert(transactions).values({
+      organizationId,
+      accountId: account.id,
+      categoryId: warsaw.id,
+      amount: -100,
+      date: new Date(),
+    })
+
+    await archiveCategoryHttp(warsaw.id)
+
+    const res = await honoApp.request(
+      `/transactions?categoryId=${warsaw.id}&limit=1`,
+      { headers: { cookie } }
+    )
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as { total: number }).total).toBe(1)
+  })
+
+  it("rejects archiving a category in another org", async () => {
+    const c = await createCategoryHttp({ name: "Food", color: "red" })
+    const other = await signupUser()
+    const res = await honoApp.request(`/categories/${c.id}/archive`, {
+      method: "PUT",
+      headers: { cookie: other.cookie },
+    })
+    expect(res.status).toBe(404)
   })
 })
 

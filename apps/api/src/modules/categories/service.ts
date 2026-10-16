@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm"
+import { and, eq, gte, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
 import { accounts, categories, transactions, users } from "@workspace/db"
 import {
@@ -33,6 +33,7 @@ function toResponse(row: CategoryRow): Category {
     parentId: row.parentId ?? null,
     icon: row.icon ?? null,
     color: row.color ?? null,
+    archivedAt: row.archivedAt?.toISOString() ?? null,
   }
 }
 
@@ -366,6 +367,64 @@ export async function updateCategory(
 
     return toResponse(row)
   })
+}
+
+// Archiving hides a category from pickers while its transactions stay
+// categorized. A parent takes its subcategories with it; unarchiving a
+// subcategory brings its parent back too, so nothing ends up visible under a
+// hidden parent.
+async function setArchived(
+  id: string,
+  organizationId: string,
+  archivedAt: Date | null
+): Promise<Category> {
+  return db.transaction(async (tx) => {
+    const existing = await findById(tx, id, organizationId)
+    if (existing === null) {
+      throw new HTTPException(404, { message: "Category not found" })
+    }
+    const now = new Date()
+    const ids = [id]
+    if (existing.parentId === null) {
+      const children = await tx
+        .select({ id: categories.id })
+        .from(categories)
+        .where(
+          and(
+            eq(categories.parentId, id),
+            eq(categories.organizationId, organizationId)
+          )
+        )
+      ids.push(...children.map((c) => c.id))
+    } else if (archivedAt === null) {
+      ids.push(existing.parentId)
+    }
+    await tx
+      .update(categories)
+      .set({ archivedAt, updatedAt: now })
+      .where(
+        and(
+          inArray(categories.id, ids),
+          eq(categories.organizationId, organizationId)
+        )
+      )
+    const row = await findById(tx, id, organizationId)
+    return toResponse(row!)
+  })
+}
+
+export async function archiveCategory(
+  id: string,
+  organizationId: string
+): Promise<Category> {
+  return setArchived(id, organizationId, new Date())
+}
+
+export async function unarchiveCategory(
+  id: string,
+  organizationId: string
+): Promise<Category> {
+  return setArchived(id, organizationId, null)
 }
 
 export async function deleteCategory(

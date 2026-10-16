@@ -27,7 +27,15 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 function makeCat(id: string, name: string, color: string | null): Category {
-  return { id, name, type: "expense", parentId: null, icon: null, color }
+  return {
+    id,
+    name,
+    type: "expense",
+    parentId: null,
+    icon: null,
+    color,
+    archivedAt: null,
+  }
 }
 
 const categories = [

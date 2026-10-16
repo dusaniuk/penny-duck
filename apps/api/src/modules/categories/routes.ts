@@ -7,11 +7,13 @@ import {
 } from "@workspace/api-contract"
 import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
 import {
+  archiveCategory,
   createCategory,
   deleteCategory,
   getCategoryUsage,
   listCategories,
   seedDefaultCategories,
+  unarchiveCategory,
   updateCategory,
 } from "./service"
 
@@ -72,4 +74,16 @@ export const categoriesRoutes = new Hono<AuthedEnv>()
     const { id } = c.req.valid("param")
     await deleteCategory(id, user.organizationId)
     return c.json({ message: "Category deleted" })
+  })
+  .put("/:id/archive", zValidator("param", IdParamSchema), async (c) => {
+    const user = c.get("user")
+    const { id } = c.req.valid("param")
+    const category = await archiveCategory(id, user.organizationId)
+    return c.json(category)
+  })
+  .delete("/:id/archive", zValidator("param", IdParamSchema), async (c) => {
+    const user = c.get("user")
+    const { id } = c.req.valid("param")
+    const category = await unarchiveCategory(id, user.organizationId)
+    return c.json(category)
   })

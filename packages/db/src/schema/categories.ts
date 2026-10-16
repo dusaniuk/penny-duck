@@ -20,6 +20,7 @@ export const categories = appSchema.table(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
   (table) => [index("categories_org_idx").on(table.organizationId)]
 )

@@ -1,0 +1,1 @@
+ALTER TABLE "app"."categories" ADD COLUMN "archived_at" timestamp with time zone;

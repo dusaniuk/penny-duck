@@ -1,8 +1,15 @@
-import { IconPencil, IconTrash } from "@tabler/icons-react"
+import {
+  IconArchive,
+  IconArchiveOff,
+  IconPencil,
+  IconTrash,
+} from "@tabler/icons-react"
 import { Button } from "@workspace/ui/components/button"
+import { cn } from "@workspace/ui/lib/utils"
 import { CategoryIconChip } from "./category-icon-chip"
 import { formatMoney, formatRelativeDate, sharePct } from "./category-stats"
 import type { Category, CategoryUsageItem } from "@workspace/api-contract"
+import { isArchivedCategory } from "@/lib/categories"
 import { categoryShadeVars } from "@/lib/palette"
 
 interface CategorySubcategoryCardProps {
@@ -13,6 +20,8 @@ interface CategorySubcategoryCardProps {
   parentSpent: number
   homeCurrency: string
   onEdit: (category: Category) => void
+  onArchive: (category: Category) => void
+  onUnarchive: (category: Category) => void
   onDelete: (category: Category) => void
 }
 
@@ -23,40 +32,73 @@ export function CategorySubcategoryCard({
   parentSpent,
   homeCurrency,
   onEdit,
+  onArchive,
+  onUnarchive,
   onDelete,
 }: CategorySubcategoryCardProps) {
   const pct = sharePct(stat.spentThisMonth, parentSpent)
   const used = stat.countThisMonth > 0
+  const archived = isArchivedCategory(category)
 
   const actions = (
     <div className="flex shrink-0 items-center gap-0.5">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={`Edit ${category.name}`}
-        onClick={() => onEdit(category)}
-        className="text-muted-foreground hover:text-foreground"
-      >
-        <IconPencil size={15} />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={`Delete ${category.name}`}
-        onClick={() => onDelete(category)}
-        className="text-muted-foreground hover:text-destructive"
-      >
-        <IconTrash size={15} />
-      </Button>
+      {archived ? (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Unarchive ${category.name}`}
+            onClick={() => onUnarchive(category)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <IconArchiveOff size={15} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Delete ${category.name}`}
+            onClick={() => onDelete(category)}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <IconTrash size={15} />
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Edit ${category.name}`}
+            onClick={() => onEdit(category)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <IconPencil size={15} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Archive ${category.name}`}
+            onClick={() => onArchive(category)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <IconArchive size={15} />
+          </Button>
+        </>
+      )}
     </div>
   )
 
   return (
     <div
       style={categoryShadeVars(parentColor)}
-      className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-4"
+      className={cn(
+        "relative overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-4",
+        archived && "opacity-70 saturate-50"
+      )}
     >
       <span
         aria-hidden
@@ -84,7 +126,9 @@ export function CategorySubcategoryCard({
               </span>
             </p>
           ) : (
-            <p className="text-[12px] text-muted-foreground">unused</p>
+            <p className="text-[12px] text-muted-foreground">
+              {archived ? "archived" : "unused"}
+            </p>
           )}
         </div>
         {actions}
@@ -121,7 +165,9 @@ export function CategorySubcategoryCard({
         </div>
 
         <div className="mt-2 flex items-center justify-between text-[11.5px] text-muted-foreground">
-          {used ? (
+          {archived ? (
+            <span>archived</span>
+          ) : used ? (
             <span>
               {stat.countThisMonth} tx ·{" "}
               {formatRelativeDate(stat.lastActivityAt)}

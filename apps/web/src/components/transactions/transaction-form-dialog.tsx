@@ -59,6 +59,7 @@ import type {
   Transaction,
   Wallet,
 } from "@workspace/api-contract"
+import { pickableCategories } from "@/lib/categories"
 import { parseLocalDate, toLocalIso } from "@/lib/dates"
 
 type TransactionType = "expense" | "income" | "transfer"
@@ -370,7 +371,9 @@ function TransactionModalBody({
   const typedCategories =
     activeType === "transfer"
       ? []
-      : categories.filter((c) => c.type === activeType)
+      : pickableCategories(categories, values.categoryId).filter(
+          (c) => c.type === activeType
+        )
 
   // Sort: user-default first, then most-used, then alphabetical. Applied to
   // chips and to the transfer From/To selects so order stays consistent

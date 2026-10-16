@@ -7,7 +7,8 @@ import type { InferRequestType } from "hono/client"
 import type { Category, CategoryType } from "@workspace/api-contract"
 import type { CategorySubmitData } from "@/components/categories/category-form-dialog"
 import type { ParentRollup } from "@/components/categories/category-stats"
-import { CategoryDeleteDialog } from "@/components/categories/category-delete-dialog"
+import type { CategoryDialogMode } from "@/components/categories/category-archive-dialog"
+import { CategoryArchiveDialog } from "@/components/categories/category-archive-dialog"
 import { CategoryDetail } from "@/components/categories/category-detail"
 import { CategoryEmptyState } from "@/components/categories/category-empty-state"
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog"
@@ -19,6 +20,7 @@ import {
 } from "@/components/categories/category-stats"
 import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
+import { activeCategories, isArchivedCategory } from "@/lib/categories"
 
 type CreateCategoryBody = InferRequestType<typeof api.categories.$post>["json"]
 type UpdateCategoryBody = InferRequestType<
@@ -68,8 +70,15 @@ function CategoriesPage() {
   })
 
   const categories = useMemo<Array<Category>>(() => data ?? [], [data])
+  // Tabs, counts and the parent picker see live parents only; archived
+  // parents get their own collapsed group in the sidebar.
   const topLevel = useMemo(
-    () => categories.filter((c) => c.parentId === null),
+    () => activeCategories(categories).filter((c) => c.parentId === null),
+    [categories]
+  )
+  const archivedTopLevel = useMemo(
+    () =>
+      categories.filter((c) => c.parentId === null && isArchivedCategory(c)),
     [categories]
   )
 
@@ -100,13 +109,13 @@ function CategoriesPage() {
 
   const parentRollups = useMemo(() => {
     const map = new Map<string, ParentRollup>()
-    for (const p of topLevel)
+    for (const p of [...topLevel, ...archivedTopLevel])
       map.set(
         p.id,
         rollupParent(p.id, childrenByParent.get(p.id) ?? [], statsMap)
       )
     return map
-  }, [topLevel, childrenByParent, statsMap])
+  }, [topLevel, archivedTopLevel, childrenByParent, statsMap])
 
   const tabCounts = useMemo(
     () => ({
@@ -131,6 +140,14 @@ function CategoriesPage() {
       })
   }, [topLevel, activeType, parentRollups])
 
+  const visibleArchivedParents = useMemo(
+    () =>
+      archivedTopLevel
+        .filter((p) => activeType === "all" || p.type === activeType)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [archivedTopLevel, activeType]
+  )
+
   const totalSpent = useMemo(
     () =>
       visibleParents.reduce(
@@ -144,13 +161,15 @@ function CategoriesPage() {
   // deleting the selected parent) always lands on a visible category.
   const selectedParent =
     visibleParents.find((p) => p.id === selectedParentId) ??
+    visibleArchivedParents.find((p) => p.id === selectedParentId) ??
     visibleParents[0] ??
     null
 
   const [formOpen, setFormOpen] = useState(false)
   const [editCategory, setEditCategory] = useState<Category | null>(null)
   const [createParentId, setCreateParentId] = useState<string | null>(null)
-  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
+  const [dialogCategory, setDialogCategory] = useState<Category | null>(null)
+  const [dialogMode, setDialogMode] = useState<CategoryDialogMode>("archive")
 
   const createMutation = useMutation({
     mutationFn: async (body: CreateCategoryBody) => {
@@ -176,6 +195,26 @@ function CategoriesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await api.categories[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateCategories,
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.categories[":id"].archive.$put({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: invalidateCategories,
+  })
+
+  const unarchiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.categories[":id"].archive.$delete({
+        param: { id },
+      })
       if (!res.ok) throw await res.json()
       return res.json()
     },
@@ -240,12 +279,41 @@ function CategoriesPage() {
     }
   }
 
-  async function handleDelete() {
-    if (!deleteCategory) return
+  function handleOpenArchive(category: Category) {
+    setDialogMode("archive")
+    setDialogCategory(category)
+  }
+
+  function handleOpenDelete(category: Category) {
+    setDialogMode("delete")
+    setDialogCategory(category)
+  }
+
+  async function handleArchive() {
+    if (!dialogCategory) return
     try {
-      await deleteMutation.mutateAsync(deleteCategory.id)
+      await archiveMutation.mutateAsync(dialogCategory.id)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't archive the category"))
+      throw err
+    }
+  }
+
+  async function handleUnarchive(category: Category) {
+    try {
+      await unarchiveMutation.mutateAsync(category.id)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't unarchive the category"))
+    }
+  }
+
+  async function handleDelete() {
+    if (!dialogCategory) return
+    try {
+      await deleteMutation.mutateAsync(dialogCategory.id)
     } catch (err) {
       toast.error(errorMessage(err, "Couldn't delete the category"))
+      throw err
     }
   }
 
@@ -257,18 +325,18 @@ function CategoriesPage() {
     }
   }
 
-  const deleteInfo = useMemo(() => {
-    if (!deleteCategory) return { childCount: 0, transactionCount: 0 }
+  const dialogInfo = useMemo(() => {
+    if (!dialogCategory) return { childCount: 0, transactionCount: 0 }
     const childIds = categories
-      .filter((c) => c.parentId === deleteCategory.id)
+      .filter((c) => c.parentId === dialogCategory.id)
       .map((c) => c.id)
-    const ids = [deleteCategory.id, ...childIds]
+    const ids = [dialogCategory.id, ...childIds]
     const transactionCount = ids.reduce(
       (sum, id) => sum + statFor(statsMap, id).count,
       0
     )
     return { childCount: childIds.length, transactionCount }
-  }, [deleteCategory, categories, statsMap])
+  }, [dialogCategory, categories, statsMap])
 
   return (
     <div className="space-y-6">
@@ -319,6 +387,7 @@ function CategoriesPage() {
           <div className="grid gap-5 lg:grid-cols-[320px_1fr] lg:items-start">
             <CategorySidebar
               parents={visibleParents}
+              archivedParents={visibleArchivedParents}
               childrenByParent={childrenByParent}
               stats={statsMap}
               totalSpent={totalSpent}
@@ -336,7 +405,9 @@ function CategoriesPage() {
                 totalSpent={totalSpent}
                 homeCurrency={user.homeCurrency}
                 onEdit={handleEdit}
-                onDelete={setDeleteCategory}
+                onArchive={handleOpenArchive}
+                onUnarchive={handleUnarchive}
+                onDelete={handleOpenDelete}
                 onAddChild={handleAddChild}
               />
             ) : (
@@ -361,15 +432,17 @@ function CategoriesPage() {
         onSubmit={handleSubmit}
       />
 
-      <CategoryDeleteDialog
-        open={!!deleteCategory}
+      <CategoryArchiveDialog
+        open={!!dialogCategory}
         onOpenChange={(open) => {
-          if (!open) setDeleteCategory(null)
+          if (!open) setDialogCategory(null)
         }}
-        category={deleteCategory}
-        childCount={deleteInfo.childCount}
-        transactionCount={deleteInfo.transactionCount}
-        onConfirm={handleDelete}
+        category={dialogCategory}
+        mode={dialogMode}
+        childCount={dialogInfo.childCount}
+        transactionCount={dialogInfo.transactionCount}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
       />
     </div>
   )

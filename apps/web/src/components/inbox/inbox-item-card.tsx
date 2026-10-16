@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
 import type { Account, Category, InboxItem } from "@workspace/api-contract"
+import { activeCategories } from "@/lib/categories"
 
 export interface AcceptInput {
   accountId: string
@@ -50,7 +51,7 @@ export function InboxItemCard({
   const [remember, setRemember] = useState(true)
 
   const byId = new Map(categories.map((c) => [c.id, c]))
-  const expenseCategories = categories
+  const expenseCategories = activeCategories(categories)
     .filter((c) => c.type === "expense" && c.parentId !== null)
     .sort((a, b) =>
       categoryLabel(a, byId).localeCompare(categoryLabel(b, byId))

@@ -11,6 +11,7 @@ export const CategorySchema = z.object({
   parentId: z.uuid().nullable(),
   icon: z.string().nullable(),
   color: z.string().nullable(),
+  archivedAt: z.string().nullable(),
 })
 
 export const CreateCategorySchema = z

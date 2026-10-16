@@ -15,6 +15,7 @@ const parent = (id: string, name: string, color: string | null): Category => ({
   parentId: null,
   icon: null,
   color,
+  archivedAt: null,
 })
 
 const child = (id: string, name: string, parentId: string): Category => ({
@@ -24,6 +25,7 @@ const child = (id: string, name: string, parentId: string): Category => ({
   parentId,
   icon: null,
   color: null,
+  archivedAt: null,
 })
 
 describe("paletteColor", () => {
