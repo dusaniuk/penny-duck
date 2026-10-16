@@ -1,7 +1,6 @@
 import { defineConfig } from "vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact from "@vitejs/plugin-react"
-import viteTsConfigPaths from "vite-tsconfig-paths"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 import mdx from "@mdx-js/rollup"
@@ -10,6 +9,9 @@ const apiUrl = process.env.API_URL ?? "http://localhost:3030"
 
 const config = defineConfig({
   envDir: "../../",
+  resolve: {
+    tsconfigPaths: true,
+  },
   server: {
     watch: {
       ignored: ["**/routeTree.gen.ts"],
@@ -37,9 +39,6 @@ const config = defineConfig({
           },
         },
       },
-    }),
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
     mdx(),
