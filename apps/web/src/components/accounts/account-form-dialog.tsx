@@ -72,7 +72,7 @@ function messageOf(err: unknown, fallback: string): string {
     err &&
     typeof err === "object" &&
     "message" in err &&
-    typeof (err as { message: unknown }).message === "string"
+    typeof err.message === "string"
   ) {
     return (err as { message: string }).message
   }

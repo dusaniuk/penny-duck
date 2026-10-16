@@ -4,7 +4,7 @@ RUN corepack enable
 
 FROM base AS prune
 COPY . .
-RUN npx -y turbo@2.8.21 prune web --docker
+RUN npx -y turbo@2.11.9 prune web --docker
 
 FROM base AS build
 COPY --from=prune /app/out/json/ .

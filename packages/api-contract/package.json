@@ -6,7 +6,7 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@workspace/shared": "workspace:^",
-    "zod": "^4.0.0"
+    "zod": "^4.6.7"
   },
   "exports": {
     ".": "./src/index.ts"

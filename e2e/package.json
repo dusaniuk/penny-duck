@@ -8,12 +8,12 @@
     "test": "pnpm test:api && pnpm test:ui"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.4.0",
-    "@playwright/test": "^1.52.0",
+    "@faker-js/faker": "^10.6.0",
+    "@playwright/test": "^1.64.1",
     "@workspace/db": "workspace:*",
     "dotenv": "^16.6.1",
-    "dotenv-expand": "^12.0.1",
-    "drizzle-orm": "^0.45.2",
-    "pg": "^8.20.0"
+    "dotenv-expand": "^12.0.3",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
   }
 }

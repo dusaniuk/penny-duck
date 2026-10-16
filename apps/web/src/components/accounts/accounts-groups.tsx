@@ -130,7 +130,7 @@ export function AccountsGroups({
         {
           key,
           label: GROUP_LABEL[key],
-          items: items as Array<AccountData>,
+          items,
           subtotal,
           isApprox,
         },
