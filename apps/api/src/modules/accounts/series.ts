@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lte, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm"
 import {
   accounts,
   instrumentPrices,
@@ -103,7 +103,12 @@ export async function computeAccountSeries(
       walletId: accounts.walletId,
     })
     .from(accounts)
-    .where(eq(accounts.organizationId, organizationId))
+    .where(
+      and(
+        eq(accounts.organizationId, organizationId),
+        isNull(accounts.archivedAt)
+      )
+    )
     .orderBy(accounts.name)
 
   if (accountRows.length === 0) return { accounts: [], wallets: [] }

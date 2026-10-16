@@ -127,6 +127,12 @@ function TransactionsPage() {
     },
   })
   const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
+  // Rows and filters reference accounts that may since have been archived, so
+  // they resolve against the full list; the form pickers above stay active-only.
+  const allAccounts = useMemo(
+    () => flattenAccounts(accountsData, { includeArchived: true }),
+    [accountsData]
+  )
   const wallets = walletsOf(accountsData)
 
   const { data: categoriesData } = useQuery({
@@ -346,7 +352,7 @@ function TransactionsPage() {
 
   const activeFilterBadges: Array<{ key: string; label: string }> = []
   if (filters.accountId) {
-    const acc = accounts.find((a) => a.id === filters.accountId)
+    const acc = allAccounts.find((a) => a.id === filters.accountId)
     activeFilterBadges.push({
       key: "accountId",
       label: acc?.name ?? "Account",
@@ -455,7 +461,7 @@ function TransactionsPage() {
 
       <TransactionList
         transactions={allTransactions}
-        accounts={accounts}
+        accounts={allAccounts}
         categories={categories}
         homeCurrency={homeCurrency}
         showMember={members.length > 1}
@@ -543,7 +549,7 @@ function TransactionsPage() {
         onOpenChange={setFilterSheetOpen}
         filters={filters}
         onApply={setFilters}
-        accounts={accounts}
+        accounts={allAccounts}
         categories={categories}
         members={members}
       />

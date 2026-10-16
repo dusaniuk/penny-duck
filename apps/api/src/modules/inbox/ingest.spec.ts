@@ -4,7 +4,7 @@ import { organizationMembers, walletInbox } from "@workspace/db"
 import type { InboxItem } from "@workspace/api-contract"
 import { honoApp } from "@/app"
 import { db } from "@/db"
-import { createAccount } from "@/modules/accounts/service"
+import { archiveAccount, createAccount } from "@/modules/accounts/service"
 import { auth } from "@/modules/auth/auth"
 import { signupUser, truncateAll, type TestUser } from "@/test/setup"
 
@@ -92,6 +92,13 @@ describe("POST /inbox/wallet", () => {
     })
     const res = await ingest(tap)
     expect(((await res.json()) as InboxItem).accountId).toBe(accountId)
+  })
+
+  it("skips archived accounts when matching the card label", async () => {
+    await archiveAccount(accountId, user.organizationId, user.userId)
+    const res = await ingest(tap)
+    expect(res.status).toBe(201)
+    expect(((await res.json()) as InboxItem).accountId).toBeNull()
   })
 
   it("keeps the row with no account when the card is unknown", async () => {

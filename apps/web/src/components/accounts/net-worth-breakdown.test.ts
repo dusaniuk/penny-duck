@@ -15,6 +15,7 @@ function account(over: Partial<Account>): Account {
     isDefault: false,
     cardLabel: null,
     walletId: null,
+    archivedAt: null,
     ...over,
   }
 }
@@ -28,6 +29,7 @@ function wallet(over: Partial<Wallet>): Wallet {
     icon: null,
     totalHomeBalance: 0,
     pockets: [],
+    archivedAt: null,
     ...over,
   }
 }

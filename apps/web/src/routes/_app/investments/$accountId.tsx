@@ -33,7 +33,9 @@ function AccountInvestmentsPage() {
       return res.json()
     },
   })
-  const account = leafAccountsOf(accountsData).find((a) => a.id === accountId)
+  const account = leafAccountsOf(accountsData, { includeArchived: true }).find(
+    (a) => a.id === accountId
+  )
 
   return (
     <div className="space-y-6">

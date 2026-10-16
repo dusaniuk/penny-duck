@@ -15,6 +15,8 @@ import { paletteColor } from "@/lib/palette"
 // set, the balance line renders one `amount currency` pair per pocket and
 // the "Set default" action is hidden (wallets can't be the default account).
 // The sparkline for wallets is in home currency, summed from pocket series.
+// An archived entry (archivedAt set) renders dimmed with a single Unarchive
+// action in place of edit/default; the page passes `onUnarchive` for those.
 export type AccountData = Account & { pockets?: ReadonlyArray<WalletPocket> }
 
 interface AccountCardProps {
@@ -22,6 +24,15 @@ interface AccountCardProps {
   series: Array<number> | undefined
   onEdit: (account: AccountData) => void
   onSetDefault: (account: AccountData) => void
+  onUnarchive?: (account: AccountData) => void
+}
+
+function fmtArchivedDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
 }
 
 function fmtMoney(n: number) {
@@ -126,24 +137,32 @@ export function AccountCard({
   series,
   onEdit,
   onSetDefault,
+  onUnarchive,
 }: AccountCardProps) {
   const navigate = useNavigate()
   const isBrokerage = account.type === "brokerage"
   const isWallet = !!account.pockets
   const isLoan = account.type === "loan"
+  const archived = account.archivedAt !== null && !!onUnarchive
   const sparkColor = paletteColor(account.color, { l: 0.78, c: 0.14 })
+
+  function handlePrimary() {
+    if (archived) onUnarchive(account)
+    else onEdit(account)
+  }
 
   return (
     <Card
       className={cn(
         "group relative gap-3 overflow-hidden p-4 transition-[box-shadow,--tw-ring-color] hover:shadow-md hover:ring-primary/40",
-        account.isDefault && "ring-primary/60"
+        account.isDefault && "ring-primary/60",
+        archived && "bg-muted/30 opacity-75 hover:opacity-100"
       )}
     >
-      {/* Mobile: horizontal row, entire card opens edit */}
+      {/* Mobile: horizontal row, entire card opens edit (or unarchives) */}
       <button
         type="button"
-        onClick={() => onEdit(account)}
+        onClick={handlePrimary}
         className="-m-4 flex items-center gap-3 rounded-xl p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:hidden"
       >
         <AccountIconChip color={account.color} icon={account.icon} />
@@ -201,7 +220,13 @@ export function AccountCard({
             </>
           )}
         </div>
-        <IconChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        {archived ? (
+          <span className="shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium">
+            Unarchive
+          </span>
+        ) : (
+          <IconChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        )}
       </button>
 
       {/* Desktop: stacked layout with sparkline + hover actions */}
@@ -275,29 +300,51 @@ export function AccountCard({
           </p>
         )}
         <div className="space-y-1 transition-opacity duration-150 group-focus-within:opacity-15 group-hover:opacity-15">
-          {series && series.length > 1 ? (
-            <BalanceSparkline color={sparkColor} values={series} />
+          {archived ? (
+            <p className="flex h-8 items-end font-mono text-[9.5px] tracking-widest text-muted-foreground/70 uppercase">
+              archived {fmtArchivedDate(account.archivedAt!)}
+            </p>
           ) : (
-            <div className="h-8 w-full animate-pulse rounded bg-muted/60" />
+            <>
+              {series && series.length > 1 ? (
+                <BalanceSparkline color={sparkColor} values={series} />
+              ) : (
+                <div className="h-8 w-full animate-pulse rounded bg-muted/60" />
+              )}
+              <p className="font-mono text-[9.5px] tracking-widest text-muted-foreground/70 uppercase">
+                {isLoan ? "debt remaining · last 30 days" : "last 30 days"}
+              </p>
+            </>
           )}
-          <p className="font-mono text-[9.5px] tracking-widest text-muted-foreground/70 uppercase">
-            {isLoan ? "debt remaining · last 30 days" : "last 30 days"}
-          </p>
         </div>
       </CardContent>
       <div className="pointer-events-none absolute inset-x-3 bottom-3 hidden translate-y-1.5 gap-1.5 opacity-0 transition group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 sm:flex">
-        <Button
-          type="button"
-          size="xs"
-          variant="secondary"
-          onClick={(e) => {
-            e.stopPropagation()
-            onEdit(account)
-          }}
-        >
-          Edit
-        </Button>
-        {!account.isDefault && !isWallet && !isLoan && (
+        {archived ? (
+          <Button
+            type="button"
+            size="xs"
+            variant="secondary"
+            onClick={(e) => {
+              e.stopPropagation()
+              onUnarchive(account)
+            }}
+          >
+            Unarchive
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="xs"
+            variant="secondary"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(account)
+            }}
+          >
+            Edit
+          </Button>
+        )}
+        {!archived && !account.isDefault && !isWallet && !isLoan && (
           <Button
             type="button"
             size="xs"
@@ -310,7 +357,7 @@ export function AccountCard({
             Set default
           </Button>
         )}
-        {isBrokerage && (
+        {!archived && isBrokerage && (
           <Button
             type="button"
             size="xs"

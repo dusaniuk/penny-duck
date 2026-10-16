@@ -79,6 +79,7 @@ function selectAccountRow(userId: string) {
       walletId: accounts.walletId,
       createdAt: accounts.createdAt,
       updatedAt: accounts.updatedAt,
+      archivedAt: accounts.archivedAt,
       balance: sql<number>`(${accounts.initialBalance} + coalesce(${balanceSq.total}, 0) + coalesce(${tradesSq.total}, 0))::float / 100`,
       isDefault: sql<boolean>`coalesce(${organizationMembers.defaultAccountId} = ${accounts.id}, false)`,
     })
@@ -140,6 +141,7 @@ function toResponse(row: AccountRow, rate: number, holdings = 0): Account {
     isDefault: row.isDefault,
     walletId: row.walletId,
     cardLabel: row.cardLabel,
+    archivedAt: row.archivedAt?.toISOString() ?? null,
   }
 }
 
@@ -290,6 +292,7 @@ export async function listAccounts(
       icon: w.icon ?? null,
       totalHomeBalance: pockets.reduce((sum, p) => sum + p.homeBalance, 0),
       pockets,
+      archivedAt: w.archivedAt?.toISOString() ?? null,
     }
   })
 
@@ -495,6 +498,53 @@ export async function deleteAccount(
     .where(
       and(eq(accounts.id, id), eq(accounts.organizationId, organizationId))
     )
+}
+
+// Archiving hides an account from pickers, totals and series while keeping its
+// transactions and trades intact. The default pointer is cleared for every
+// member who had this account as default, so new transactions never land in
+// an archived account by default.
+export async function archiveAccount(
+  id: string,
+  organizationId: string,
+  userId: string
+): Promise<Account> {
+  const existing = await findById(id, organizationId, userId)
+  if (!existing) throw new HTTPException(404, { message: "Account not found" })
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(accounts)
+      .set({ archivedAt: new Date(), updatedAt: new Date() })
+      .where(eq(accounts.id, id))
+    await tx
+      .update(organizationMembers)
+      .set({ defaultAccountId: null })
+      .where(
+        and(
+          eq(organizationMembers.organizationId, organizationId),
+          eq(organizationMembers.defaultAccountId, id)
+        )
+      )
+  })
+
+  return getAccount(id, organizationId, userId)
+}
+
+export async function unarchiveAccount(
+  id: string,
+  organizationId: string,
+  userId: string
+): Promise<Account> {
+  const existing = await findById(id, organizationId, userId)
+  if (!existing) throw new HTTPException(404, { message: "Account not found" })
+
+  await db
+    .update(accounts)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(eq(accounts.id, id))
+
+  return getAccount(id, organizationId, userId)
 }
 
 export async function setDefaultAccount(

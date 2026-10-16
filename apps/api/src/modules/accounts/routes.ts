@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-contract"
 import { honoAuthMiddleware, type AuthedEnv } from "@/middleware/auth"
 import {
+  archiveAccount,
   clearDefaultAccount,
   createAccount,
   deleteAccount,
@@ -16,14 +17,17 @@ import {
   getAccountUsage,
   listAccounts,
   setDefaultAccount,
+  unarchiveAccount,
   updateAccount,
 } from "./service"
 import {
   addPocket,
+  archiveWallet,
   createWallet,
   deletePocket,
   deleteWallet,
   loadWallet,
+  unarchiveWallet,
   updateWallet,
   walletExists,
 } from "@/modules/wallets/service"
@@ -182,6 +186,26 @@ export const accountsRoutes = new Hono<AuthedEnv>()
       return c.json(wallet)
     }
   )
+  .put("/:id/archive", zValidator("param", IdParamSchema), async (c) => {
+    const user = c.get("user")
+    const { id } = c.req.valid("param")
+    if (await walletExists(id, user.organizationId)) {
+      const wallet = await archiveWallet(id, user.organizationId, user.sub)
+      return c.json(wallet)
+    }
+    const account = await archiveAccount(id, user.organizationId, user.sub)
+    return c.json(account)
+  })
+  .delete("/:id/archive", zValidator("param", IdParamSchema), async (c) => {
+    const user = c.get("user")
+    const { id } = c.req.valid("param")
+    if (await walletExists(id, user.organizationId)) {
+      const wallet = await unarchiveWallet(id, user.organizationId, user.sub)
+      return c.json(wallet)
+    }
+    const account = await unarchiveAccount(id, user.organizationId, user.sub)
+    return c.json(account)
+  })
   .put("/:id/default", zValidator("param", IdParamSchema), async (c) => {
     const user = c.get("user")
     const { id } = c.req.valid("param")

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import {
-  IconAlertTriangle,
+  IconArchive,
   IconCreditCard,
   IconMinus,
   IconPlus,
@@ -41,7 +41,6 @@ import {
 } from "@workspace/ui/components/select"
 import { Switch } from "@workspace/ui/components/switch"
 import { cn } from "@workspace/ui/lib/utils"
-import { toast } from "sonner"
 import * as z from "zod"
 import type { AccountData } from "@/components/accounts/account-card"
 import type { Wallet } from "@workspace/api-contract"
@@ -193,7 +192,7 @@ interface AccountFormDialogProps {
   onSubmit: (data: AccountSubmitData) => Promise<void>
   onSubmitWallet: (data: WalletSubmitData) => Promise<void>
   onArchive?: (account: AccountData) => void
-  onDeleteWallet?: (wallet: Wallet) => Promise<void>
+  onArchiveWallet?: (wallet: Wallet) => void
   onAddPocket?: (
     walletId: string,
     currency: string,
@@ -240,7 +239,7 @@ function AccountModalBody({
   onSubmit: onSubmitProp,
   onSubmitWallet: onSubmitWalletProp,
   onArchive,
-  onDeleteWallet,
+  onArchiveWallet,
   onAddPocket,
   onDeletePocket,
   pocketTransactionCounts,
@@ -258,7 +257,7 @@ function AccountModalBody({
         existingAccountColors={existingAccountColors}
         existingAccountIcons={existingAccountIcons}
         onSubmitWallet={onSubmitWalletProp}
-        onDeleteWallet={onDeleteWallet}
+        onArchiveWallet={onArchiveWallet}
         onAddPocket={onAddPocket}
         onDeletePocket={onDeletePocket}
         pocketTransactionCounts={pocketTransactionCounts}
@@ -759,26 +758,7 @@ function AccountModalBody({
       </form.Subscribe>
 
       {isEdit && onArchive && account && (
-        <div className="flex items-center gap-3 rounded-[11px] border border-destructive/25 bg-destructive/5 p-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[13px] font-medium text-destructive">
-              Archive this account
-            </span>
-            <span className="text-[11.5px] text-muted-foreground">
-              Hides it from totals and the picker. Transactions are kept.
-            </span>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleArchiveClick}
-            className="shrink-0 border-destructive/35 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
-          >
-            <IconAlertTriangle size={13} />
-            Archive
-          </Button>
-        </div>
+        <ArchivePanel noun="account" onClick={handleArchiveClick} />
       )}
 
       <form.Subscribe
@@ -923,12 +903,44 @@ function PocketFields({
 
 // Wallet edit body — handles rename/recolor/reicon + add/delete pockets
 
+// Archiving is reversible and keeps every transaction, so the panel reads as a
+// quiet housekeeping action rather than a destructive one.
+function ArchivePanel({
+  noun,
+  onClick,
+}: {
+  noun: "account" | "wallet"
+  onClick: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-[11px] border bg-muted/40 p-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[13px] font-medium">Archive this {noun}</span>
+        <span className="text-[11.5px] text-muted-foreground">
+          Hides it from totals and pickers. Transactions are kept, and you can
+          unarchive it later.
+        </span>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onClick}
+        className="shrink-0"
+      >
+        <IconArchive size={13} />
+        Archive
+      </Button>
+    </div>
+  )
+}
+
 interface WalletEditBodyProps {
   wallet: Wallet
   existingAccountColors?: ReadonlyArray<string | null>
   existingAccountIcons?: ReadonlyArray<string | null>
   onSubmitWallet: (data: WalletSubmitData) => Promise<void>
-  onDeleteWallet?: (wallet: Wallet) => Promise<void>
+  onArchiveWallet?: (wallet: Wallet) => void
   onAddPocket?: (
     walletId: string,
     currency: string,
@@ -957,7 +969,7 @@ function WalletEditBody({
   existingAccountColors,
   existingAccountIcons,
   onSubmitWallet,
-  onDeleteWallet,
+  onArchiveWallet,
   onAddPocket,
   onDeletePocket,
   pocketTransactionCounts,
@@ -987,7 +999,6 @@ function WalletEditBody({
   } | null>(null)
   const [addPocketError, setAddPocketError] = useState<string | null>(null)
   const [deletingCurrency, setDeletingCurrency] = useState<string | null>(null)
-  const [deletingWallet, setDeletingWallet] = useState(false)
 
   const form = useForm({
     defaultValues: initialValues,
@@ -1052,17 +1063,10 @@ function WalletEditBody({
     }
   }
 
-  async function handleDeleteWallet() {
-    if (!onDeleteWallet) return
-    setDeletingWallet(true)
-    try {
-      await onDeleteWallet(wallet)
-      close()
-    } catch (err) {
-      toast.error(messageOf(err, "Couldn't delete the wallet"))
-    } finally {
-      setDeletingWallet(false)
-    }
+  function handleArchiveClick() {
+    if (!onArchiveWallet) return
+    close()
+    onArchiveWallet(wallet)
   }
 
   return (
@@ -1268,29 +1272,8 @@ function WalletEditBody({
         )}
       </div>
 
-      {onDeleteWallet && (
-        <div className="flex items-center gap-3 rounded-[11px] border border-destructive/25 bg-destructive/5 p-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[13px] font-medium text-destructive">
-              Delete this wallet
-            </span>
-            <span className="text-[11.5px] text-muted-foreground">
-              Permanently removes the wallet and all its pockets. Blocked if any
-              pocket has transactions.
-            </span>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleDeleteWallet}
-            disabled={deletingWallet}
-            className="shrink-0 border-destructive/35 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
-          >
-            <IconAlertTriangle size={13} />
-            {deletingWallet ? "Deleting…" : "Delete"}
-          </Button>
-        </div>
+      {onArchiveWallet && (
+        <ArchivePanel noun="wallet" onClick={handleArchiveClick} />
       )}
 
       <form.Subscribe

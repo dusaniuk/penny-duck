@@ -224,6 +224,54 @@ export async function deletePocket(
   return loadWallet(walletId, organizationId, userId)
 }
 
+// A wallet and its pockets archive together: pockets are plain account rows,
+// so stamping them too lets every account-level filter (series, inbox card
+// matching) stay a single `archived_at is null` check.
+async function setWalletArchived(
+  id: string,
+  organizationId: string,
+  archivedAt: Date | null
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: wallets.id })
+      .from(wallets)
+      .where(
+        and(eq(wallets.id, id), eq(wallets.organizationId, organizationId))
+      )
+      .limit(1)
+    if (!existing) throw new HTTPException(404, { message: "Wallet not found" })
+
+    const now = new Date()
+    await tx
+      .update(wallets)
+      .set({ archivedAt, updatedAt: now })
+      .where(eq(wallets.id, id))
+    await tx
+      .update(accounts)
+      .set({ archivedAt, updatedAt: now })
+      .where(eq(accounts.walletId, id))
+  })
+}
+
+export async function archiveWallet(
+  id: string,
+  organizationId: string,
+  userId: string
+): Promise<Wallet> {
+  await setWalletArchived(id, organizationId, new Date())
+  return loadWallet(id, organizationId, userId)
+}
+
+export async function unarchiveWallet(
+  id: string,
+  organizationId: string,
+  userId: string
+): Promise<Wallet> {
+  await setWalletArchived(id, organizationId, null)
+  return loadWallet(id, organizationId, userId)
+}
+
 export async function loadWallet(
   walletId: string,
   organizationId: string,
@@ -257,6 +305,7 @@ export async function loadWallet(
     icon: walletRow.icon ?? null,
     totalHomeBalance: pockets.reduce((sum, p) => sum + p.homeBalance, 0),
     pockets,
+    archivedAt: walletRow.archivedAt?.toISOString() ?? null,
   }
 }
 

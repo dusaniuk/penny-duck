@@ -165,6 +165,7 @@ export async function getExportData(
           currency: accounts.currency,
           initialBalance: accounts.initialBalance,
           createdAt: accounts.createdAt,
+          archivedAt: accounts.archivedAt,
         })
         .from(accounts)
         .where(eq(accounts.organizationId, organizationId)),

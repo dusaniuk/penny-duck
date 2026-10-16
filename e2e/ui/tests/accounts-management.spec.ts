@@ -92,10 +92,13 @@ test.describe("Accounts management", () => {
     await dialog.getByRole("button", { name: "Create account" }).click()
     await expect(page.getByText("To Delete")).toBeVisible()
 
-    // Delete lives inside the edit dialog as "Archive", which then opens a
-    // confirmation dialog.
+    // The edit dialog's "Archive" opens a confirmation that also offers a hard
+    // delete while the account has no transactions.
     await openAccountEdit(page, "To Delete")
-    await page.getByRole("dialog").getByRole("button", { name: "Archive" }).click()
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Archive" })
+      .click()
 
     await page
       .getByRole("dialog")
@@ -103,6 +106,48 @@ test.describe("Accounts management", () => {
       .click()
 
     await expect(accountCard(page, "To Delete")).not.toBeVisible()
+  })
+
+  test("archives an account into the Archived group and unarchives it", async ({
+    page,
+  }) => {
+    await page.goto("/accounts")
+    await page.waitForLoadState("networkidle")
+
+    await page.getByRole("button", { name: "New account" }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByPlaceholder("e.g. Main Wallet").fill("Old Bank")
+    await selectCurrency(page, "EUR")
+    await dialog.getByRole("button", { name: "Create account" }).click()
+    await expect(accountCard(page, "Old Bank")).toBeVisible()
+
+    await openAccountEdit(page, "Old Bank")
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Archive" })
+      .click()
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^Archive$|Archiving/ })
+      .click()
+
+    // Gone from the Bank group, present behind the collapsed Archived header.
+    await expect(page.getByRole("heading", { name: "Bank" })).not.toBeVisible()
+    const archivedHeading = page.getByRole("heading", { name: "Archived" })
+    await expect(archivedHeading).toBeVisible()
+    await expect(accountCard(page, "Old Bank")).not.toBeVisible()
+
+    await page.getByRole("button", { name: "Show" }).click()
+    const card = accountCard(page, "Old Bank")
+    await expect(card).toBeVisible()
+    await expect(card.getByText(/archived/i)).toBeVisible()
+
+    await card.hover()
+    await card.getByRole("button", { name: "Unarchive" }).click()
+
+    await expect(page.getByRole("heading", { name: "Bank" })).toBeVisible()
+    await expect(archivedHeading).not.toBeVisible()
+    await expect(accountCard(page, "Old Bank")).toBeVisible()
   })
 
   test("shows empty state with add card", async ({ page }) => {

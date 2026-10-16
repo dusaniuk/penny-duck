@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, beforeEach, describe, it, expect } from "bun:test"
-import { exchangeRates } from "@workspace/db"
+import { eq } from "drizzle-orm"
+import { accounts, exchangeRates } from "@workspace/db"
 import { honoApp } from "@/app"
 import { db } from "@/db"
 import {
@@ -201,6 +202,62 @@ describe("DELETE /accounts/:id (wallet)", () => {
 })
 
 describe("POST /accounts/:id/pockets", () => {
+  it("archives a wallet together with its pockets", async () => {
+    const created = (await (
+      await createWalletHttp({
+        name: "W",
+        pockets: [{ currency: "USD", balance: 50 }],
+      })
+    ).json()) as { id: string; pockets: Array<{ accountId: string }> }
+
+    const res = await honoApp.request(`/accounts/${created.id}/archive`, {
+      method: "PUT",
+      headers: { cookie },
+    })
+    expect(res.status).toBe(200)
+    const wallet = (await res.json()) as {
+      id: string
+      type: string
+      archivedAt: string | null
+    }
+    expect(wallet.type).toBe("wallet")
+    expect(wallet.archivedAt).not.toBeNull()
+
+    const [pocket] = await db
+      .select({ archivedAt: accounts.archivedAt })
+      .from(accounts)
+      .where(eq(accounts.id, created.pockets[0].accountId))
+    expect(pocket.archivedAt).not.toBeNull()
+  })
+
+  it("unarchives a wallet together with its pockets", async () => {
+    const created = (await (
+      await createWalletHttp({
+        name: "W",
+        pockets: [{ currency: "USD", balance: 50 }],
+      })
+    ).json()) as { id: string; pockets: Array<{ accountId: string }> }
+    await honoApp.request(`/accounts/${created.id}/archive`, {
+      method: "PUT",
+      headers: { cookie },
+    })
+
+    const res = await honoApp.request(`/accounts/${created.id}/archive`, {
+      method: "DELETE",
+      headers: { cookie },
+    })
+    expect(res.status).toBe(200)
+    expect(
+      ((await res.json()) as { archivedAt: string | null }).archivedAt
+    ).toBeNull()
+
+    const [pocket] = await db
+      .select({ archivedAt: accounts.archivedAt })
+      .from(accounts)
+      .where(eq(accounts.id, created.pockets[0].accountId))
+    expect(pocket.archivedAt).toBeNull()
+  })
+
   it("adds a new pocket", async () => {
     const created = await (
       await createWalletHttp({

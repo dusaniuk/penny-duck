@@ -197,6 +197,13 @@
       "when": 1791901819890,
       "tag": "0027_optional-inbox-currency",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792161029232,
+      "tag": "0028_archive-accounts",
+      "breakpoints": true
     }
   ]
 }

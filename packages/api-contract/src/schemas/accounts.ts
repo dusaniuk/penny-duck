@@ -19,6 +19,7 @@ export const AccountSchema = z.object({
   isDefault: z.boolean(),
   walletId: z.uuid().nullable(),
   cardLabel: z.string().nullable(),
+  archivedAt: z.string().nullable(),
 })
 
 export const WalletPocketSchema = z.object({
@@ -38,6 +39,7 @@ export const WalletSchema = z.object({
   icon: z.string().nullable(),
   totalHomeBalance: z.number(),
   pockets: z.array(WalletPocketSchema),
+  archivedAt: z.string().nullable(),
 })
 
 // GET /accounts returns a flat list of accounts. A wallet entry carries its

@@ -11,14 +11,15 @@ import type {
   AccountSubmitData,
   WalletSubmitData,
 } from "@/components/accounts/account-form-dialog"
-import { AccountDeleteDialog } from "@/components/accounts/account-delete-dialog"
+import type { ArchiveTarget } from "@/components/accounts/account-archive-dialog"
+import { AccountArchiveDialog } from "@/components/accounts/account-archive-dialog"
 import { AccountEmptyState } from "@/components/accounts/account-empty-state"
 import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { AccountsGroups } from "@/components/accounts/accounts-groups"
 import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
 import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
-import { leafAccountsOf, walletsOf } from "@/lib/accounts"
+import { isArchived, leafAccountsOf, walletsOf } from "@/lib/accounts"
 
 type AccountType = "bank" | "wallet" | "brokerage" | "loan"
 
@@ -64,9 +65,18 @@ function AccountsPage() {
   })
   const wallets = useMemo(() => walletsOf(data), [data])
   const standaloneAccounts = useMemo(() => leafAccountsOf(data), [data])
+  const archivedWallets = useMemo(
+    () => walletsOf(data, { includeArchived: true }).filter(isArchived),
+    [data]
+  )
+  const archivedAccounts = useMemo(
+    () => leafAccountsOf(data, { includeArchived: true }).filter(isArchived),
+    [data]
+  )
 
-  // Transaction counts per account, used to disable deleting a pocket that has
-  // transactions in the wallet-edit dialog.
+  // Transaction counts per account: disables deleting a pocket that has
+  // transactions in the wallet-edit dialog, and decides whether the archive
+  // dialog may also offer a hard delete.
   const { data: usageData } = useQuery({
     queryKey: ["accounts", "usage"],
     queryFn: async () => {
@@ -113,8 +123,18 @@ function AccountsPage() {
   const [editAccount, setEditAccount] = useState<AccountData | null>(null)
   const [editWallet, setEditWallet] = useState<Wallet | null>(null)
   const [pendingType, setPendingType] = useState<AccountType | null>(null)
-  const [deleteAccount, setDeleteAccount] = useState<AccountData | null>(null)
-  const [deleteTransactionCount, setDeleteTransactionCount] = useState(0)
+  const [archiveTarget, setArchiveTarget] = useState<ArchiveTarget | null>(null)
+  const archiveTransactionCount = useMemo(() => {
+    if (!archiveTarget) return 0
+    const wallet = wallets.find((w) => w.id === archiveTarget.id)
+    if (wallet) {
+      return wallet.pockets.reduce(
+        (sum, p) => sum + (pocketTransactionCounts[p.accountId] ?? 0),
+        0
+      )
+    }
+    return pocketTransactionCounts[archiveTarget.id] ?? 0
+  }, [archiveTarget, wallets, pocketTransactionCounts])
 
   // ── Account mutations ─────────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -145,6 +165,24 @@ function AccountsPage() {
       return res.json()
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.accounts[":id"].archive.$put({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: () => invalidateAccounts(),
+  })
+
+  const unarchiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.accounts[":id"].archive.$delete({ param: { id } })
+      if (!res.ok) throw await res.json()
+      return res.json()
+    },
+    onSuccess: () => invalidateAccounts(),
   })
 
   const setDefaultMutation = useMutation({
@@ -217,17 +255,12 @@ function AccountsPage() {
     await setDefaultMutation.mutateAsync(account.id)
   }
 
-  async function handleOpenDelete(account: AccountData) {
-    setDeleteAccount(account)
-    try {
-      const res = await api.transactions.$get({
-        query: { accountId: account.id, limit: "1" },
-      })
-      const body = res.ok ? await res.json() : null
-      setDeleteTransactionCount(body?.total ?? 0)
-    } catch {
-      setDeleteTransactionCount(0)
-    }
+  function handleOpenArchive(account: AccountData) {
+    setArchiveTarget({ id: account.id, name: account.name, type: account.type })
+  }
+
+  function handleOpenArchiveWallet(wallet: Wallet) {
+    setArchiveTarget({ id: wallet.id, name: wallet.name, type: "wallet" })
   }
 
   async function handleSubmit(input: AccountSubmitData) {
@@ -303,18 +336,40 @@ function AccountsPage() {
     }
   }
 
-  async function handleDeleteWallet(wallet: Wallet) {
-    await deleteMutation.mutateAsync(wallet.id)
+  async function handleArchive() {
+    if (!archiveTarget) return
+    try {
+      await archiveMutation.mutateAsync(archiveTarget.id)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't archive"))
+      throw err
+    }
   }
 
   async function handleDelete() {
-    if (!deleteAccount) return
-    await deleteMutation.mutateAsync(deleteAccount.id)
+    if (!archiveTarget) return
+    try {
+      await deleteMutation.mutateAsync(archiveTarget.id)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't delete"))
+      throw err
+    }
   }
 
-  const totalCount = standaloneAccounts.length + wallets.length
-  const hasContent = !loading && totalCount > 0
-  const isEmpty = !loading && totalCount === 0
+  async function handleUnarchive(account: AccountData) {
+    try {
+      await unarchiveMutation.mutateAsync(account.id)
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't unarchive"))
+    }
+  }
+
+  // Archived entries keep the grid (and the Unarchive path) on screen; only a
+  // truly empty org gets the onboarding state. Totals stay active-only.
+  const activeCount = standaloneAccounts.length + wallets.length
+  const archivedCount = archivedAccounts.length + archivedWallets.length
+  const hasContent = !loading && activeCount > 0
+  const isEmpty = !loading && activeCount + archivedCount === 0
 
   return (
     <div className="space-y-8">
@@ -355,11 +410,14 @@ function AccountsPage() {
         <AccountsGroups
           accounts={standaloneAccounts}
           wallets={wallets}
+          archivedAccounts={archivedAccounts}
+          archivedWallets={archivedWallets}
           homeCurrency={user.homeCurrency}
           seriesByAccount={seriesByAccount}
           onEdit={handleEdit}
           onSetDefault={handleSetDefault}
           onEditWallet={handleEditWallet}
+          onUnarchive={handleUnarchive}
         />
       )}
 
@@ -373,22 +431,22 @@ function AccountsPage() {
         existingAccountIcons={standaloneAccounts.map((a) => a.icon)}
         onSubmit={handleSubmit}
         onSubmitWallet={handleSubmitWallet}
-        onArchive={handleOpenDelete}
-        onDeleteWallet={handleDeleteWallet}
+        onArchive={handleOpenArchive}
+        onArchiveWallet={handleOpenArchiveWallet}
         onAddPocket={handleAddPocket}
         onDeletePocket={handleDeletePocket}
         pocketTransactionCounts={pocketTransactionCounts}
       />
 
-      <AccountDeleteDialog
-        open={!!deleteAccount}
+      <AccountArchiveDialog
+        open={!!archiveTarget}
         onOpenChange={(open) => {
-          if (!open) setDeleteAccount(null)
+          if (!open) setArchiveTarget(null)
         }}
-        account={deleteAccount}
-        transactionCount={deleteTransactionCount}
-        openPositionCount={0}
-        onConfirm={handleDelete}
+        target={archiveTarget}
+        transactionCount={archiveTransactionCount}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
       />
     </div>
   )

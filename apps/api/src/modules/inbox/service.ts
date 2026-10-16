@@ -34,6 +34,7 @@ export async function matchAccountByCardLabel(
     .where(
       and(
         eq(accounts.organizationId, organizationId),
+        isNull(accounts.archivedAt),
         sql`lower(trim(${accounts.cardLabel})) = lower(trim(${card}))`
       )
     )

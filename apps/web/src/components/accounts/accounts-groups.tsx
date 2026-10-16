@@ -1,4 +1,7 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
+import { IconChevronDown } from "@tabler/icons-react"
+import { Button } from "@workspace/ui/components/button"
+import { cn } from "@workspace/ui/lib/utils"
 import type { Account, Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard } from "@/components/accounts/account-card"
@@ -35,6 +38,7 @@ function walletToAccountData(w: Wallet, homeCurrency: string): AccountData {
     isDefault: false,
     cardLabel: null,
     walletId: null,
+    archivedAt: w.archivedAt,
     pockets: w.pockets,
   }
 }
@@ -42,22 +46,36 @@ function walletToAccountData(w: Wallet, homeCurrency: string): AccountData {
 type Props = {
   accounts: Array<Account>
   wallets: Array<Wallet>
+  archivedAccounts: Array<Account>
+  archivedWallets: Array<Wallet>
   homeCurrency: string
   seriesByAccount: Map<string, Array<number>>
   onEdit: (a: AccountData) => void
   onSetDefault: (a: AccountData) => void
   onEditWallet: (w: Wallet) => void
+  onUnarchive: (a: AccountData) => void
 }
 
 export function AccountsGroups({
   accounts,
   wallets,
+  archivedAccounts,
+  archivedWallets,
   homeCurrency,
   seriesByAccount,
   onEdit,
   onSetDefault,
   onEditWallet,
+  onUnarchive,
 }: Props) {
+  const [showArchived, setShowArchived] = useState(false)
+  const archivedEntries = useMemo<Array<AccountData>>(
+    () => [
+      ...archivedWallets.map((w) => walletToAccountData(w, homeCurrency)),
+      ...archivedAccounts,
+    ],
+    [archivedWallets, archivedAccounts, homeCurrency]
+  )
   const walletEntries = useMemo(
     () => wallets.map((w) => walletToAccountData(w, homeCurrency)),
     [wallets, homeCurrency]
@@ -180,6 +198,50 @@ export function AccountsGroups({
           </div>
         </div>
       ))}
+
+      {archivedEntries.length > 0 && (
+        <div className="space-y-3.5">
+          <header className="flex items-baseline justify-between gap-2 px-1">
+            <div className="flex items-baseline gap-2.5">
+              <h2 className="font-heading text-[15px] font-semibold text-muted-foreground">
+                Archived
+              </h2>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {archivedEntries.length}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              aria-expanded={showArchived}
+              onClick={() => setShowArchived((v) => !v)}
+            >
+              {showArchived ? "Hide" : "Show"}
+              <IconChevronDown
+                className={cn(
+                  "size-3.5 transition-transform",
+                  showArchived && "rotate-180"
+                )}
+              />
+            </Button>
+          </header>
+          {showArchived && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {archivedEntries.map((a) => (
+                <AccountCard
+                  key={a.id}
+                  account={a}
+                  series={undefined}
+                  onEdit={handleCardEdit}
+                  onSetDefault={onSetDefault}
+                  onUnarchive={onUnarchive}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   )
 }

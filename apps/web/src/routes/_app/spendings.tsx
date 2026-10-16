@@ -55,6 +55,10 @@ function SpendingsPage() {
     },
   })
   const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
+  const allAccounts = useMemo(
+    () => flattenAccounts(accountsData, { includeArchived: true }),
+    [accountsData]
+  )
   const wallets = walletsOf(accountsData)
 
   const { data: meData } = useQuery({
@@ -270,7 +274,7 @@ function SpendingsPage() {
       {/* Transaction list */}
       <TransactionList
         transactions={filteredTransactions}
-        accounts={accounts}
+        accounts={allAccounts}
         categories={categories}
         homeCurrency={homeCurrency}
         showMember={members.length > 1}

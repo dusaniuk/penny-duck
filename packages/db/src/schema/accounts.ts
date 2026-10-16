@@ -36,6 +36,7 @@ export const accounts = appSchema.table(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
   (table) => [
     index("accounts_org_idx").on(table.organizationId),

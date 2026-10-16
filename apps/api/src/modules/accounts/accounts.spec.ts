@@ -130,6 +130,32 @@ async function clearDefaultHttp(
   return res
 }
 
+async function archiveAccountHttp(
+  id: string,
+  cookieValue: string = cookie,
+  expectedStatus = 200
+): Promise<Account> {
+  const res = await honoApp.request(`/accounts/${id}/archive`, {
+    method: "PUT",
+    headers: { cookie: cookieValue },
+  })
+  expect(res.status).toBe(expectedStatus)
+  return res.json()
+}
+
+async function unarchiveAccountHttp(
+  id: string,
+  cookieValue: string = cookie,
+  expectedStatus = 200
+): Promise<Account> {
+  const res = await honoApp.request(`/accounts/${id}/archive`, {
+    method: "DELETE",
+    headers: { cookie: cookieValue },
+  })
+  expect(res.status).toBe(expectedStatus)
+  return res.json()
+}
+
 describe("Accounts — auth", () => {
   it("rejects unauthenticated list", async () => {
     const res = await honoApp.request("/accounts")
@@ -463,6 +489,135 @@ describe("Accounts", () => {
     expect(
       ((await res.json()) as { cardLabel: string | null }).cardLabel
     ).toBeNull()
+  })
+})
+
+describe("Accounts — archiving", () => {
+  it("returns archivedAt null on a fresh account", async () => {
+    const created = await createAccountHttp({
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    expect(created.archivedAt).toBeNull()
+  })
+
+  it("archives an account and keeps it in the list with archivedAt set", async () => {
+    const created = await createAccountHttp({
+      name: "Old Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+
+    const archived = await archiveAccountHttp(created.id)
+    expect(archived.id).toBe(created.id)
+    expect(archived.archivedAt).not.toBeNull()
+
+    const list = await listAccountsHttp()
+    const item = list.find((a) => a.id === created.id)
+    expect(item).toBeDefined()
+    expect(item!.archivedAt).not.toBeNull()
+  })
+
+  it("keeps transactions of an archived account", async () => {
+    const account = await createAccountHttp({
+      name: "Old Bank",
+      type: "bank",
+      currency: "UAH",
+      balance: 1000,
+    })
+    const category = await createCategory({
+      organizationId,
+      name: "Groceries",
+      parentId: null,
+      icon: "cart",
+      type: "expense",
+      color: "red",
+    })
+    await createTransaction({
+      organizationId,
+      accountId: account.id,
+      type: "expense",
+      amount: 50,
+      categoryId: category.id,
+      date: new Date(),
+      madeById: userId,
+    })
+
+    await archiveAccountHttp(account.id)
+
+    const res = await honoApp.request(
+      `/transactions?accountId=${account.id}&limit=1`,
+      { headers: { cookie } }
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { total: number }
+    expect(body.total).toBe(1)
+  })
+
+  it("clears the default when the default account is archived", async () => {
+    const a = await createAccountHttp({
+      name: "Bank A",
+      type: "bank",
+      currency: "UAH",
+    })
+    await setDefaultHttp(a.id)
+
+    const archived = await archiveAccountHttp(a.id)
+    expect(archived.isDefault).toBe(false)
+
+    const list = await listAccountsHttp()
+    expect(list.find((x) => x.id === a.id)!.isDefault).toBe(false)
+  })
+
+  it("unarchives an account", async () => {
+    const created = await createAccountHttp({
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    await archiveAccountHttp(created.id)
+
+    const restored = await unarchiveAccountHttp(created.id)
+    expect(restored.archivedAt).toBeNull()
+
+    const list = await listAccountsHttp()
+    expect(list.find((a) => a.id === created.id)!.archivedAt).toBeNull()
+  })
+
+  it("rejects archiving an account in another org", async () => {
+    const created = await createAccountHttp({
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    const other = await signupUser()
+    await archiveAccountHttp(created.id, other.cookie, 404)
+  })
+
+  it("excludes archived accounts from the series", async () => {
+    const active = await createAccountHttp({
+      name: "Active",
+      type: "bank",
+      currency: "UAH",
+    })
+    const archived = await createAccountHttp({
+      name: "Archived",
+      type: "bank",
+      currency: "UAH",
+    })
+    await archiveAccountHttp(archived.id)
+
+    const res = await honoApp.request("/accounts/series?days=7", {
+      headers: { cookie },
+    })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      accounts: Array<{ accountId: string }>
+    }
+    const ids = body.accounts.map((s) => s.accountId)
+    expect(ids).toContain(active.id)
+    expect(ids).not.toContain(archived.id)
   })
 })
 

@@ -18,6 +18,7 @@ export const wallets = appSchema.table(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
   (table) => [index("wallets_org_idx").on(table.organizationId)]
 )
