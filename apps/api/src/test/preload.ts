@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process"
 import { resolve } from "node:path"
 import { mock } from "bun:test"
 import { quoteMock, searchMock, chartMock } from "./yahoo-mock"
+import { installFxApiMock } from "./fx-api-mock"
 
 process.env.NODE_ENV ??= "test"
 
@@ -16,6 +17,8 @@ const result = spawnSync("pnpm", ["--filter", "@workspace/db", "db:migrate"], {
 if (result.status !== 0) {
   throw new Error(`Migration failed with code ${result.status}`)
 }
+
+installFxApiMock()
 
 mock.module("yahoo-finance2", () => ({
   default: class YahooFinance {
