@@ -9,7 +9,6 @@
     "declaration": false,
     "types": ["bun"],
     "outDir": "./dist",
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }

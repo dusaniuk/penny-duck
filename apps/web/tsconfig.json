@@ -21,7 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowJs": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*", "../api/src/*"],
       "@workspace/ui/*": ["../../packages/ui/src/*"]

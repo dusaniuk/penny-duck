@@ -24,7 +24,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^10.13.0",
     "kysely": "0.29.6",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "xlsx": "^0.18.5"
   },
   "exports": {
