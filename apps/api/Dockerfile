@@ -11,7 +11,7 @@ COPY --from=prune /app/out/json/ .
 RUN corepack install && pnpm install --frozen-lockfile --prod --ignore-scripts
 COPY --from=prune /app/out/full/ .
 
-FROM oven/bun:1.3.14-slim
+FROM oven/bun:1.4.3-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app ./

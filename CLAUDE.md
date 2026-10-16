@@ -105,7 +105,7 @@ Each service builds from its own Dockerfile, configured as code in its `railway.
 - **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step)
 - **Web** — `apps/web/Dockerfile`: `turbo prune web --docker` → install + `vite build` → `oven/bun` runtime with only `.output/` (Nitro output is self-contained)
 - **Pre-deploy migration** (API): `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
-- Bun is pinned via the `oven/bun:<version>` tag in both Dockerfiles
+- Bun is pinned in three places that must move together: `.bun-version` (local, read by mise), and the `oven/bun:<version>` tag in both Dockerfiles
 - `.dockerignore` keeps env files and build artifacts out of the build context; watch paths live in each `railway.json`
 
 Build locally with `docker build -f apps/api/Dockerfile .` (web needs `--build-arg API_URL=...`).
