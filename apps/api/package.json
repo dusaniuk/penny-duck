@@ -23,7 +23,7 @@
     "@workspace/env": "workspace:*",
     "@workspace/shared": "workspace:^",
     "better-auth": "1.7.10",
-    "csv-parse": "^6.2.1",
+    "csv-parse": "^7.0.3",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.13",
     "yahoo-finance2": "^4.0.4",
@@ -33,6 +33,7 @@
     "@faker-js/faker": "^10.6.0",
     "@types/bun": "^1.4.3",
     "@types/node": "^25.9.9",
+    "eslint": "^10.13.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2"
   }
