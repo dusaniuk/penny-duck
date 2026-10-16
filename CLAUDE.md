@@ -100,23 +100,20 @@ Hosted on Railway with two services: **Web**, **API** (private networking only).
 
 ### Build & Start
 
-```bash
-pnpm build:api    # Build API + workspace deps (tsup + nest build)
-pnpm build:web    # Build Web + workspace deps (tsup + vite build)
-pnpm start:api    # node apps/api/dist/main.js
-pnpm start:web    # node apps/web/.output/server/index.mjs
-pnpm db:deploy    # Programmatic migration (pre-deploy command)
-```
+Each service builds from its own Dockerfile, configured as code in its `railway.json` (Railway → service → Settings → Config-as-code path):
 
-### Shared Packages
+- **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step)
+- **Web** — `apps/web/Dockerfile`: `turbo prune web --docker` → install + `vite build` → `oven/bun` runtime with only `.output/` (Nitro output is self-contained)
+- **Pre-deploy migration** (API): `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
+- Bun is pinned via the `oven/bun:<version>` tag in both Dockerfiles
+- `.dockerignore` keeps env files and build artifacts out of the build context; watch paths live in each `railway.json`
 
-Workspace packages (`db`, `env`, `shared`, `api-contract`) are built with **tsup** (ESM, no DTS). Conditional exports: `node` → `dist/*.js` (production runtime), `default` → `src/*.ts` (Vite/bundlers/TypeScript).
+Build locally with `docker build -f apps/api/Dockerfile .` (web needs `--build-arg API_URL=...`).
 
 ### Environment Variables
 
 - **API service**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`, `PORT=3030`
-- **Web service**: `API_PROXY_TARGET` (build-time, Nitro proxy target), `API_URL` (runtime, SSR auth in `auth.ts`)
-- **Migrations**: `pnpm db:deploy` runs `packages/db/dist/migrate.js` — uses drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
+- **Web service**: `API_URL` — used at build time (baked into the Nitro `/api/**` proxy target, passed as a Docker build arg) and at runtime (SSR auth in `auth.ts`)
 
 ## Legal
 
