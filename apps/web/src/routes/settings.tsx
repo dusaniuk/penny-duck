@@ -2,6 +2,7 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import {
   IconArrowLeft,
   IconDeviceMobile,
+  IconShieldLock,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react"
@@ -25,6 +26,7 @@ import { getAuthUser } from "@/lib/auth"
 const settingsNav: Array<NavItem> = [
   { title: "Profile", url: "/settings/profile", icon: IconUser },
   { title: "Members", url: "/settings/members", icon: IconUsers },
+  { title: "Security", url: "/settings/security", icon: IconShieldLock },
   { title: "Shortcuts", url: "/settings/shortcuts", icon: IconDeviceMobile },
 ]
 

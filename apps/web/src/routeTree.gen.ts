@@ -28,6 +28,7 @@ import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsMembersRouteImport } from './routes/settings/members'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsShortcutsRouteImport } from './routes/settings/shortcuts'
 import { Route as AppInvestmentsIndexRouteImport } from './routes/_app/investments/index'
 import { Route as AppInvestmentsAccountIdRouteImport } from './routes/_app/investments/$accountId'
@@ -127,6 +128,11 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsSecurityRoute = SettingsSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsShortcutsRoute = SettingsShortcutsRouteImport.update({
   id: '/shortcuts',
   path: '/shortcuts',
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings/': typeof SettingsIndexRoute
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings': typeof SettingsIndexRoute
   '/investments/$accountId': typeof AppInvestmentsAccountIdRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_auth/signup': typeof AuthSignupRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
   '/settings/shortcuts': typeof SettingsShortcutsRoute
   '/settings/': typeof SettingsIndexRoute
   '/_app/investments/$accountId': typeof AppInvestmentsAccountIdRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/security'
     | '/settings/shortcuts'
     | '/settings/'
     | '/investments/$accountId'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/security'
     | '/settings/shortcuts'
     | '/settings'
     | '/investments/$accountId'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/_auth/signup'
     | '/settings/members'
     | '/settings/profile'
+    | '/settings/security'
     | '/settings/shortcuts'
     | '/settings/'
     | '/_app/investments/$accountId'
@@ -453,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/security': {
+      id: '/settings/security'
+      path: '/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof SettingsSecurityRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/shortcuts': {
       id: '/settings/shortcuts'
       path: '/shortcuts'
@@ -566,6 +585,7 @@ const PublicRouteWithChildren =
 interface SettingsRouteChildren {
   SettingsMembersRoute: typeof SettingsMembersRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsSecurityRoute: typeof SettingsSecurityRoute
   SettingsShortcutsRoute: typeof SettingsShortcutsRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
@@ -573,6 +593,7 @@ interface SettingsRouteChildren {
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsMembersRoute: SettingsMembersRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsSecurityRoute: SettingsSecurityRoute,
   SettingsShortcutsRoute: SettingsShortcutsRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }

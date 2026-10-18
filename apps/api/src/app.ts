@@ -24,6 +24,7 @@ import {
   tradesRoutes,
 } from "./modules/investments/routes"
 import { invitesRoutes } from "./modules/invites/routes"
+import { sessionsRoutes } from "./modules/sessions/routes"
 import { statsRoutes } from "./modules/stats/routes"
 import { transactionsRoutes } from "./modules/transactions/routes"
 import { usersRoutes } from "./modules/users/routes"
@@ -117,6 +118,7 @@ export const honoApp = attachErrorHandlers(
     .route("/categories", categoriesRoutes)
     .route("/exchange-rates", exchangeRatesRoutes)
     .route("/inbox", inboxRoutes)
+    .route("/sessions", sessionsRoutes)
     .route("/stats", statsRoutes)
     .route("/instruments", instrumentsRoutes)
     .route("/positions", positionsRoutes)

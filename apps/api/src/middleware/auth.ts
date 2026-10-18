@@ -6,6 +6,7 @@ export type AuthedUser = {
   sub: string
   email: string
   organizationId: string
+  sessionId: string
 }
 
 export type AuthedEnv = { Variables: { user: AuthedUser } }
@@ -31,6 +32,7 @@ export const honoAuthMiddleware: MiddlewareHandler<AuthedEnv> = async (
     sub: response.user.id,
     email: response.user.email,
     organizationId,
+    sessionId: response.session.id,
   })
   await next()
 }

@@ -130,3 +130,5 @@ export {
   AcceptInboxItemSchema,
 } from "./schemas/inbox"
 export type { InboxItem } from "./schemas/inbox"
+export { SessionSchema } from "./schemas/sessions"
+export type { Session } from "./schemas/sessions"
