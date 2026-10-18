@@ -4,47 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Penny Duck is a monorepo using **TanStack Start** (React 19 + Vite + Nitro) with **shadcn/ui** components. Managed with pnpm workspaces and Turborepo.
+Penny Duck is a personal finance app (accounts, transactions, categories, investments, net worth). It is a pnpm + Turborepo monorepo: a **TanStack Start** web app (React 19 + Vite + Nitro) with **shadcn/ui**, talking to a **Hono** API on **Bun**, backed by PostgreSQL via **Drizzle**.
 
 ## Monorepo Structure
 
-- `apps/web` — TanStack Start app (file-based routing via TanStack Router, Nitro server)
-- `apps/api` — NestJS API (DDD/CQRS architecture, port 3030)
+- `apps/web` — TanStack Start app (file-based routing via TanStack Router, TanStack Query, Nitro server, port 3000)
+- `apps/api` — Hono API on Bun (port 3030), runs TypeScript from source
 - `packages/ui` — Shared UI package: shadcn/ui components, hooks, utilities, and global styles
-- `packages/db` — Database schema and Drizzle ORM client (PostgreSQL, `app` schema namespace)
-- `packages/env` — Environment variable validation (t3-env + Zod)
+- `packages/db` — Drizzle schema, client, and SQL migrations (PostgreSQL, `app` and `auth` schemas)
+- `packages/api-contract` — Zod request/response schemas and types shared by web and API (wire format only)
+- `packages/shared` — Shared runtime helpers (`./categories`, `./currencies`, `./errors`)
+- `packages/env` — Environment variable validation (t3-env + Zod): `@workspace/env/api`, `@workspace/env/web`
+- `e2e` — Playwright API and UI suites
 
 ## Commands
 
 All commands run from the repo root via Turborepo:
 
 ```bash
-pnpm dev          # Start dev server (port 3000)
+pnpm dev          # Start web (3000) and API (3030) dev servers
 pnpm build        # Build all packages
 pnpm lint         # Lint all packages (ESLint flat config)
+pnpm lint:fix     # Lint with --fix
 pnpm format       # Format with Prettier
-pnpm typecheck    # TypeScript type checking
+pnpm typecheck    # TypeScript type checking (never run bare tsc — it emits .js files)
 ```
 
-Per-package commands: `pnpm --filter web <script>`, `pnpm --filter api <script>`, or `pnpm --filter @workspace/ui <script>`
+Per-package commands: `pnpm --filter web <script>`, `pnpm --filter api <script>`, `pnpm --filter @workspace/db <script>`, `pnpm --filter @workspace/ui <script>`
+
+The husky pre-commit hook runs `pnpm lint -- --max-warnings 0` and `pnpm typecheck`.
 
 ### Database
 
 ```bash
-pnpm --filter @workspace/db drizzle-kit generate   # Generate migration from schema changes
-pnpm --filter @workspace/db drizzle-kit migrate     # Apply migrations
-pnpm --filter @workspace/db drizzle-kit studio      # Open Drizzle Studio
+pnpm db:up                             # Start local Postgres 18 (docker compose)
+pnpm db:generate --name <kebab-case>   # Generate a migration from schema changes
+pnpm db:migrate                        # Apply migrations (drizzle-kit)
+pnpm db:studio                         # Open Drizzle Studio
 ```
 
 **Always pass `--name` when generating migrations** so the SQL file gets a meaningful kebab-case name from the start (e.g. `pnpm db:generate --name add-investments` produces `0015_add-investments.sql`). Skipping `--name` yields a random superhero/villain name like `0015_open_betty_ross.sql`, which carries zero information in PR diffs and deploy logs.
 
+Schema changes must go through Drizzle migrations — don't use `db:push` for anything that ships.
+
+drizzle-kit loads `.env` with plain `dotenv` (no interpolation), so `DATABASE_URL` in `.env` must be a literal URL.
+
 ### Tests
 
 ```bash
-pnpm --filter api test          # Run API tests (Vitest)
-pnpm --filter api test:watch    # Watch mode
-pnpm test:e2e                   # Run e2e tests (Playwright — starts dev servers automatically)
+pnpm test:unit                  # API tests (bun test, reads .env.test)
+pnpm --filter api test:watch    # API tests in watch mode
+pnpm --filter web test          # Web unit tests (Vitest, *.test.ts)
+pnpm --filter @workspace/ui test  # UI package unit tests (Vitest)
+pnpm test:e2e                   # Playwright API + UI suites (starts dev servers automatically)
+pnpm test:e2e:api               # Playwright API suite only
+pnpm test:e2e:ui                # Playwright UI suite only
 ```
+
+- API tests live next to the code as `*.spec.ts`. `apps/api/src/test/preload.ts` (via `bunfig.toml`) runs migrations against the test DB, stubs `fetch` with fixture FX rates (any other host throws), and mocks `yahoo-finance2`. Tests must not hit the network.
+- Unit and e2e tests share the `penny_duck_test` database (created by `docker/init`) and truncate it — don't run them concurrently.
 
 ## Adding shadcn/ui Components
 
@@ -54,7 +72,7 @@ pnpm dlx shadcn@latest add <component> -c apps/web
 
 This places components in `packages/ui/src/components/`. The shadcn config lives at `apps/web/components.json`.
 
-- Style: `radix-mira`
+- Style: `radix-nova`
 - Icon library: `@tabler/icons-react`
 - Import UI components as: `@workspace/ui/components/<name>`
 - Import utilities as: `@workspace/ui/lib/utils`
@@ -66,33 +84,54 @@ This places components in `packages/ui/src/components/`. The shadcn config lives
 - **Utility functions** — `cn()` (clsx + tailwind-merge) and `cva` for component variants
 - **Route files** — `apps/web/src/routes/` using TanStack Router file-based routing. `routeTree.gen.ts` is auto-generated — do not edit manually
 - **Package exports** — `@workspace/ui` uses subpath exports (`./components/*`, `./lib/*`, `./hooks/*`)
+- **Inputs** — use `text-base` (16px) on inputs; never add responsive classes that shrink them below 16px (iOS Safari zooms)
+- **No lint suppression** — fix lint issues properly, never add `eslint-disable` comments
 - **No explanatory one-liner comments** — don't add comments narrating a small styling or layout choice (e.g. why a class sits on one element rather than another). Only comment non-obvious logic
 - **Do not commit** files under `docs/superpowers/` (specs, plans) — these are local working documents
 
-## API Architecture (DDD/CQRS)
+## API Architecture
 
-The NestJS API follows Domain-Driven Design with CQRS (`@nestjs/cqrs`):
+Plain Hono modules — no DI container, no DDD layers. Keep it that way unless a module's complexity genuinely demands more.
 
 ```
-apps/api/src/<module>/
-  domain/          Pure TypeScript — entities, value objects, events, repository ports, errors
-  application/     Commands, queries, event handlers (use cases)
-  infrastructure/  Repository implementations (Drizzle), services (JWT, cookies), mappers
-  presentation/    Controller, DTOs, guards, decorators, exception filters
+apps/api/src/
+  main.ts          Bun entry (exports { port, fetch })
+  app.ts           Hono app: CORS, /healthz, route mounting, error handlers; exports AppType
+  db.ts            Shared Drizzle client + Executor type (db or transaction)
+  middleware/      honoAuthMiddleware (session → c.get("user")), apiKeyAuthMiddleware (x-api-key → c.get("ingest"))
+  modules/<name>/
+    routes.ts      Hono router: zValidator with api-contract schemas, reads user.organizationId, calls service
+    service.ts     Plain async functions doing Drizzle queries and business rules; throw HTTPException for errors
+    *.spec.ts      Bun tests
 ```
 
-- **Domain layer** has zero framework dependencies
-- **Repository ports** are abstract classes in domain, implementations in infrastructure
-- **Schema changes** must use Drizzle migrations (`drizzle-kit generate` + `drizzle-kit migrate`)
+- Modules: `accounts`, `auth`, `categories`, `exchange-rates`, `inbox`, `investments` (instruments, positions, trades, IBKR CSV import), `invites`, `organizations`, `stats` (incl. net worth), `transactions`, `users`, `wallets`
+- All data is scoped by `organizationId` (Better Auth organization); every query must filter on it
+- Errors: `app.ts` turns `HTTPException` and `ZodError` into the `ApiError` shape from `@workspace/shared/errors`
+- `@workspace/api-contract` is the wire format only — no behavior. Prefer loose types (`z.string()`) over `z.enum` when the value set is a frontend concern
+- Path alias `@/` → `apps/api/src/`
+- External data: FX rates from the fawazahmed0 currency-api (jsDelivr / pages.dev), instrument quotes from `yahoo-finance2`
+
+## Web ↔ API
+
+- The web app calls the API through a typed Hono RPC client: `api = hc<AppType>("/api")` in `apps/web/src/lib/api.ts`, with TanStack Query (`queryClient` in the same file)
+- Nitro proxies `/api/**` → `API_URL` (`routeRules` in `apps/web/vite.config.ts`) so cookies are same-origin; the proxy strips the `/api` prefix
+- Because `AppType` is inferred from `app.ts`, new routes must be chained onto the Hono builders (not registered imperatively) to show up on the client
 
 ## Auth
 
-- Better Auth 1.7 (self-hosted) in the Hono API: DB sessions in the `auth` schema, httpOnly `penny-duck.session_token` cookie (7d sliding) + 5 min `session_data` cookie cache
+- Better Auth 1.7 (self-hosted) in the API: DB sessions in the `auth` schema, httpOnly `penny-duck.session_token` cookie (7d sliding) + 5 min `session_data` cookie cache
 - `apps/api/src/modules/auth/auth.ts` is the single auth config; organization provisioning lives in its `databaseHooks`
 - Mounted at `/auth/*`; the handler rewrites the path to `/api/auth/*` because the Nitro proxy strips `/api`
 - Google sign-in when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; redirect URI `${WEB_URL}/api/auth/callback/google`
-- Frontend proxies API calls through Nitro (`/api/**` → `API_PROXY_TARGET`) for same-origin cookies
-- SSR auth check: `getAuthUser()` in `apps/web/src/lib/auth.ts` forwards the request cookie to `/users/me`
+- API keys (`@better-auth/api-key`, prefix `pd_`, 60 req/min) grant `inbox: ["write"]` for the wallet inbox ingest endpoint
+- SSR auth check: `getAuthUser()` in `apps/web/src/lib/auth.ts` forwards the request cookie to `/users/me`; client-side auth uses `apps/web/src/lib/auth-client.ts`
+
+## Local Development
+
+- `.env` at the repo root (copy `.env.example`); `.env.test` for tests (not committed, points at `penny_duck_test`)
+- Postgres runs in Docker on `127.0.0.1:5433`; `docker/init` creates the `app` schema and the test database on first start
+- The API dev server uses `bun --hot`, which doesn't always pick up schema or api-contract changes — restart it after those
 
 ## Deployment (Railway)
 
@@ -104,15 +143,16 @@ Each service builds from its own Dockerfile, configured as code in its `railway.
 
 - **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step)
 - **Web** — `apps/web/Dockerfile`: `turbo prune web --docker` → install + `vite build` → `oven/bun` runtime with only `.output/` (Nitro output is self-contained)
-- **Pre-deploy migration** (API): `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway)
+- **Pre-deploy migration** (API): `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway). It runs even if the new API then fails its healthcheck, so set new required env vars before deploying
 - Bun is pinned in three places that must move together: `.bun-version` (local, read by mise), and the `oven/bun:<version>` tag in both Dockerfiles
 - `.dockerignore` keeps env files and build artifacts out of the build context; watch paths live in each `railway.json`
+- Turbo runs in strict env mode: build-time vars must be listed in `turbo.json` (`API_URL` is)
 
 Build locally with `docker build -f apps/api/Dockerfile .` (web needs `--build-arg API_URL=...`).
 
 ### Environment Variables
 
-- **API service**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`, `PORT=3030`
+- **API service**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`, `PORT=3030`; optional `MAX_BODY_SIZE_MB` (default 1). `RAILWAY_ENVIRONMENT_NAME=production` (set by Railway) drives `isProduction`
 - **Web service**: `API_URL` — used at build time (baked into the Nitro `/api/**` proxy target, passed as a Docker build arg) and at runtime (SSR auth in `auth.ts`)
 
 ## Legal
@@ -123,6 +163,7 @@ When features change (e.g., new data collected, third-party integrations, auth c
 
 - **`main`** is the production branch — linked to Railway, every push triggers a deploy
 - Work on a version branch (e.g. `v0.2.0`), push freely without triggering deploys
+- Issues live on GitHub; each version has a GitHub milestone — assign issues worked on that branch to it
 - When ready to release: rebase onto main, fast-forward merge, tag, push
 
 ```bash
