@@ -1,5 +1,6 @@
 import { TransactionRow } from "./transaction-row"
 import type { Account, Category, Transaction } from "@workspace/api-contract"
+import { formatSigned } from "@/lib/money"
 
 interface TransactionListProps {
   transactions: Array<Transaction>
@@ -176,14 +177,13 @@ export function TransactionList({
             <span
               className={`text-sm tabular-nums ${
                 group.subtotal < 0
-                  ? "text-red-400"
+                  ? "text-tx-expense-ink"
                   : group.subtotal > 0
-                    ? "text-green-400"
+                    ? "text-tx-income-ink"
                     : "text-muted-foreground"
               }`}
             >
-              {group.subtotal >= 0 ? "+" : ""}
-              {group.subtotal.toFixed(2)} {homeCurrency}
+              {formatSigned(group.subtotal)} {homeCurrency}
             </span>
           </div>
           <div className="space-y-0.5">

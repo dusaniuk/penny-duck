@@ -61,6 +61,7 @@ import type {
 } from "@workspace/api-contract"
 import { pickableCategories } from "@/lib/categories"
 import { parseLocalDate, toLocalIso } from "@/lib/dates"
+import { toTypographicMinus } from "@/lib/money"
 
 type TransactionType = "expense" | "income" | "transfer"
 type View = "form" | "picker"
@@ -610,7 +611,8 @@ function TransactionModalBody({
                               .filter((a) => a.walletId === w.id)
                               .map((a) => (
                                 <option key={a.id} value={a.id}>
-                                  {a.currency} — {a.balance.toFixed(2)}
+                                  {a.currency} —{" "}
+                                  {toTypographicMinus(a.balance.toFixed(2))}
                                 </option>
                               ))}
                           </optgroup>
@@ -619,7 +621,9 @@ function TransactionModalBody({
                         .filter((a) => a.walletId === null)
                         .map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.name} — {a.balance.toFixed(2)} {a.currency}
+                            {a.name} —{" "}
+                            {toTypographicMinus(a.balance.toFixed(2))}{" "}
+                            {a.currency}
                           </option>
                         ))}
                     </select>
@@ -681,7 +685,8 @@ function TransactionModalBody({
                               )
                               .map((a) => (
                                 <option key={a.id} value={a.id}>
-                                  {a.currency} — {a.balance.toFixed(2)}
+                                  {a.currency} —{" "}
+                                  {toTypographicMinus(a.balance.toFixed(2))}
                                 </option>
                               ))}
                           </optgroup>
@@ -693,7 +698,9 @@ function TransactionModalBody({
                         )
                         .map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.name} — {a.balance.toFixed(2)} {a.currency}
+                            {a.name} —{" "}
+                            {toTypographicMinus(a.balance.toFixed(2))}{" "}
+                            {a.currency}
                           </option>
                         ))}
                     </select>
@@ -878,7 +885,7 @@ function TransactionModalBody({
                   }
                   className={cn(
                     values.unsettled &&
-                      "border-amber-400/50 bg-amber-400/12 text-amber-400 hover:border-amber-400/50 hover:bg-amber-400/16 hover:text-amber-400 dark:border-amber-400/50 dark:bg-amber-400/12 dark:hover:bg-amber-400/16"
+                      "border-warning/50 bg-warning/12 text-warning hover:border-warning/50 hover:bg-warning/16 hover:text-warning dark:border-warning/50 dark:bg-warning/12 dark:hover:bg-warning/16"
                   )}
                 >
                   <IconAlertTriangle />

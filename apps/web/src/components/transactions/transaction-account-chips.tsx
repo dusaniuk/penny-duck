@@ -2,6 +2,7 @@ import { SelectableSurface } from "@workspace/ui/components/selectable-surface"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Account, AccountUsageItem, Wallet } from "@workspace/api-contract"
 import { paletteColor } from "@/lib/palette"
+import { formatBalance } from "@/lib/money"
 
 type Chip =
   | { kind: "account"; account: Account }
@@ -75,7 +76,7 @@ export function TransactionAccountChips({
       <div className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-foreground/40 uppercase">
         {label}
       </div>
-      <div className="-mx-1 -my-1 flex gap-1.5 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-1 -my-1 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden">
         {chips.map((chip) => {
           if (chip.kind === "account") {
             const active = chip.account.id === selectedId
@@ -192,11 +193,7 @@ function AccountText({ account }: { account: Account }) {
         {account.name}
       </div>
       <div className="truncate text-[11px] text-foreground/45 tabular-nums">
-        {account.balance.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}{" "}
-        {account.currency}
+        {formatBalance(account.balance)} {account.currency}
       </div>
     </div>
   )

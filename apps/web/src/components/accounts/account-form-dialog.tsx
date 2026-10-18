@@ -54,6 +54,7 @@ import {
   paletteColor,
   pickRandomUnusedColor,
 } from "@/lib/palette"
+import { formatBalance } from "@/lib/money"
 
 function asPaletteColor(s: string | null | undefined): PaletteColor | null {
   return s != null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
@@ -1169,10 +1170,7 @@ function WalletEditBody({
                   {pocket.currency}
                 </span>
                 <span className="flex-1 text-[13px] text-foreground tabular-nums">
-                  {pocket.balance.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatBalance(pocket.balance)}
                 </span>
                 <button
                   type="button"
@@ -1348,10 +1346,7 @@ function PreviewCard({
   const displayName = name || "Account name"
   const resolved = getIcon(icon)
   const IconComp = resolved?.component ?? IconCreditCard
-  const formatted = balance.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  const formatted = formatBalance(balance)
 
   return (
     <div className="relative flex flex-col gap-3 overflow-hidden rounded-[12px] border border-border bg-card p-3.5">
@@ -1405,10 +1400,7 @@ function PreviewCard({
                 className="flex items-baseline gap-1.5"
               >
                 <span className="font-heading text-[18px] font-semibold tracking-tight text-foreground tabular-nums">
-                  {p.balance.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatBalance(p.balance)}
                 </span>
                 <span className="text-[11px] tracking-[0.04em] text-muted-foreground uppercase">
                   {p.currency || "—"}

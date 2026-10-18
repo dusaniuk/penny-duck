@@ -1,6 +1,7 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { formatSigned } from "@/lib/money"
 
 export const Route = createFileRoute("/_app/investments/$accountId_/$symbol")({
   staticData: { breadcrumb: "Position" },
@@ -55,8 +56,8 @@ function PositionPage() {
                 : "text-rose-600"
             }
           >
-            {position.unrealizedGain.toFixed(2)} (
-            {position.unrealizedGainPct.toFixed(2)}%)
+            {formatSigned(position.unrealizedGain)} (
+            {formatSigned(position.unrealizedGainPct)}%)
           </span>
         </p>
       </div>

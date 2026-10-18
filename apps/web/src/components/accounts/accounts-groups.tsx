@@ -5,6 +5,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import type { Account, Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard } from "@/components/accounts/account-card"
+import { toTypographicMinus } from "@/lib/money"
 
 type StandaloneType = "bank" | "brokerage" | "loan"
 
@@ -20,7 +21,7 @@ const GROUP_LABEL: Record<GroupKey, string> = {
 }
 
 function formatInt(n: number): string {
-  return Math.round(n).toLocaleString("en-US")
+  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
 }
 
 // Synthesize an AccountData entry from a Wallet so the AccountCard can render

@@ -15,6 +15,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu"
 import type { Account, Category, Transaction } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
+import { MINUS } from "@/lib/money"
 
 type AccountData = Account
 type CategoryData = Category
@@ -56,28 +57,28 @@ export function TransactionRow({
     isUnsettled && isExpense && !isTransfer && !isReimbursement
 
   const amountColor = isReimbursement
-    ? "text-amber-400"
+    ? "text-warning"
     : isTransfer
-      ? "text-violet-400"
+      ? "text-tx-transfer-ink"
       : isExpense
-        ? "text-red-400"
-        : "text-green-400"
+        ? "text-tx-expense-ink"
+        : "text-tx-income-ink"
 
   const amountPrefix = isReimbursement
     ? "+"
     : isTransfer
       ? ""
       : isExpense
-        ? "-"
+        ? MINUS
         : "+"
 
   function renderLeft() {
     if (isReimbursement) {
       return (
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <span className="shrink-0 text-base text-amber-400">↩</span>
+          <span className="shrink-0 text-base text-warning">↩</span>
           <div className="min-w-0">
-            <p className="truncate text-base font-medium text-amber-400">
+            <p className="truncate text-base font-medium text-warning">
               Return
             </p>
             <p className="truncate text-sm text-muted-foreground">
@@ -98,7 +99,7 @@ export function TransactionRow({
               {account?.name ?? "Unknown"}
               {pairedAccountName && ` → ${pairedAccountName}`}
               {transaction.exchangeRate != null && (
-                <span className="text-blue-400">
+                <span className="text-info">
                   {" "}
                   · rate {transaction.exchangeRate}
                 </span>
@@ -127,7 +128,7 @@ export function TransactionRow({
             </span>
           </p>
           <p className="truncate text-sm text-muted-foreground">
-            {isUnsettled && <span className="text-amber-400">unsettled </span>}
+            {isUnsettled && <span className="text-warning">unsettled </span>}
             {transaction.note && (
               <span>
                 {isUnsettled ? "· " : ""}
@@ -176,7 +177,7 @@ export function TransactionRow({
   return (
     <div
       className={`flex w-full items-center justify-between gap-3 rounded-md px-0 py-2.5 text-left transition-colors sm:px-3 ${
-        isUnsettled ? "border-l-3 border-l-amber-400 bg-amber-400/5" : ""
+        isUnsettled ? "border-l-3 border-l-warning bg-warning/5" : ""
       }`}
     >
       {renderLeft()}

@@ -9,6 +9,7 @@ import type { CSSProperties } from "react"
 import type { Account, WalletPocket } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
 import { paletteColor } from "@/lib/palette"
+import { formatBalance } from "@/lib/money"
 
 // AccountCard handles bank/brokerage (single currency) and wallet (multiple
 // currency pockets) entries with the same visual frame. When `pockets` is
@@ -32,13 +33,6 @@ function fmtArchivedDate(iso: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
-  })
-}
-
-function fmtMoney(n: number) {
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   })
 }
 
@@ -196,7 +190,7 @@ export function AccountCard({
               ) : (
                 account.pockets!.map((p) => (
                   <span key={p.currency}>
-                    {fmtMoney(p.balance)}{" "}
+                    {formatBalance(p.balance)}{" "}
                     <span className="text-[10px] font-normal text-muted-foreground">
                       {p.currency}
                     </span>
@@ -212,7 +206,7 @@ export function AccountCard({
                   isLoan && "text-amber-600 dark:text-amber-400"
                 )}
               >
-                {fmtMoney(account.balance)}
+                {formatBalance(account.balance)}
               </p>
               <p className="text-[11px] text-muted-foreground">
                 {isLoan ? `${account.currency} · Owed` : account.currency}
@@ -275,7 +269,7 @@ export function AccountCard({
               account.pockets!.map((p) => (
                 <span key={p.currency} className="flex items-baseline gap-1">
                   <span className="font-heading text-[18px] font-semibold tracking-tight">
-                    {fmtMoney(p.balance)}
+                    {formatBalance(p.balance)}
                   </span>
                   <span className="text-[10px] text-muted-foreground uppercase">
                     {p.currency}
@@ -292,7 +286,7 @@ export function AccountCard({
                 isLoan && "text-amber-600 dark:text-amber-400"
               )}
             >
-              {fmtMoney(account.balance)}
+              {formatBalance(account.balance)}
             </span>
             <span className="text-[11px] text-muted-foreground">
               {isLoan ? `${account.currency} · Owed` : account.currency}

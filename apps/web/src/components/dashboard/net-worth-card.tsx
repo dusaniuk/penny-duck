@@ -8,6 +8,7 @@ import {
 } from "@workspace/ui/components/chart"
 import type { ChartConfig } from "@workspace/ui/components/chart"
 import { api } from "@/lib/api"
+import { toTypographicMinus } from "@/lib/money"
 
 const chartConfig = {
   total: {
@@ -22,11 +23,11 @@ function formatAmount(n: number): { whole: string; fraction: string } {
     maximumFractionDigits: 2,
   })
   const [whole, fraction] = parts.split(".")
-  return { whole, fraction: fraction ?? "00" }
+  return { whole: toTypographicMinus(whole), fraction: fraction ?? "00" }
 }
 
 function formatInt(n: number): string {
-  return Math.round(n).toLocaleString("en-US")
+  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
 }
 
 export function NetWorthCard() {

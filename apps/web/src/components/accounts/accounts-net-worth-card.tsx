@@ -4,6 +4,7 @@ import { buildNetWorthBreakdown } from "./net-worth-breakdown"
 import type { AssetGroup, LiabilityGroup } from "./net-worth-breakdown"
 import type { Account, NetWorthResponse, Wallet } from "@workspace/api-contract"
 import { queryClient } from "@/lib/api"
+import { toTypographicMinus } from "@/lib/money"
 
 const ASSET_LABEL: Record<AssetGroup, string> = {
   bank: "Bank",
@@ -31,11 +32,11 @@ function formatAmount(n: number): { whole: string; fraction: string } {
     maximumFractionDigits: 2,
   })
   const [whole, fraction] = parts.split(".")
-  return { whole, fraction: fraction ?? "00" }
+  return { whole: toTypographicMinus(whole), fraction: fraction ?? "00" }
 }
 
 function formatInt(n: number): string {
-  return Math.round(n).toLocaleString("en-US")
+  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
 }
 
 type Props = {

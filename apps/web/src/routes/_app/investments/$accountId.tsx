@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { leafAccountsOf } from "@/lib/accounts"
 import { PositionsTable } from "@/components/investments/positions-table"
+import { toTypographicMinus } from "@/lib/money"
 
 export const Route = createFileRoute("/_app/investments/$accountId")({
   staticData: { breadcrumb: "Account" },
@@ -45,7 +46,8 @@ function AccountInvestmentsPage() {
             {account.name}
           </h1>
           <p className="text-muted-foreground">
-            Cash: {account.balance.toFixed(2)} {account.currency}
+            Cash: {toTypographicMinus(account.balance.toFixed(2))}{" "}
+            {account.currency}
           </p>
         </div>
       )}

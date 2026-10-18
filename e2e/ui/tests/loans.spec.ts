@@ -122,19 +122,19 @@ test.describe("Loans", () => {
     await txDialog.getByRole("button", { name: /^Create/ }).click()
     await expect(txDialog).not.toBeVisible({ timeout: 10_000 })
 
-    // ── Loan balance dropped to -223,000 ──────────────────────────────────────
+    // ── Loan balance dropped to −223,000 ──────────────────────────────────────
     // Navigate back to accounts to check the updated loan card balance.
     await page.goto("/accounts")
     await page.waitForLoadState("networkidle")
 
-    // fmtMoney(-223000) → "-223,000.00" (en-US) or "-223 000,00" (uk locale)
+    // formatBalance(-223000) → "−223,000.00" (en-US) or "−223 000,00" (uk locale)
     // Match the absolute numeric value with the "Owed" label present on the card.
     const updatedLoanCard = page
       .locator("[data-slot=card]")
       .filter({ hasText: "Car loan" })
     await expect(updatedLoanCard).toBeVisible()
-    // The balance is rendered as fmtMoney(−223000) next to "UAH · Owed".
+    // The balance is rendered as formatBalance(−223000) next to "UAH · Owed".
     // Accept any comma/dot/space number separator.
-    await expect(updatedLoanCard).toContainText(/-\s?223[,\s.]?000/)
+    await expect(updatedLoanCard).toContainText(/−\s?223[,\s.]?000/)
   })
 })

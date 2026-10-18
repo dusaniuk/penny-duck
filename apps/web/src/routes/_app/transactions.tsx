@@ -412,8 +412,8 @@ function TransactionsPage() {
               onClick={handleToggleUnsettled}
               className={`rounded-full border px-2.5 py-0.5 text-sm font-medium transition-colors ${
                 filters.settled === false
-                  ? "border-amber-400 bg-amber-400/20 text-amber-400"
-                  : "border-amber-400/50 text-amber-400 hover:bg-amber-400/10"
+                  ? "border-warning bg-warning/20 text-warning"
+                  : "border-warning/50 text-warning hover:bg-warning/10"
               }`}
             >
               ⚠ Unsettled ({unsettledCount})

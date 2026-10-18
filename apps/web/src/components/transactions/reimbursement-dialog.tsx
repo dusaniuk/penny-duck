@@ -18,6 +18,7 @@ import {
 } from "@workspace/ui/components/select"
 import type { Account, Member, Transaction } from "@workspace/api-contract"
 import { DatePicker } from "@/components/date-picker"
+import { toTypographicMinus } from "@/lib/money"
 
 interface ReimbursementDialogProps {
   open: boolean
@@ -172,7 +173,8 @@ export function ReimbursementDialog({
                     .filter((a) => a.id !== transaction.accountId)
                     .map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name} — {a.balance.toFixed(2)} {a.currency}
+                        {a.name} — {toTypographicMinus(a.balance.toFixed(2))}{" "}
+                        {a.currency}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -196,7 +198,7 @@ export function ReimbursementDialog({
             </Field>
 
             {isCrossCurrency && (
-              <div className="rounded-md border border-blue-400/30 bg-blue-400/5 p-3">
+              <div className="rounded-md border border-info/30 bg-info/5 p-3">
                 <Field>
                   <FieldLabel>
                     Exchange rate (1 {expenseAccount.currency} ={" "}

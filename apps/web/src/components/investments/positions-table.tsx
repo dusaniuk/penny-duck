@@ -10,12 +10,15 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import type { Position } from "@workspace/api-contract"
+import { formatSigned, toTypographicMinus } from "@/lib/money"
 
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat(undefined, {
+function fmt(n: number, currency: string, signed = false) {
+  const formatted = new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
+    signDisplay: signed ? "exceptZero" : "auto",
   }).format(n)
+  return signed ? toTypographicMinus(formatted) : formatted
 }
 
 interface PositionsTableProps {
@@ -96,8 +99,8 @@ export function PositionsTable({ positions, onRowClick }: PositionsTableProps) {
                       : "text-rose-600")
                   }
                 >
-                  {fmt(p.unrealizedGain, p.currency)} (
-                  {p.unrealizedGainPct.toFixed(2)}%)
+                  {fmt(p.unrealizedGain, p.currency, true)} (
+                  {formatSigned(p.unrealizedGainPct)}%)
                 </TableCell>
                 <TableCell
                   className={
@@ -105,7 +108,7 @@ export function PositionsTable({ positions, onRowClick }: PositionsTableProps) {
                     (p.realizedGain >= 0 ? "text-emerald-600" : "text-rose-600")
                   }
                 >
-                  {fmt(p.realizedGain, p.currency)}
+                  {fmt(p.realizedGain, p.currency, true)}
                 </TableCell>
               </TableRow>
             ))}

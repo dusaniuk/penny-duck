@@ -1,11 +1,14 @@
 import { Card, CardContent } from "@workspace/ui/components/card"
 import type { InvestmentsSummary } from "@workspace/api-contract"
+import { toTypographicMinus } from "@/lib/money"
 
-function fmt(n: number, currency: string) {
-  return new Intl.NumberFormat(undefined, {
+function fmt(n: number, currency: string, signed = false) {
+  const formatted = new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
+    signDisplay: signed ? "exceptZero" : "auto",
   }).format(n)
+  return signed ? toTypographicMinus(formatted) : formatted
 }
 
 interface PortfolioSummaryProps {
@@ -32,12 +35,12 @@ export function PortfolioSummary({
     },
     {
       label: "Unrealized P&L",
-      value: fmt(summary.totalUnrealizedGainHome, homeCurrency),
+      value: fmt(summary.totalUnrealizedGainHome, homeCurrency, true),
       tone: summary.totalUnrealizedGainHome >= 0 ? "positive" : "negative",
     },
     {
       label: "Realized P&L",
-      value: fmt(summary.totalRealizedGainHome, homeCurrency),
+      value: fmt(summary.totalRealizedGainHome, homeCurrency, true),
       tone: summary.totalRealizedGainHome >= 0 ? "positive" : "negative",
     },
   ]

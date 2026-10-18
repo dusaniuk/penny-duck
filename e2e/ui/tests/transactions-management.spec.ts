@@ -99,7 +99,7 @@ test.describe("Transactions management", () => {
     await dialog.getByRole("button", { name: /^Create/ }).click()
 
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
-    await expect(page.getByText("-42.50").first()).toBeVisible()
+    await expect(page.getByText("−42.50").first()).toBeVisible()
   })
 
   test("creates an income transaction via FAB", async ({
@@ -194,7 +194,7 @@ test.describe("Transactions management", () => {
     await editDialog.getByRole("button", { name: "Save changes" }).click()
 
     await expect(editDialog).not.toBeVisible({ timeout: 5000 })
-    await expect(page.getByText("-75.00").first()).toBeVisible()
+    await expect(page.getByText("−75.00").first()).toBeVisible()
   })
 
   test("deletes a transaction", async ({ page }) => {
