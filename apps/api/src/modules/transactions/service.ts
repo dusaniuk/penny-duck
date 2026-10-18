@@ -394,6 +394,8 @@ async function findAll(
     pairedRows = pairedRows.filter((r) => !resultIds.has(r.id))
   }
 
+  // Paired halves ride along outside the page: `data` may exceed `limit` and
+  // `total` doesn't count them, so clients must page by page count, not rows.
   return { data: [...rows, ...pairedRows], total }
 }
 

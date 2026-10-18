@@ -7,6 +7,7 @@ import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query"
 import type { Category, Member, Transaction } from "@workspace/api-contract"
 import { api, queryClient } from "@/lib/api"
 import { flattenAccounts, walletsOf } from "@/lib/accounts"
+import { nextPageParam } from "@/lib/pagination"
 import { TransactionDeleteDialog } from "@/components/transactions/transaction-delete-dialog"
 import { TransactionFab } from "@/components/transactions/transaction-fab"
 import { TransactionFilterSheet } from "@/components/transactions/transaction-filters"
@@ -83,10 +84,8 @@ function TransactionsPage() {
       return res.json()
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      const loaded = allPages.reduce((sum, p) => sum + p.data.length, 0)
-      return loaded < lastPage.total ? allPages.length + 1 : undefined
-    },
+    getNextPageParam: (lastPage, allPages) =>
+      nextPageParam(allPages.length, PAGE_SIZE, lastPage.total),
   })
 
   const allTransactions = useMemo(

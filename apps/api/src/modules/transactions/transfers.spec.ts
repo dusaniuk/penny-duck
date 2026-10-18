@@ -287,4 +287,64 @@ describe("Transfers", () => {
 
     await deleteTxHttp(outgoing.id, 400)
   })
+
+  it("pages an account view with paired halves outside the limit", async () => {
+    const acc1 = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank 1",
+      type: "bank",
+      currency: "UAH",
+      balance: 5000,
+    })
+    const acc2 = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank 2",
+      type: "bank",
+      currency: "UAH",
+      balance: 0,
+    })
+
+    const outgoingIds: string[] = []
+    for (let i = 0; i < 5; i++) {
+      const { outgoing } = await createTransferHttp({
+        fromAccountId: acc1.id,
+        toAccountId: acc2.id,
+        amount: 100,
+        date: new Date(Date.UTC(2026, 0, i + 1)).toISOString(),
+      })
+      outgoingIds.push(outgoing.id)
+    }
+
+    const limit = 2
+    const pages: { data: Transaction[]; total: number }[] = []
+    let page = 1
+    do {
+      const res = await honoApp.request(
+        `/transactions?accountId=${acc1.id}&page=${page}&limit=${limit}`,
+        { headers: { cookie } }
+      )
+      expect(res.status).toBe(200)
+      pages.push(await res.json())
+      page++
+    } while ((page - 1) * limit < pages[0].total)
+
+    expect(pages[0].total).toBe(5)
+    expect(pages).toHaveLength(3)
+
+    const ownRows = pages.flatMap((p) =>
+      p.data.filter((t) => t.accountId === acc1.id)
+    )
+    expect(ownRows.map((t) => t.id).sort()).toEqual(outgoingIds.sort())
+
+    for (const p of pages) {
+      const own = p.data.filter((t) => t.accountId === acc1.id)
+      expect(own.length).toBeLessThanOrEqual(limit)
+      expect(p.data).toHaveLength(own.length * 2)
+    }
+
+    const rowCount = pages.reduce((sum, p) => sum + p.data.length, 0)
+    expect(rowCount).toBeGreaterThan(pages[0].total)
+  })
 })
