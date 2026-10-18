@@ -1,3 +1,4 @@
+import { Amount } from "@workspace/ui/components/amount"
 import { useState } from "react"
 import {
   IconArchive,
@@ -13,12 +14,12 @@ import { cn } from "@workspace/ui/lib/utils"
 import { CategoryIconChip } from "./category-icon-chip"
 import { CategorySubcategoryCard } from "./category-subcategory-card"
 import {
-  formatMoney,
   formatRelativeDate,
   rollupParent,
   sharePct,
   statFor,
 } from "./category-stats"
+import type { ReactNode } from "react"
 import type { Category } from "@workspace/api-contract"
 import type { StatsMap } from "./category-stats"
 import { isArchivedCategory } from "@/lib/categories"
@@ -166,8 +167,13 @@ export function CategoryDetail({
         <div className="relative mt-5 grid grid-cols-1 gap-4 border-t border-border/60 pt-4 sm:grid-cols-3">
           <Stat
             label="Spend this month"
-            value={formatMoney(roll.spentThisMonth)}
-            unit={homeCurrency}
+            value={
+              <Amount
+                size="stat"
+                value={roll.spentThisMonth}
+                currency={homeCurrency}
+              />
+            }
             sub={`${sharePct(roll.spentThisMonth, totalSpent)}% of total`}
           />
           <Stat
@@ -177,8 +183,9 @@ export function CategoryDetail({
           />
           <Stat
             label="Average"
-            value={formatMoney(average)}
-            unit={homeCurrency}
+            value={
+              <Amount size="stat" value={average} currency={homeCurrency} />
+            }
             sub="per transaction"
           />
         </div>
@@ -276,26 +283,18 @@ export function CategoryDetail({
 
 interface StatProps {
   label: string
-  value: string
-  unit?: string
+  value: ReactNode
   sub: string
 }
 
-function Stat({ label, value, unit, sub }: StatProps) {
+function Stat({ label, value, sub }: StatProps) {
   return (
     <div>
       <p className="text-[10.5px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
         {label}
       </p>
-      <p className="mt-1.5 flex items-baseline gap-1">
-        <span className="font-heading text-xl font-semibold text-foreground tabular-nums">
-          {value}
-        </span>
-        {unit && (
-          <span className="text-[11px] font-medium text-muted-foreground">
-            {unit}
-          </span>
-        )}
+      <p className="mt-1.5 font-heading text-xl font-semibold text-foreground">
+        {value}
       </p>
       <p className="mt-0.5 text-[12px] text-muted-foreground">{sub}</p>
     </div>

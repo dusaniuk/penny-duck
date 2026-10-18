@@ -7,10 +7,12 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { ThemeProvider } from "@workspace/ui/components/theme-provider"
+import { LocaleProvider } from "@workspace/ui/components/locale-provider"
 import appCss from "@workspace/ui/globals.css?url"
 import { themeScript } from "@workspace/ui/lib/theme-script"
 import { Toaster } from "sonner"
 import { queryClient } from "@/lib/api"
+import { getLocale } from "@/lib/locale"
 
 export const Route = createRootRoute({
   head: () => ({
@@ -33,6 +35,9 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  loader: () => getLocale(),
+  staleTime: Infinity,
+  shouldReload: false,
   shellComponent: RootDocument,
   component: RootLayout,
 })
@@ -53,14 +58,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayout() {
+  const locale = Route.useLoaderData()
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Outlet />
-          <Toaster richColors />
-        </TooltipProvider>
-      </QueryClientProvider>
+      <LocaleProvider locale={locale}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Outlet />
+            <Toaster richColors />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LocaleProvider>
     </ThemeProvider>
   )
 }

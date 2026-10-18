@@ -1,3 +1,4 @@
+import { Amount } from "@workspace/ui/components/amount"
 import { useState } from "react"
 import {
   IconArchive,
@@ -54,7 +55,6 @@ import {
   paletteColor,
   pickRandomUnusedColor,
 } from "@/lib/palette"
-import { formatBalance } from "@/lib/money"
 
 function asPaletteColor(s: string | null | undefined): PaletteColor | null {
   return s != null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
@@ -1169,9 +1169,10 @@ function WalletEditBody({
                 <span className="w-8 shrink-0 font-mono text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                   {pocket.currency}
                 </span>
-                <span className="flex-1 text-[13px] text-foreground tabular-nums">
-                  {formatBalance(pocket.balance)}
-                </span>
+                <Amount
+                  value={pocket.balance}
+                  className="flex-1 text-[13px] text-foreground"
+                />
                 <button
                   type="button"
                   disabled={hasTx || isDeleting}
@@ -1346,7 +1347,6 @@ function PreviewCard({
   const displayName = name || "Account name"
   const resolved = getIcon(icon)
   const IconComp = resolved?.component ?? IconCreditCard
-  const formatted = formatBalance(balance)
 
   return (
     <div className="relative flex flex-col gap-3 overflow-hidden rounded-[12px] border border-border bg-card p-3.5">
@@ -1395,29 +1395,22 @@ function PreviewCard({
             </span>
           ) : (
             pockets.map((p, i) => (
-              <div
+              <Amount
                 key={`${p.currency}-${i}`}
-                className="flex items-baseline gap-1.5"
-              >
-                <span className="font-heading text-[18px] font-semibold tracking-tight text-foreground tabular-nums">
-                  {formatBalance(p.balance)}
-                </span>
-                <span className="text-[11px] tracking-[0.04em] text-muted-foreground uppercase">
-                  {p.currency || "—"}
-                </span>
-              </div>
+                value={p.balance}
+                currency={p.currency || "—"}
+                className="block font-heading text-[18px] font-semibold tracking-tight text-foreground"
+              />
             ))
           )}
         </div>
       ) : (
-        <div className="relative flex items-baseline gap-1.5">
-          <span className="font-heading text-[22px] font-semibold tracking-tight text-foreground tabular-nums">
-            {formatted}
-          </span>
-          <span className="text-[11px] tracking-[0.04em] text-muted-foreground">
-            {currency}
-          </span>
-        </div>
+        <Amount
+          size="stat"
+          value={balance}
+          currency={currency}
+          className="relative"
+        />
       )}
     </div>
   )

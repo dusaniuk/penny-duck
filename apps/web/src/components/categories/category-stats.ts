@@ -73,11 +73,6 @@ export function sharePct(part: number, whole: number): number {
   return Math.round((part / whole) * 100)
 }
 
-export function formatMoney(n: number): string {
-  if (!Number.isFinite(n)) return "0"
-  return Math.round(n).toLocaleString("en-US")
-}
-
 export function formatRelativeDate(iso: string | null): string {
   if (!iso) return "—"
   const date = new Date(iso)

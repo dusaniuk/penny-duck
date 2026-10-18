@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Cell, Label, Pie, PieChart } from "recharts"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
+import { useLocale } from "@workspace/ui/components/locale-provider"
+import { formatMoney } from "@workspace/ui/lib/money"
 import {
   ChartContainer,
   ChartTooltip,
@@ -15,10 +17,6 @@ import { paletteColor } from "@/lib/palette"
 const chartConfig = {} satisfies ChartConfig
 
 const TOP_CATEGORIES = 5
-
-function formatInt(n: number): string {
-  return Math.round(n).toLocaleString("en-US")
-}
 
 interface DisplaySlice {
   key: string
@@ -53,6 +51,7 @@ function toSlices(
 }
 
 export function SpendingByCategoryCard() {
+  const locale = useLocale()
   const { data, isLoading } = useQuery({
     queryKey: ["stats", "spending-by-category"],
     queryFn: async () => {
@@ -134,7 +133,7 @@ export function SpendingByCategoryCard() {
                               y={viewBox.cy}
                               className="fill-foreground font-mono text-lg font-bold tabular-nums"
                             >
-                              {formatInt(data.total)}
+                              {formatMoney(data.total, { locale })}
                             </tspan>
                             <tspan
                               x={viewBox.cx}

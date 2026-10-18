@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { IconCheck, IconX } from "@tabler/icons-react"
+import { Amount } from "@workspace/ui/components/amount"
 import { Button } from "@workspace/ui/components/button"
 import {
   Field,
@@ -17,7 +18,6 @@ import {
 import { Switch } from "@workspace/ui/components/switch"
 import type { Account, Category, InboxItem } from "@workspace/api-contract"
 import { activeCategories } from "@/lib/categories"
-import { MINUS } from "@/lib/money"
 
 export interface AcceptInput {
   accountId: string
@@ -85,11 +85,12 @@ export function InboxItemCard({
             {item.merchant && item.description ? ` · ${item.description}` : ""}
           </p>
         </div>
-        <p className="shrink-0 text-base font-semibold text-tx-expense-ink tabular-nums">
-          {MINUS}
-          {item.amount.toFixed(2)}
-          {item.currency ? ` ${item.currency}` : ""}
-        </p>
+        <Amount
+          value={-item.amount}
+          tone="expense"
+          currency={item.currency ?? undefined}
+          className="shrink-0 text-base font-semibold"
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

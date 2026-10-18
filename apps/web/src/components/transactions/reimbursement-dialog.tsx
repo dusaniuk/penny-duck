@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
+import { Amount } from "@workspace/ui/components/amount"
 import { Button } from "@workspace/ui/components/button"
+import { useLocale } from "@workspace/ui/components/locale-provider"
+import { formatMoney } from "@workspace/ui/lib/money"
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -18,7 +21,6 @@ import {
 } from "@workspace/ui/components/select"
 import type { Account, Member, Transaction } from "@workspace/api-contract"
 import { DatePicker } from "@/components/date-picker"
-import { toTypographicMinus } from "@/lib/money"
 
 interface ReimbursementDialogProps {
   open: boolean
@@ -48,6 +50,7 @@ export function ReimbursementDialog({
   exchangeRates,
   onSubmit,
 }: ReimbursementDialogProps) {
+  const locale = useLocale()
   const [accountId, setAccountId] = useState("")
   const [amount, setAmount] = useState("")
   const [exchangeRate, setExchangeRate] = useState("")
@@ -156,8 +159,12 @@ export function ReimbursementDialog({
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add reimbursement</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            {transaction.note ?? "Transaction"} &middot; -
-            {transaction.amount.toFixed(2)} {expenseAccount?.currency} remaining
+            {transaction.note ?? "Transaction"} &middot;{" "}
+            <Amount
+              value={-transaction.amount}
+              currency={expenseAccount?.currency}
+            />{" "}
+            remaining
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <form onSubmit={handleSubmit}>
@@ -173,8 +180,11 @@ export function ReimbursementDialog({
                     .filter((a) => a.id !== transaction.accountId)
                     .map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name} — {toTypographicMinus(a.balance.toFixed(2))}{" "}
-                        {a.currency}
+                        {a.name} —{" "}
+                        {formatMoney(a.balance, {
+                          locale,
+                          currency: a.currency,
+                        })}
                       </SelectItem>
                     ))}
                 </SelectContent>

@@ -127,13 +127,13 @@ test.describe("Loans", () => {
     await page.goto("/accounts")
     await page.waitForLoadState("networkidle")
 
-    // formatBalance(-223000) → "−223,000.00" (en-US) or "−223 000,00" (uk locale)
+    // <Amount> renders "−223,000.00" (en-US) or "−223 000,00" (uk locale)
     // Match the absolute numeric value with the "Owed" label present on the card.
     const updatedLoanCard = page
       .locator("[data-slot=card]")
       .filter({ hasText: "Car loan" })
     await expect(updatedLoanCard).toBeVisible()
-    // The balance is rendered as formatBalance(−223000) next to "UAH · Owed".
+    // The balance is rendered by <Amount> next to "UAH · Owed".
     // Accept any comma/dot/space number separator.
     await expect(updatedLoanCard).toContainText(/−\s?223[,\s.]?000/)
   })

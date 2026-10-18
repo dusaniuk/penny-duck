@@ -1,3 +1,4 @@
+import { Amount } from "@workspace/ui/components/amount"
 import {
   IconArchive,
   IconArchiveOff,
@@ -7,7 +8,7 @@ import {
 import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 import { CategoryIconChip } from "./category-icon-chip"
-import { formatMoney, formatRelativeDate, sharePct } from "./category-stats"
+import { formatRelativeDate, sharePct } from "./category-stats"
 import type { Category, CategoryUsageItem } from "@workspace/api-contract"
 import { isArchivedCategory } from "@/lib/categories"
 import { categoryShadeVars } from "@/lib/palette"
@@ -115,12 +116,11 @@ export function CategorySubcategoryCard({
           </p>
           {used ? (
             <p className="flex items-baseline gap-1">
-              <span className="text-[15px] font-semibold text-(--chip-fg-l) tabular-nums dark:text-(--chip-fg-d)">
-                {formatMoney(stat.spentThisMonth)}
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
-                {homeCurrency}
-              </span>
+              <Amount
+                value={stat.spentThisMonth}
+                currency={homeCurrency}
+                className="text-[15px] font-semibold text-(--chip-fg-l) dark:text-(--chip-fg-d)"
+              />
               <span className="text-[11px] text-muted-foreground">
                 · {pct}%
               </span>
@@ -148,14 +148,12 @@ export function CategorySubcategoryCard({
         <p className="mt-3 truncate text-[13.5px] font-medium text-(--chip-fg-l) dark:text-(--chip-fg-d)">
           {category.name}
         </p>
-        <p className="mt-1 flex items-baseline gap-1">
-          <span className="text-xl font-semibold text-(--chip-fg-l) tabular-nums dark:text-(--chip-fg-d)">
-            {formatMoney(stat.spentThisMonth)}
-          </span>
-          <span className="text-[11px] font-medium text-muted-foreground">
-            {homeCurrency}
-          </span>
-        </p>
+        <Amount
+          size="stat"
+          value={stat.spentThisMonth}
+          currency={homeCurrency}
+          className="mt-1 block text-(--chip-fg-l) dark:text-(--chip-fg-d)"
+        />
 
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-foreground/8">
           <div

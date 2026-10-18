@@ -1,5 +1,6 @@
 import { IconChevronRight, IconCreditCard } from "@tabler/icons-react"
 import { useNavigate } from "@tanstack/react-router"
+import { Amount } from "@workspace/ui/components/amount"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
@@ -9,7 +10,6 @@ import type { CSSProperties } from "react"
 import type { Account, WalletPocket } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
 import { paletteColor } from "@/lib/palette"
-import { formatBalance } from "@/lib/money"
 
 // AccountCard handles bank/brokerage (single currency) and wallet (multiple
 // currency pockets) entries with the same visual frame. When `pockets` is
@@ -180,7 +180,7 @@ export function AccountCard({
               : `${account.type} · ${account.currency}`}
           </p>
         </div>
-        <div className="shrink-0 text-right tabular-nums">
+        <div className="shrink-0 text-right">
           {isWallet ? (
             <div className="flex flex-col items-end gap-0.5 text-[13px] leading-tight font-semibold">
               {account.pockets!.length === 0 ? (
@@ -189,25 +189,23 @@ export function AccountCard({
                 </span>
               ) : (
                 account.pockets!.map((p) => (
-                  <span key={p.currency}>
-                    {formatBalance(p.balance)}{" "}
-                    <span className="text-[10px] font-normal text-muted-foreground">
-                      {p.currency}
-                    </span>
-                  </span>
+                  <Amount
+                    key={p.currency}
+                    value={p.balance}
+                    currency={p.currency}
+                  />
                 ))
               )}
             </div>
           ) : (
             <>
-              <p
+              <Amount
+                value={account.balance}
                 className={cn(
-                  "font-heading text-lg font-semibold tracking-tight",
+                  "block font-heading text-lg font-semibold tracking-tight",
                   isLoan && "text-amber-600 dark:text-amber-400"
                 )}
-              >
-                {formatBalance(account.balance)}
-              </p>
+              />
               <p className="text-[11px] text-muted-foreground">
                 {isLoan ? `${account.currency} · Owed` : account.currency}
               </p>
@@ -260,37 +258,33 @@ export function AccountCard({
       </CardHeader>
       <CardContent className="hidden space-y-3 p-0 sm:block">
         {isWallet ? (
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 tabular-nums">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             {account.pockets!.length === 0 ? (
               <span className="text-[12px] text-muted-foreground/70">
                 No currencies yet — edit to add one.
               </span>
             ) : (
               account.pockets!.map((p) => (
-                <span key={p.currency} className="flex items-baseline gap-1">
-                  <span className="font-heading text-[18px] font-semibold tracking-tight">
-                    {formatBalance(p.balance)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground uppercase">
-                    {p.currency}
-                  </span>
-                </span>
+                <Amount
+                  key={p.currency}
+                  value={p.balance}
+                  currency={p.currency}
+                  className="font-heading text-[18px] font-semibold tracking-tight"
+                />
               ))
             )}
           </div>
         ) : (
-          <p className="flex items-baseline gap-1.5 tabular-nums">
-            <span
-              className={cn(
-                "font-heading text-[22px] font-semibold tracking-tight",
-                isLoan && "text-amber-600 dark:text-amber-400"
-              )}
-            >
-              {formatBalance(account.balance)}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              {isLoan ? `${account.currency} · Owed` : account.currency}
-            </span>
+          <p className="flex items-baseline gap-1.5">
+            <Amount
+              size="stat"
+              value={account.balance}
+              currency={account.currency}
+              className={cn(isLoan && "text-amber-600 dark:text-amber-400")}
+            />
+            {isLoan && (
+              <span className="text-xs text-muted-foreground">· Owed</span>
+            )}
           </p>
         )}
         <div className="space-y-1 transition-opacity duration-150 group-focus-within:opacity-15 group-hover:opacity-15">

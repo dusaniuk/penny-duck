@@ -6,7 +6,9 @@
   "scripts": {
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/design-system",
+    "test": "vitest run",
+    "build:design-system": "bun scripts/design-system/build.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -29,16 +31,21 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@tailwindcss/node": "^4.3.3",
+    "@tailwindcss/oxide": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/eslint-config": "^0.4.0",
     "@turbo/gen": "^2.11.9",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.13.0",
     "eslint-plugin-better-tailwindcss": "^4.9.1",
     "shadcn": "^4.22.0",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",

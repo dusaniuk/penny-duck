@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Amount } from "@workspace/ui/components/amount"
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card"
 import {
   ChartContainer,
@@ -8,7 +9,6 @@ import {
 } from "@workspace/ui/components/chart"
 import type { ChartConfig } from "@workspace/ui/components/chart"
 import { api } from "@/lib/api"
-import { toTypographicMinus } from "@/lib/money"
 
 const chartConfig = {
   total: {
@@ -16,19 +16,6 @@ const chartConfig = {
     color: "var(--color-chart-1)",
   },
 } satisfies ChartConfig
-
-function formatAmount(n: number): { whole: string; fraction: string } {
-  const parts = n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  const [whole, fraction] = parts.split(".")
-  return { whole: toTypographicMinus(whole), fraction: fraction ?? "00" }
-}
-
-function formatInt(n: number): string {
-  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
-}
 
 export function NetWorthCard() {
   const { data, isLoading } = useQuery({
@@ -51,7 +38,6 @@ export function NetWorthCard() {
   }
 
   const { current, history } = data
-  const { whole, fraction } = formatAmount(current.total)
 
   return (
     <Card className="h-full">
@@ -75,10 +61,7 @@ export function NetWorthCard() {
 
       <CardContent className="space-y-4">
         <div>
-          <p className="font-mono text-5xl font-bold tracking-tight tabular-nums md:text-6xl">
-            <span>{whole}</span>
-            <span className="text-muted-foreground/50">.{fraction}</span>
-          </p>
+          <Amount size="display" value={current.total} className="block" />
 
           {/* Mobile sub-line: total across N accounts */}
           <p className="mt-2 text-xs tracking-wider text-muted-foreground uppercase md:hidden">
@@ -152,9 +135,10 @@ export function NetWorthCard() {
                   <p className="truncate text-[10px] tracking-wider text-muted-foreground uppercase">
                     {a.name}
                   </p>
-                  <p className="font-mono text-base font-semibold tabular-nums">
-                    {formatInt(a.homeBalance)}
-                  </p>
+                  <Amount
+                    value={a.homeBalance}
+                    className="block truncate font-mono text-base font-semibold"
+                  />
                 </div>
               )
             )}

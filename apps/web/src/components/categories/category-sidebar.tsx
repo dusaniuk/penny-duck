@@ -1,8 +1,9 @@
+import { Amount } from "@workspace/ui/components/amount"
 import { useState } from "react"
 import { IconChevronDown, IconPlus } from "@tabler/icons-react"
 import { cn } from "@workspace/ui/lib/utils"
 import { CategoryIconChip } from "./category-icon-chip"
-import { formatMoney, rollupParent, sharePct } from "./category-stats"
+import { rollupParent, sharePct } from "./category-stats"
 import type { Category } from "@workspace/api-contract"
 import type { StatsMap } from "./category-stats"
 import { categoryShadeVars } from "@/lib/palette"
@@ -57,9 +58,10 @@ export function CategorySidebar({
               <span className="truncate text-[13.5px] font-medium text-foreground">
                 {parent.name}
               </span>
-              <span className="shrink-0 text-[13px] font-semibold text-foreground tabular-nums">
-                {formatMoney(roll.spentThisMonth)}
-              </span>
+              <Amount
+                value={roll.spentThisMonth}
+                className="shrink-0 text-[13px] font-semibold text-foreground"
+              />
             </span>
             <span className="mt-0.5 flex items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
               <span>

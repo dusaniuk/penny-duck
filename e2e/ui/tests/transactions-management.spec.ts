@@ -125,7 +125,7 @@ test.describe("Transactions management", () => {
     await dialog.getByRole("button", { name: /^Create/ }).click()
 
     await expect(dialog).not.toBeVisible({ timeout: 5000 })
-    await expect(page.getByText("+1000.00").first()).toBeVisible()
+    await expect(page.getByText("+1,000.00").first()).toBeVisible()
   })
 
   test("creates an unsettled expense and settles it", async ({ page }) => {
@@ -303,7 +303,7 @@ test.describe("Transfers", () => {
     await rate.clear()
     await rate.fill("41.52")
 
-    // Receive amount is rendered as text (not an input), formatted by toLocaleString.
+    // Receive amount is rendered as text (not an input), formatted by <Amount>.
     await expect(dialog.getByText(/4[,. ]?152[.,]00\s+UAH/)).toBeVisible()
 
     await dialog.getByRole("button", { name: /^Create/ }).click()

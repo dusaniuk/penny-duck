@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@workspace/ui/*": ["../../src/*"],
+      "@/*": ["../../../../apps/web/src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": []
+}

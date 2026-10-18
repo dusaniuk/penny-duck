@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { IconX } from "@tabler/icons-react"
+import { Amount } from "@workspace/ui/components/amount"
 import { Badge } from "@workspace/ui/components/badge"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type { Category, Member, Transaction } from "@workspace/api-contract"
@@ -238,11 +239,7 @@ function SpendingsPage() {
                   style={{ backgroundColor: d.fill }}
                 />
                 {d.categoryName}{" "}
-                {d.total.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                {homeCurrency}
+                <Amount value={d.total} currency={homeCurrency} />
               </button>
             ))}
           </div>

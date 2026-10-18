@@ -1,11 +1,11 @@
 import { useMemo } from "react"
+import { Amount } from "@workspace/ui/components/amount"
 import { Card, CardContent } from "@workspace/ui/components/card"
 import { cn } from "@workspace/ui/lib/utils"
 import { buildNetWorthBreakdown } from "./net-worth-breakdown"
 import type { AssetGroup, LiabilityGroup } from "./net-worth-breakdown"
 import type { Account, NetWorthResponse, Wallet } from "@workspace/api-contract"
 import { queryClient } from "@/lib/api"
-import { toTypographicMinus } from "@/lib/money"
 
 const ASSET_LABEL: Record<AssetGroup, string> = {
   bank: "Bank",
@@ -27,19 +27,6 @@ const LIABILITY_BG: Record<LiabilityGroup, string> = {
   loan: "bg-chart-4",
 }
 
-function formatAmount(n: number): { whole: string; fraction: string } {
-  const parts = n.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  const [whole, fraction] = parts.split(".")
-  return { whole: toTypographicMinus(whole), fraction: fraction ?? "00" }
-}
-
-function formatInt(n: number): string {
-  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
-}
-
 type Props = {
   accounts: Array<Account>
   wallets: Array<Wallet>
@@ -58,7 +45,6 @@ export function AccountsNetWorthCard({ accounts, wallets }: Props) {
   const hasLiabilities = liabilities.rows.length > 0
   const headline = hasLiabilities ? net : assets.total
   const headlineLabel = hasLiabilities ? "Net worth" : "Total net worth"
-  const { whole, fraction } = formatAmount(headline)
 
   const assetRows = assets.rows.map((r) => ({
     ...r,
@@ -79,17 +65,12 @@ export function AccountsNetWorthCard({ accounts, wallets }: Props) {
           <p className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
             {headlineLabel}
           </p>
-          <p className="mt-2 flex items-baseline gap-2 font-mono text-4xl font-semibold tracking-tight tabular-nums">
-            <span>
-              <span>{whole}</span>
-              <span className="text-muted-foreground/50">.{fraction}</span>
-            </span>
-            {homeCurrency && (
-              <span className="text-sm font-medium tracking-[0.04em] text-muted-foreground">
-                {homeCurrency}
-              </span>
-            )}
-          </p>
+          <Amount
+            size="hero"
+            value={headline}
+            currency={homeCurrency || undefined}
+            className="mt-2 block"
+          />
           <p className="mt-2 text-xs text-muted-foreground/80">
             across {totalEntities} account{totalEntities === 1 ? "" : "s"} in{" "}
             {currencyCount} currenc{currencyCount === 1 ? "y" : "ies"}
@@ -152,14 +133,11 @@ function BreakdownSection({
           <p className="font-mono text-[10.5px] tracking-widest text-muted-foreground uppercase">
             {label}
           </p>
-          <p className="text-[12px] font-semibold tabular-nums">
-            {formatInt(total)}
-            {homeCurrency && (
-              <span className="ml-1 text-[10.5px] font-medium text-muted-foreground">
-                {homeCurrency}
-              </span>
-            )}
-          </p>
+          <Amount
+            value={total}
+            currency={homeCurrency || undefined}
+            className="text-[12px] font-semibold"
+          />
         </div>
       )}
       <div className="space-y-2.5">
@@ -194,14 +172,11 @@ function BreakdownSection({
                 style={{ width: `${r.pct}%` }}
               />
             </div>
-            <div className="text-right text-sm font-medium tabular-nums">
-              {formatInt(r.value)}
-              {homeCurrency && (
-                <span className="ml-1 text-[11px] text-muted-foreground">
-                  {homeCurrency}
-                </span>
-              )}
-            </div>
+            <Amount
+              value={r.value}
+              currency={homeCurrency || undefined}
+              className="text-right text-sm font-medium"
+            />
           </div>
         ))}
       </div>

@@ -6,6 +6,10 @@ import {
   IconEdit,
   IconTrash,
 } from "@tabler/icons-react"
+import { Amount } from "@workspace/ui/components/amount"
+import { formatMoney } from "@workspace/ui/lib/money"
+import { useLocale } from "@workspace/ui/components/locale-provider"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +19,6 @@ import {
 } from "@workspace/ui/components/dropdown-menu"
 import type { Account, Category, Transaction } from "@workspace/api-contract"
 import { getIcon } from "@/lib/icons"
-import { MINUS } from "@/lib/money"
 
 type AccountData = Account
 type CategoryData = Category
@@ -56,21 +59,20 @@ export function TransactionRow({
   const canReimburse =
     isUnsettled && isExpense && !isTransfer && !isReimbursement
 
-  const amountColor = isReimbursement
-    ? "text-warning"
-    : isTransfer
-      ? "text-tx-transfer-ink"
-      : isExpense
-        ? "text-tx-expense-ink"
-        : "text-tx-income-ink"
+  const locale = useLocale()
 
-  const amountPrefix = isReimbursement
-    ? "+"
+  const amountTone = isReimbursement
+    ? undefined
     : isTransfer
-      ? ""
+      ? "transfer"
       : isExpense
-        ? MINUS
-        : "+"
+        ? "expense"
+        : "income"
+
+  const signedAmount =
+    isExpense && !isReimbursement && !isTransfer
+      ? -transaction.amount
+      : transaction.amount
 
   function renderLeft() {
     if (isReimbursement) {
@@ -156,17 +158,20 @@ export function TransactionRow({
   function renderRight() {
     return (
       <div className="min-w-0 text-right">
-        <p
-          className={`truncate text-base font-semibold tabular-nums ${amountColor}`}
-        >
-          {amountPrefix}
-          {transaction.amount.toFixed(2)} {account?.currency}
+        <p className="truncate text-base font-semibold">
+          <Amount
+            value={signedAmount}
+            signed={!isTransfer}
+            tone={amountTone}
+            currency={account?.currency}
+            className={cn(isReimbursement && "text-warning")}
+          />
         </p>
         <p className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
           {renderMemberBadge()}
           <span className="min-w-0 truncate">
             {isTransfer && transaction.originalAmount != null
-              ? `→ ${transaction.originalAmount.toFixed(2)} ${transaction.originalCurrency}`
+              ? `→ ${formatMoney(transaction.originalAmount, { locale, currency: transaction.originalCurrency ?? undefined })}`
               : (account?.name ?? "")}
           </span>
         </p>

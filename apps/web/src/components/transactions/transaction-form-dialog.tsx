@@ -9,7 +9,10 @@ import {
   IconPlus,
 } from "@tabler/icons-react"
 import { useForm, useStore } from "@tanstack/react-form"
+import { Amount } from "@workspace/ui/components/amount"
 import { Badge } from "@workspace/ui/components/badge"
+import { useLocale } from "@workspace/ui/components/locale-provider"
+import { formatMoney } from "@workspace/ui/lib/money"
 import { Button } from "@workspace/ui/components/button"
 import { Calendar } from "@workspace/ui/components/calendar"
 import {
@@ -61,7 +64,6 @@ import type {
 } from "@workspace/api-contract"
 import { pickableCategories } from "@/lib/categories"
 import { parseLocalDate, toLocalIso } from "@/lib/dates"
-import { toTypographicMinus } from "@/lib/money"
 
 type TransactionType = "expense" | "income" | "transfer"
 type View = "form" | "picker"
@@ -253,6 +255,7 @@ function TransactionModalBody({
   onCreateCategory,
   ctx,
 }: ModalBodyProps) {
+  const locale = useLocale()
   const isEdit = !!transaction
   const isTransferEdit = isEdit && !!transaction.transferId
   const { shellClass, isMobile, close } = ctx
@@ -612,7 +615,7 @@ function TransactionModalBody({
                               .map((a) => (
                                 <option key={a.id} value={a.id}>
                                   {a.currency} —{" "}
-                                  {toTypographicMinus(a.balance.toFixed(2))}
+                                  {formatMoney(a.balance, { locale })}
                                 </option>
                               ))}
                           </optgroup>
@@ -622,8 +625,10 @@ function TransactionModalBody({
                         .map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name} —{" "}
-                            {toTypographicMinus(a.balance.toFixed(2))}{" "}
-                            {a.currency}
+                            {formatMoney(a.balance, {
+                              locale,
+                              currency: a.currency,
+                            })}
                           </option>
                         ))}
                     </select>
@@ -686,7 +691,7 @@ function TransactionModalBody({
                               .map((a) => (
                                 <option key={a.id} value={a.id}>
                                   {a.currency} —{" "}
-                                  {toTypographicMinus(a.balance.toFixed(2))}
+                                  {formatMoney(a.balance, { locale })}
                                 </option>
                               ))}
                           </optgroup>
@@ -699,8 +704,10 @@ function TransactionModalBody({
                         .map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name} —{" "}
-                            {toTypographicMinus(a.balance.toFixed(2))}{" "}
-                            {a.currency}
+                            {formatMoney(a.balance, {
+                              locale,
+                              currency: a.currency,
+                            })}
                           </option>
                         ))}
                     </select>
@@ -741,18 +748,11 @@ function TransactionModalBody({
               </span>
               <span className="ml-auto text-foreground/60 tabular-nums">
                 → receive{" "}
-                <strong className="font-semibold text-foreground">
-                  {values.receiveAmount
-                    ? parseFloat(values.receiveAmount).toLocaleString(
-                        undefined,
-                        {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }
-                      )
-                    : "0.00"}{" "}
-                  {toAccount.currency}
-                </strong>
+                <Amount
+                  value={parseFloat(values.receiveAmount) || 0}
+                  currency={toAccount.currency}
+                  className="font-semibold text-foreground"
+                />
               </span>
             </div>
           )}

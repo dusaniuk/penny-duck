@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { Label, Pie, PieChart } from "recharts"
+import { useLocale } from "@workspace/ui/components/locale-provider"
+import { formatMoney } from "@workspace/ui/lib/money"
 import {
   ChartContainer,
   ChartTooltip,
@@ -34,6 +36,7 @@ export function SpendingsDonutChart({
   activeCategory,
   onSliceClick,
 }: SpendingsDonutChartProps) {
+  const locale = useLocale()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const grandTotal = data.reduce((sum, d) => sum + d.total, 0)
 
@@ -91,11 +94,10 @@ export function SpendingsDonutChart({
                       y={viewBox.cy}
                       className="fill-foreground text-xl font-bold"
                     >
-                      {centerValue.toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}{" "}
-                      {homeCurrency}
+                      {formatMoney(centerValue, {
+                        locale,
+                        currency: homeCurrency,
+                      })}
                     </tspan>
                     <tspan
                       x={viewBox.cx}

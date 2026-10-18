@@ -1,8 +1,8 @@
+import { Amount } from "@workspace/ui/components/amount"
 import { SelectableSurface } from "@workspace/ui/components/selectable-surface"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Account, AccountUsageItem, Wallet } from "@workspace/api-contract"
 import { paletteColor } from "@/lib/palette"
-import { formatBalance } from "@/lib/money"
 
 type Chip =
   | { kind: "account"; account: Account }
@@ -192,9 +192,11 @@ function AccountText({ account }: { account: Account }) {
       <div className="truncate text-[12.5px] font-medium text-foreground">
         {account.name}
       </div>
-      <div className="truncate text-[11px] text-foreground/45 tabular-nums">
-        {formatBalance(account.balance)} {account.currency}
-      </div>
+      <Amount
+        value={account.balance}
+        currency={account.currency}
+        className="block truncate text-[11px] text-foreground/45"
+      />
     </div>
   )
 }

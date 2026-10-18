@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react"
 import { IconChevronDown } from "@tabler/icons-react"
+import { Amount } from "@workspace/ui/components/amount"
 import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 import type { Account, Wallet } from "@workspace/api-contract"
 import type { AccountData } from "@/components/accounts/account-card"
 import { AccountCard } from "@/components/accounts/account-card"
-import { toTypographicMinus } from "@/lib/money"
 
 type StandaloneType = "bank" | "brokerage" | "loan"
 
@@ -18,10 +18,6 @@ const GROUP_LABEL: Record<GroupKey, string> = {
   bank: "Bank",
   brokerage: "Brokerage",
   loan: "Liabilities",
-}
-
-function formatInt(n: number): string {
-  return toTypographicMinus(Math.round(n).toLocaleString("en-US"))
 }
 
 // Synthesize an AccountData entry from a Wallet so the AccountCard can render
@@ -172,18 +168,15 @@ export function AccountsGroups({
                       : "accounts"}
               </span>
             </div>
-            <div className="flex items-baseline gap-1.5 tabular-nums">
+            <div className="flex items-baseline gap-1.5">
               {g.isApprox && (
                 <span className="text-[11px] text-muted-foreground/70">≈</span>
               )}
-              <span className="font-heading text-lg font-semibold">
-                {formatInt(g.subtotal)}
-              </span>
-              {homeCurrency && (
-                <span className="text-[11px] text-muted-foreground">
-                  {homeCurrency}
-                </span>
-              )}
+              <Amount
+                value={g.subtotal}
+                currency={homeCurrency || undefined}
+                className="font-heading text-lg font-semibold"
+              />
             </div>
           </header>
           <div className="grid gap-3 sm:grid-cols-2">
