@@ -279,6 +279,62 @@ describe("Transactions", () => {
     expect(tx.exchangeRate).toBe(41.52)
   })
 
+  it("rejects partial exchange-rate fields on update", async () => {
+    const tx = await createTxHttp({
+      accountId,
+      type: "expense",
+      amount: 100,
+      categoryId,
+      originalAmount: 4152,
+      originalCurrency: "UAH",
+      exchangeRate: 41.52,
+    })
+
+    await updateTxHttp(tx.id, { exchangeRate: 40 }, 400)
+    await updateTxHttp(
+      tx.id,
+      { originalAmount: 4000, originalCurrency: "UAH" },
+      400
+    )
+    await updateTxHttp(
+      tx.id,
+      { originalAmount: null, originalCurrency: "UAH", exchangeRate: 40 },
+      400
+    )
+
+    const unchanged = await updateTxHttp(tx.id, { note: "still there" })
+    expect(unchanged.originalAmount).toBe(4152)
+    expect(unchanged.originalCurrency).toBe("UAH")
+    expect(unchanged.exchangeRate).toBe(41.52)
+  })
+
+  it("updates and clears exchange-rate fields together", async () => {
+    const tx = await createTxHttp({
+      accountId,
+      type: "expense",
+      amount: 100,
+      categoryId,
+    })
+
+    const withRate = await updateTxHttp(tx.id, {
+      originalAmount: 4000,
+      originalCurrency: "UAH",
+      exchangeRate: 40,
+    })
+    expect(withRate.originalAmount).toBe(4000)
+    expect(withRate.originalCurrency).toBe("UAH")
+    expect(withRate.exchangeRate).toBe(40)
+
+    const cleared = await updateTxHttp(tx.id, {
+      originalAmount: null,
+      originalCurrency: null,
+      exchangeRate: null,
+    })
+    expect(cleared.originalAmount).toBeNull()
+    expect(cleared.originalCurrency).toBeNull()
+    expect(cleared.exchangeRate).toBeNull()
+  })
+
   it("gets a single transaction", async () => {
     const created = await createTxHttp({
       accountId,

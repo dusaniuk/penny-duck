@@ -229,6 +229,123 @@ describe("Transfers", () => {
     expect(updatedIn.note).toBe("adjusted")
   })
 
+  it("rejects partial exchange-rate fields on update", async () => {
+    const usd = await createAccount({
+      organizationId,
+      userId,
+      name: "USD",
+      type: "bank",
+      currency: "USD",
+      balance: 1000,
+    })
+    const uah = await createAccount({
+      organizationId,
+      userId,
+      name: "UAH",
+      type: "bank",
+      currency: "UAH",
+      balance: 0,
+    })
+
+    const { outgoing } = await createTransferHttp({
+      fromAccountId: usd.id,
+      toAccountId: uah.id,
+      amount: 100,
+      originalAmount: 4152,
+      originalCurrency: "UAH",
+      exchangeRate: 41.52,
+    })
+    const transferId = outgoing.transferId!
+
+    await updateTransferHttp(transferId, { exchangeRate: 40 }, 400)
+    await updateTransferHttp(
+      transferId,
+      { amount: 200, originalAmount: 8000 },
+      400
+    )
+    await updateTransferHttp(
+      transferId,
+      { originalAmount: 4000, originalCurrency: null, exchangeRate: 40 },
+      400
+    )
+
+    const { outgoing: out, incoming } = await updateTransferHttp(transferId, {
+      note: "still there",
+    })
+    expect(out.amount).toBe(100)
+    expect(out.exchangeRate).toBe(41.52)
+    expect(incoming.amount).toBe(4152)
+  })
+
+  it("rejects clearing the exchange rate on a cross-currency transfer", async () => {
+    const usd = await createAccount({
+      organizationId,
+      userId,
+      name: "USD",
+      type: "bank",
+      currency: "USD",
+      balance: 1000,
+    })
+    const uah = await createAccount({
+      organizationId,
+      userId,
+      name: "UAH",
+      type: "bank",
+      currency: "UAH",
+      balance: 0,
+    })
+
+    const { outgoing } = await createTransferHttp({
+      fromAccountId: usd.id,
+      toAccountId: uah.id,
+      amount: 100,
+      originalAmount: 4152,
+      originalCurrency: "UAH",
+      exchangeRate: 41.52,
+    })
+
+    await updateTransferHttp(
+      outgoing.transferId!,
+      { originalAmount: null, originalCurrency: null, exchangeRate: null },
+      400
+    )
+  })
+
+  it("clears the exchange rate on a same-currency transfer", async () => {
+    const acc1 = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank 1",
+      type: "bank",
+      currency: "UAH",
+      balance: 5000,
+    })
+    const acc2 = await createAccount({
+      organizationId,
+      userId,
+      name: "Bank 2",
+      type: "bank",
+      currency: "UAH",
+      balance: 0,
+    })
+
+    const { outgoing } = await createTransferHttp({
+      fromAccountId: acc1.id,
+      toAccountId: acc2.id,
+      amount: 100,
+      originalAmount: 100,
+      originalCurrency: "UAH",
+      exchangeRate: 1,
+    })
+
+    const { outgoing: out, incoming } = await updateTransferHttp(
+      outgoing.transferId!,
+      { originalAmount: null, originalCurrency: null, exchangeRate: null }
+    )
+    expect(out.exchangeRate).toBeNull()
+    expect(incoming.amount).toBe(100)
+  })
+
   it("deletes a transfer and restores balances", async () => {
     const acc1 = await createAccount({
       organizationId,

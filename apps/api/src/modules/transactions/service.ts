@@ -97,6 +97,34 @@ function validateExchangeRate(
   }
 }
 
+interface ExchangeRateFields {
+  originalAmount: number | null
+  originalCurrency: string | null
+  exchangeRate: number | null
+}
+
+function resolveExchangeRateUpdate(fields: {
+  originalAmount?: number | null
+  originalCurrency?: string | null
+  exchangeRate?: number | null
+}): ExchangeRateFields | undefined {
+  const { originalAmount, originalCurrency, exchangeRate } = fields
+  const values = [originalAmount, originalCurrency, exchangeRate]
+  if (values.every((v) => v === undefined)) return undefined
+  if (values.every((v) => v === null))
+    return { originalAmount: null, originalCurrency: null, exchangeRate: null }
+  if (
+    originalAmount != null &&
+    originalCurrency != null &&
+    exchangeRate != null
+  )
+    return { originalAmount, originalCurrency, exchangeRate }
+  throw new HTTPException(400, {
+    message:
+      "Exchange rate fields must all be provided, all null, or all omitted",
+  })
+}
+
 async function getHomeCurrency(userId: string): Promise<string> {
   const rows = await db
     .select({ homeCurrency: users.homeCurrency })
@@ -525,30 +553,8 @@ export async function updateTransaction(
   if (fields.note !== undefined) updateData.note = fields.note
   if (fields.date !== undefined) updateData.date = fields.date
 
-  if (
-    fields.originalAmount !== undefined &&
-    fields.originalCurrency !== undefined &&
-    fields.exchangeRate !== undefined
-  ) {
-    if (
-      fields.originalAmount === null ||
-      fields.originalCurrency === null ||
-      fields.exchangeRate === null
-    ) {
-      updateData.originalAmount = null
-      updateData.originalCurrency = null
-      updateData.exchangeRate = null
-    } else {
-      validateExchangeRate(
-        fields.originalAmount,
-        fields.originalCurrency,
-        fields.exchangeRate
-      )
-      updateData.originalAmount = fields.originalAmount
-      updateData.originalCurrency = fields.originalCurrency
-      updateData.exchangeRate = fields.exchangeRate
-    }
-  }
+  const exchangeRateUpdate = resolveExchangeRateUpdate(fields)
+  if (exchangeRateUpdate) Object.assign(updateData, exchangeRateUpdate)
 
   if (fields.madeById !== undefined) {
     const isMember = await isMemberOfOrg(fields.madeById, organizationId)
@@ -977,48 +983,32 @@ export async function updateTransfer(
     incomingUpdate.madeById = fields.madeById
   }
 
-  const hasNewExchangeRate =
-    fields.originalAmount != null &&
-    fields.originalCurrency != null &&
-    fields.exchangeRate != null
+  const exchangeRateUpdate = resolveExchangeRateUpdate(fields)
+  if (exchangeRateUpdate?.exchangeRate === null) {
+    const accountRows = await db
+      .select({ currency: accounts.currency })
+      .from(accounts)
+      .where(
+        and(
+          eq(accounts.organizationId, organizationId),
+          inArray(accounts.id, [outgoing.accountId, incoming.accountId])
+        )
+      )
+    if (new Set(accountRows.map((a) => a.currency)).size > 1)
+      throw new HTTPException(400, {
+        message: "Cross-currency transfers require an exchange rate",
+      })
+  }
+  if (exchangeRateUpdate) Object.assign(outgoingUpdate, exchangeRateUpdate)
+  const newOriginalAmount = exchangeRateUpdate?.originalAmount
 
   if (fields.amount !== undefined) {
     if (fields.amount <= 0)
       throw new HTTPException(400, { message: "Amount must be greater than 0" })
     outgoingUpdate.amount = -fields.amount
-    if (hasNewExchangeRate) {
-      incomingUpdate.amount = fields.originalAmount!
-    } else {
-      incomingUpdate.amount = fields.amount
-    }
-  }
-
-  if (
-    fields.originalAmount !== undefined &&
-    fields.originalCurrency !== undefined &&
-    fields.exchangeRate !== undefined
-  ) {
-    if (
-      fields.originalAmount === null ||
-      fields.originalCurrency === null ||
-      fields.exchangeRate === null
-    ) {
-      outgoingUpdate.originalAmount = null
-      outgoingUpdate.originalCurrency = null
-      outgoingUpdate.exchangeRate = null
-    } else {
-      validateExchangeRate(
-        fields.originalAmount,
-        fields.originalCurrency,
-        fields.exchangeRate
-      )
-      outgoingUpdate.originalAmount = fields.originalAmount
-      outgoingUpdate.originalCurrency = fields.originalCurrency
-      outgoingUpdate.exchangeRate = fields.exchangeRate
-      if (fields.amount === undefined) {
-        incomingUpdate.amount = fields.originalAmount
-      }
-    }
+    incomingUpdate.amount = newOriginalAmount ?? fields.amount
+  } else if (newOriginalAmount != null) {
+    incomingUpdate.amount = newOriginalAmount
   }
 
   const [outRow, inRow] = await updateTransferPair(
