@@ -457,6 +457,7 @@ function TransactionModalBody({
             setView("form")
           }}
           onClose={() => setView("form")}
+          onBack={() => setView("form")}
           onCreateCategory={onCreateCategory}
           variant={variant}
         />

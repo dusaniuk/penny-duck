@@ -1,8 +1,8 @@
 import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm"
 import { HTTPException } from "hono/http-exception"
-import { accounts, categories, walletInbox } from "@workspace/db"
+import { accounts, categories, transactions, walletInbox } from "@workspace/db"
 import type { InboxItem, Transaction } from "@workspace/api-contract"
-import { db } from "@/db"
+import { db, type Executor } from "@/db"
 import { getRate } from "@/modules/exchange-rates/service"
 import { createTransaction } from "@/modules/transactions/service"
 
@@ -26,9 +26,10 @@ export function toResponse(row: InboxRow): InboxItem {
 
 export async function matchAccountByCardLabel(
   organizationId: string,
-  card: string
+  card: string,
+  executor: Executor = db
 ): Promise<{ id: string; currency: string } | null> {
-  const rows = await db
+  const rows = await executor
     .select({ id: accounts.id, currency: accounts.currency })
     .from(accounts)
     .where(
@@ -346,4 +347,81 @@ export async function dismissInboxItem(
     throw new HTTPException(409, { message: "Inbox item is not pending" })
   }
   return toResponse(updated)
+}
+
+export interface UndoInboxItemInput {
+  id: string
+  organizationId: string
+  forgetCardLabel?: boolean
+}
+
+// Reverses an accept or a dismiss: deletes the booked transaction, if it still
+// exists, and returns the row to pending, matched again by its card label. The
+// client asks to forget the card label only when its accept saved it; the label
+// is cleared only while it still names this row's card.
+export async function undoInboxItem(
+  input: UndoInboxItemInput
+): Promise<InboxItem> {
+  const [row] = await db
+    .select()
+    .from(walletInbox)
+    .where(
+      and(
+        eq(walletInbox.id, input.id),
+        eq(walletInbox.organizationId, input.organizationId)
+      )
+    )
+    .limit(1)
+  if (!row) throw new HTTPException(404, { message: "Inbox item not found" })
+  if (row.status === "pending") {
+    throw new HTTPException(409, { message: "Inbox item is already pending" })
+  }
+
+  return db.transaction(async (tx) => {
+    if (row.transactionId) {
+      await tx
+        .delete(transactions)
+        .where(
+          and(
+            eq(transactions.id, row.transactionId),
+            eq(transactions.organizationId, input.organizationId)
+          )
+        )
+    }
+
+    if (input.forgetCardLabel && row.accountId) {
+      await tx
+        .update(accounts)
+        .set({ cardLabel: null, updatedAt: new Date() })
+        .where(
+          and(
+            eq(accounts.id, row.accountId),
+            eq(accounts.organizationId, input.organizationId),
+            sql`lower(trim(${accounts.cardLabel})) = lower(trim(${row.card}))`
+          )
+        )
+    }
+
+    const match = await matchAccountByCardLabel(
+      input.organizationId,
+      row.card,
+      tx
+    )
+    const [restored] = await tx
+      .update(walletInbox)
+      .set({
+        status: "pending",
+        accountId: match?.id ?? null,
+        transactionId: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(walletInbox.id, row.id), eq(walletInbox.status, row.status))
+      )
+      .returning()
+    if (!restored) {
+      throw new HTTPException(409, { message: "Inbox item changed meanwhile" })
+    }
+    return toResponse(restored)
+  })
 }

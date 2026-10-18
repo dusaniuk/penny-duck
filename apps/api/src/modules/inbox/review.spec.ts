@@ -428,3 +428,112 @@ describe("POST /inbox/:id/dismiss", () => {
     expect(res.status).toBe(404)
   })
 })
+
+function undo(id: string, body: unknown = {}) {
+  return authed(`/inbox/${id}/undo`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+describe("POST /inbox/:id/undo", () => {
+  it("deletes the transaction and puts an accepted row back to pending", async () => {
+    const item = await seedTap()
+    const accepted = (await (
+      await accept(item.id, { accountId: uahAccountId, categoryId })
+    ).json()) as { transaction: Transaction }
+
+    const res = await undo(item.id)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as InboxItem
+    expect(body.status).toBe("pending")
+    expect(body.transactionId).toBeNull()
+    expect(body.accountId).toBe(uahAccountId)
+
+    const left = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, accepted.transaction.id))
+    expect(left).toHaveLength(0)
+
+    const again = await accept(item.id, { accountId: uahAccountId, categoryId })
+    expect(again.status).toBe(200)
+  })
+
+  it("restores the unmatched account of a tap from an unknown card", async () => {
+    const item = await seedTap({ card: "Wise Card" })
+    await accept(item.id, { accountId: usdAccountId, categoryId })
+
+    const body = (await (await undo(item.id)).json()) as InboxItem
+    expect(body.accountId).toBeNull()
+  })
+
+  it("forgets a card label the accept saved when asked", async () => {
+    const item = await seedTap({ card: "Wise Card" })
+    await accept(item.id, {
+      accountId: usdAccountId,
+      categoryId,
+      saveCardLabel: true,
+    })
+
+    const body = (await (
+      await undo(item.id, { forgetCardLabel: true })
+    ).json()) as InboxItem
+    expect(body.accountId).toBeNull()
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, usdAccountId))
+    expect(account.cardLabel).toBeNull()
+  }, 15_000)
+
+  it("keeps a card label that belongs to another card", async () => {
+    const item = await seedTap({ card: "Wise Card" })
+    await accept(item.id, { accountId: uahAccountId, categoryId })
+
+    await undo(item.id, { forgetCardLabel: true })
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, uahAccountId))
+    expect(account.cardLabel).toBe("Mono Black")
+  }, 15_000)
+
+  it("still restores the row when its transaction was already deleted", async () => {
+    const item = await seedTap()
+    const accepted = (await (
+      await accept(item.id, { accountId: uahAccountId, categoryId })
+    ).json()) as { transaction: Transaction }
+    await db
+      .delete(transactions)
+      .where(eq(transactions.id, accepted.transaction.id))
+
+    const res = await undo(item.id)
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as InboxItem).status).toBe("pending")
+  })
+
+  it("puts a dismissed row back to pending", async () => {
+    const item = await seedTap()
+    await authed(`/inbox/${item.id}/dismiss`, { method: "POST" })
+
+    const res = await undo(item.id)
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as InboxItem).status).toBe("pending")
+  })
+
+  it("rejects a pending row, unknown rows and other organizations", async () => {
+    const item = await seedTap()
+    expect((await undo(item.id)).status).toBe(409)
+    expect((await undo(crypto.randomUUID())).status).toBe(404)
+
+    await authed(`/inbox/${item.id}/dismiss`, { method: "POST" })
+    const other = await signupUser()
+    const foreign = await honoApp.request(`/inbox/${item.id}/undo`, {
+      method: "POST",
+      headers: { cookie: other.cookie, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    })
+    expect(foreign.status).toBe(404)
+  })
+})

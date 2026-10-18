@@ -53,4 +53,8 @@ export const AcceptInboxItemSchema = z.object({
   saveCardLabel: z.boolean().optional(),
 })
 
+export const UndoInboxItemSchema = z.object({
+  forgetCardLabel: z.boolean().optional(),
+})
+
 export type InboxItem = z.infer<typeof InboxItemSchema>

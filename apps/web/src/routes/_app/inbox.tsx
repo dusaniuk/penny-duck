@@ -2,12 +2,20 @@ import { useMemo } from "react"
 import { Link, createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import type { Category, InboxItem } from "@workspace/api-contract"
+import type {
+  AccountUsageItem,
+  Category,
+  CategoryUsageItem,
+  InboxItem,
+} from "@workspace/api-contract"
 import type { AcceptInput } from "@/components/inbox/inbox-item-card"
+import {
+  InboxItemCard,
+  inboxItemTitle,
+} from "@/components/inbox/inbox-item-card"
 import { api, queryClient, unwrap } from "@/lib/api"
-import { flattenAccounts } from "@/lib/accounts"
+import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { PageHeader } from "@/components/page-header"
-import { InboxItemCard } from "@/components/inbox/inbox-item-card"
 import { formatDateLabel } from "@/components/transactions/transaction-list"
 import { errorMessage } from "@/lib/errors"
 
@@ -22,7 +30,19 @@ function invalidateAfterChange() {
     queryClient.invalidateQueries({ queryKey: ["transactions"] }),
     queryClient.invalidateQueries({ queryKey: ["accounts"] }),
     queryClient.invalidateQueries({ queryKey: ["stats"] }),
+    queryClient.invalidateQueries({ queryKey: ["categories", "usage"] }),
   ])
+}
+
+const PENDING_KEY = ["inbox", "pending"]
+
+// Accept and dismiss take the row off the list before the request returns; a
+// failure refetches it back. Undo in the toast reverses either on the server.
+async function hideFromList(id: string) {
+  await queryClient.cancelQueries({ queryKey: PENDING_KEY })
+  queryClient.setQueryData<{ data: Array<InboxItem> }>(PENDING_KEY, (old) =>
+    old ? { ...old, data: old.data.filter((i) => i.id !== id) } : old
+  )
 }
 
 function groupByDay(items: Array<InboxItem>) {
@@ -41,7 +61,7 @@ function groupByDay(items: Array<InboxItem>) {
 
 function InboxPage() {
   const { data, isLoading } = useQuery({
-    queryKey: ["inbox", "pending"],
+    queryKey: PENDING_KEY,
     queryFn: () =>
       unwrap(
         api.inbox.$get({
@@ -55,6 +75,13 @@ function InboxPage() {
     queryFn: () => unwrap(api.accounts.$get()),
   })
   const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
+  const wallets = useMemo(() => walletsOf(accountsData), [accountsData])
+
+  const { data: accountUsageData } = useQuery({
+    queryKey: ["accounts", "usage"],
+    queryFn: () => unwrap(api.accounts.usage.$get()),
+  })
+  const accountUsage: Array<AccountUsageItem> = accountUsageData ?? []
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -62,17 +89,52 @@ function InboxPage() {
   })
   const categories: Array<Category> = categoriesData ?? []
 
-  const acceptMutation = useMutation({
-    mutationFn: (vars: { id: string; input: AcceptInput }) =>
+  const { data: categoryUsageData } = useQuery({
+    queryKey: ["categories", "usage"],
+    queryFn: () => unwrap(api.categories.usage.$get()),
+  })
+  const categoryUsage: Array<CategoryUsageItem> = categoryUsageData ?? []
+
+  const undoMutation = useMutation({
+    mutationFn: (vars: { id: string; forgetCardLabel?: boolean }) =>
       unwrap(
-        api.inbox[":id"].accept.$post({
+        api.inbox[":id"].undo.$post({
           param: { id: vars.id },
-          json: vars.input,
+          json: { forgetCardLabel: vars.forgetCardLabel },
         })
       ),
     onSuccess: async () => {
       await invalidateAfterChange()
-      toast.success("Added to transactions")
+      toast.success("Moved back to the inbox")
+    },
+    onError: (err) => toast.error(errorMessage(err, "Couldn't undo")),
+  })
+
+  const acceptMutation = useMutation({
+    mutationFn: (vars: {
+      item: InboxItem
+      input: AcceptInput
+      category: Category
+    }) =>
+      unwrap(
+        api.inbox[":id"].accept.$post({
+          param: { id: vars.item.id },
+          json: vars.input,
+        })
+      ),
+    onMutate: (vars) => hideFromList(vars.item.id),
+    onSuccess: async (_res, { item, input, category }) => {
+      await invalidateAfterChange()
+      toast.success(`${inboxItemTitle(item)} filed under ${category.name}`, {
+        action: {
+          label: "Undo",
+          onClick: () =>
+            undoMutation.mutate({
+              id: item.id,
+              forgetCardLabel: input.saveCardLabel,
+            }),
+        },
+      })
     },
     onError: (err) => {
       toast.error(errorMessage(err, "Couldn't accept this tap"))
@@ -81,9 +143,18 @@ function InboxPage() {
   })
 
   const dismissMutation = useMutation({
-    mutationFn: (id: string) =>
-      unwrap(api.inbox[":id"].dismiss.$post({ param: { id } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inbox"] }),
+    mutationFn: (item: InboxItem) =>
+      unwrap(api.inbox[":id"].dismiss.$post({ param: { id: item.id } })),
+    onMutate: (item) => hideFromList(item.id),
+    onSuccess: async (_res, item) => {
+      await queryClient.invalidateQueries({ queryKey: ["inbox"] })
+      toast(`${inboxItemTitle(item)} dismissed`, {
+        action: {
+          label: "Undo",
+          onClick: () => undoMutation.mutate({ id: item.id }),
+        },
+      })
+    },
     onError: (err) => {
       toast.error(errorMessage(err, "Couldn't dismiss this tap"))
       void queryClient.invalidateQueries({ queryKey: ["inbox"] })
@@ -92,7 +163,6 @@ function InboxPage() {
 
   const items = data?.data ?? []
   const groups = groupByDay(items)
-  const busy = acceptMutation.isPending || dismissMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -103,9 +173,19 @@ function InboxPage() {
       />
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="divide-y divide-border overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="flex flex-col gap-2.5 px-3.5 py-3">
+              <div className="flex items-center gap-3">
+                <div className="size-9 shrink-0 animate-pulse rounded-[10px] bg-muted" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3.5 w-32 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-48 animate-pulse rounded bg-muted" />
+                </div>
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+              </div>
+              <div className="h-6 w-72 max-w-full animate-pulse rounded-full bg-muted sm:ml-12" />
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -121,24 +201,35 @@ function InboxPage() {
       ) : (
         <div className="space-y-6">
           {groups.map((group) => (
-            <div key={group.label} className="space-y-2">
-              <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
-                {group.label}
-              </p>
-              {group.items.map((item) => (
-                <InboxItemCard
-                  key={item.id}
-                  item={item}
-                  accounts={accounts}
-                  categories={categories}
-                  busy={busy}
-                  onAccept={(it, input) =>
-                    acceptMutation.mutate({ id: it.id, input })
-                  }
-                  onDismiss={(it) => dismissMutation.mutate(it.id)}
-                />
-              ))}
-            </div>
+            <section key={group.label} className="space-y-2">
+              <div className="flex items-baseline justify-between px-0.5">
+                <h2 className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
+                  {group.label}
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {group.items.length === 1
+                    ? "1 tap"
+                    : `${group.items.length} taps`}
+                </span>
+              </div>
+              <div className="divide-y divide-border overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+                {group.items.map((item) => (
+                  <InboxItemCard
+                    key={item.id}
+                    item={item}
+                    accounts={accounts}
+                    wallets={wallets}
+                    categories={categories}
+                    categoryUsage={categoryUsage}
+                    accountUsage={accountUsage}
+                    onAccept={(it, input, category) =>
+                      acceptMutation.mutate({ item: it, input, category })
+                    }
+                    onDismiss={(it) => dismissMutation.mutate(it)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       )}

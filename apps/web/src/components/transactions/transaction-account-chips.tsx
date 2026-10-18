@@ -177,7 +177,7 @@ export function TransactionAccountBlock({
   )
 }
 
-function AccountDot({ color }: { color: string }) {
+export function AccountDot({ color }: { color: string }) {
   return (
     <span
       className="size-2 shrink-0 rounded-full"
@@ -186,7 +186,7 @@ function AccountDot({ color }: { color: string }) {
   )
 }
 
-function AccountText({ account }: { account: Account }) {
+export function AccountText({ account }: { account: Account }) {
   return (
     <div className="min-w-0 flex-1">
       <div className="truncate text-[12.5px] font-medium text-foreground">

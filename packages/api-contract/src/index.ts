@@ -128,6 +128,7 @@ export {
   WalletIngestSchema,
   ListInboxQuerySchema,
   AcceptInboxItemSchema,
+  UndoInboxItemSchema,
 } from "./schemas/inbox"
 export type { InboxItem } from "./schemas/inbox"
 export { SessionSchema } from "./schemas/sessions"

@@ -4,6 +4,7 @@ import { z } from "zod"
 import {
   AcceptInboxItemSchema,
   ListInboxQuerySchema,
+  UndoInboxItemSchema,
   WalletIngestSchema,
 } from "@workspace/api-contract"
 import {
@@ -16,6 +17,7 @@ import {
   dismissInboxItem,
   ingestWalletTap,
   listInboxItems,
+  undoInboxItem,
 } from "./service"
 
 export type InboxEnv = {
@@ -89,6 +91,23 @@ export const inboxRoutes = new Hono<InboxEnv>()
       const user = c.get("user")
       const { id } = c.req.valid("param")
       const item = await dismissInboxItem(id, user.organizationId)
+      return c.json(item)
+    }
+  )
+  .post(
+    "/:id/undo",
+    honoAuthMiddleware,
+    zValidator("param", IdParamSchema),
+    zValidator("json", UndoInboxItemSchema),
+    async (c) => {
+      const user = c.get("user")
+      const { id } = c.req.valid("param")
+      const body = c.req.valid("json")
+      const item = await undoInboxItem({
+        id,
+        organizationId: user.organizationId,
+        forgetCardLabel: body.forgetCardLabel,
+      })
       return c.json(item)
     }
   )

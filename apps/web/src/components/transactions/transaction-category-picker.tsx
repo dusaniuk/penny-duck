@@ -33,6 +33,7 @@ interface TransactionCategoryPickerProps {
   recentIds: ReadonlyArray<string>
   onSelect: (id: string) => void
   onClose: () => void
+  onBack?: () => void
   onCreateCategory?: () => void
   variant?: "desktop" | "mobile"
 }
@@ -49,6 +50,7 @@ export function TransactionCategoryPicker({
   recentIds,
   onSelect,
   onClose,
+  onBack,
   onCreateCategory,
   variant = "desktop",
 }: TransactionCategoryPickerProps) {
@@ -73,16 +75,20 @@ export function TransactionCategoryPicker({
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onClose}
-          aria-label="Back to form"
-          className={ICON_BTN_CLASS}
-        >
-          <IconArrowLeft size={16} />
-        </Button>
+        {onBack ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onBack}
+            aria-label="Back to form"
+            className={ICON_BTN_CLASS}
+          >
+            <IconArrowLeft size={16} />
+          </Button>
+        ) : (
+          <span aria-hidden className="size-7.5" />
+        )}
         <div className="flex-1 text-center font-heading text-[14px] font-semibold text-foreground">
           Select category
         </div>

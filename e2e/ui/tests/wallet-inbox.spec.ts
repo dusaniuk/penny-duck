@@ -67,13 +67,28 @@ test.describe("Wallet inbox", () => {
     await page.goto("/inbox")
     const card = page.getByTestId("inbox-item").filter({ hasText: "Silpo" })
     await expect(card).toBeVisible()
-    await expect(card.getByRole("combobox", { name: "Account" })).toContainText(
-      "Mono"
-    )
+    await expect(
+      card.getByRole("button", { name: /^Account: Mono · UAH/ })
+    ).toBeVisible()
 
-    await card.getByRole("combobox", { name: "Category" }).click()
-    await page.getByRole("option", { name: categoryName }).click()
-    await card.getByRole("button", { name: "Accept" }).click()
+    const fileViaPicker = async () => {
+      await card.getByRole("button", { name: "More categories" }).click()
+      const picker = page.getByRole("dialog", { name: "Select category" })
+      await picker.getByPlaceholder("Search categories").fill(categoryName)
+      await picker.getByRole("button", { name: categoryName }).click()
+      await expect(picker).toHaveCount(0)
+    }
+
+    await fileViaPicker()
+    await expect(card).toHaveCount(0)
+    const toastMessage = page.getByText(`Silpo filed under ${categoryName}`)
+    await expect(toastMessage).toBeVisible()
+
+    await page.getByRole("button", { name: "Undo" }).click()
+    await expect(page.getByText("Moved back to the inbox")).toBeVisible()
+    await expect(card).toBeVisible()
+
+    await fileViaPicker()
     await expect(card).toHaveCount(0)
 
     await page.goto("/transactions")
