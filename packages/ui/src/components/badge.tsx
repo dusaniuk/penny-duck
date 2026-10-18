@@ -37,7 +37,7 @@ const badgeVariants = cva(
         variant: "outline",
         selected: true,
         className:
-          "border-orange-500/45 bg-orange-500/10 text-orange-600 hover:bg-orange-500/16 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-400",
+          "border-primary/45 bg-primary/10 text-primary-ink hover:bg-primary/16 hover:text-primary-ink",
       },
     ],
     defaultVariants: {

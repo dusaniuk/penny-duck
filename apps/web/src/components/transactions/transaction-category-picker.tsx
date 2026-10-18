@@ -41,7 +41,7 @@ const ICON_BTN_CLASS =
   "size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
 
 const CHIP_CLASS =
-  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-foreground/[0.05] bg-foreground/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-foreground/[0.05] bg-foreground/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 
 export function TransactionCategoryPicker({
   categories,
@@ -124,7 +124,7 @@ export function TransactionCategoryPicker({
 
       <div
         className={cn(
-          "-mx-1 flex flex-col gap-3.5 overflow-y-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:w-0",
+          "-mx-1 flex [scrollbar-width:none] flex-col gap-3.5 overflow-y-auto px-1 pb-1 [&::-webkit-scrollbar]:w-0",
           bodyMaxH
         )}
       >
@@ -246,7 +246,7 @@ export function TransactionCategoryPicker({
             type="button"
             variant="outline"
             onClick={onCreateCategory}
-            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-foreground/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-foreground/50 hover:border-orange-500/40 hover:bg-transparent hover:text-orange-400"
+            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-foreground/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-foreground/50 hover:border-primary/40 hover:bg-transparent hover:text-primary-ink"
           >
             <IconPlus size={14} />
             Create new category

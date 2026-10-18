@@ -63,8 +63,8 @@
   --tx-transfer-ink: #7c3aed; /* violet-600 */
   --tx-transfer-ink-bg: rgba(124, 58, 237, 0.1);
   --tx-transfer-ink-ring: rgba(124, 58, 237, 0.32);
-  --tx-submit-default-bg: #f97316; /* orange-500 */
-  --tx-submit-default-fg: #0a0a0a;
+  --tx-submit-default-bg: var(--primary);
+  --tx-submit-default-fg: var(--primary-foreground);
   --tx-submit-transfer-bg: #7c3aed; /* violet-600 */
   --tx-submit-transfer-fg: #fafafa;
 }
@@ -119,8 +119,8 @@
   --tx-transfer-ink: #c4b5fd; /* violet-300 */
   --tx-transfer-ink-bg: rgba(196, 181, 253, 0.14);
   --tx-transfer-ink-ring: rgba(196, 181, 253, 0.4);
-  --tx-submit-default-bg: #f97316; /* orange-500 */
-  --tx-submit-default-fg: #0a0a0a;
+  --tx-submit-default-bg: var(--primary);
+  --tx-submit-default-fg: var(--primary-foreground);
   --tx-submit-transfer-bg: #7c3aed; /* violet-600 */
   --tx-submit-transfer-fg: #fafafa;
 }

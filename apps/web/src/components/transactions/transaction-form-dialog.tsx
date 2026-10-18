@@ -560,7 +560,7 @@ function TransactionModalBody({
                 }}
                 aria-label="Amount"
                 className={cn(
-                  "field-sizing-content max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left font-[Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-orange-500 outline-none placeholder:text-foreground/[0.28]",
+                  "field-sizing-content max-w-[calc(100%-80px)] min-w-[2.5ch] border-0 bg-transparent p-0 text-left font-[Geist,Inter,system-ui] leading-none font-semibold tracking-[-0.03em] text-foreground tabular-nums caret-primary outline-none placeholder:text-foreground/[0.28]",
                   isMobile ? "text-[46px]" : "text-[52px]"
                 )}
               />
