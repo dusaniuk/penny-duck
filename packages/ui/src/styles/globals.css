@@ -28,9 +28,9 @@
   --muted-foreground: oklch(0.46 0.008 270);
   --accent: oklch(0.92 0.005 80);
   --accent-foreground: oklch(0.16 0.005 270);
-  --destructive: oklch(0.59 0.22 27);
-  --success: oklch(0.62 0.16 158);
-  --warning: oklch(0.66 0.14 65);
+  --destructive: oklch(0.55 0.21 27);
+  --success: oklch(0.52 0.12 158);
+  --warning: oklch(0.54 0.12 65);
   --border: oklch(0 0 0 / 0.08);
   --input: oklch(0 0 0 / 0.1);
   --ring: oklch(0.52 0.18 45);
@@ -53,12 +53,12 @@
   --sidebar-ring: oklch(0.52 0.18 45);
 
   /* Transaction dialog per-type accents (light theme tuned for white-ish bg) */
-  --tx-expense-ink: #e11d48; /* rose-600 */
-  --tx-expense-ink-bg: rgba(225, 29, 72, 0.1);
-  --tx-expense-ink-ring: rgba(225, 29, 72, 0.32);
-  --tx-income-ink: #16a34a; /* green-600 */
-  --tx-income-ink-bg: rgba(22, 163, 74, 0.1);
-  --tx-income-ink-ring: rgba(22, 163, 74, 0.32);
+  --tx-expense-ink: #be123c; /* rose-700 */
+  --tx-expense-ink-bg: rgba(190, 18, 60, 0.1);
+  --tx-expense-ink-ring: rgba(190, 18, 60, 0.32);
+  --tx-income-ink: #157a3a; /* between green-700 and green-800 */
+  --tx-income-ink-bg: rgba(21, 122, 58, 0.1);
+  --tx-income-ink-ring: rgba(21, 122, 58, 0.32);
   --tx-transfer-ink: #7c3aed; /* violet-600 */
   --tx-transfer-ink-bg: rgba(124, 58, 237, 0.1);
   --tx-transfer-ink-ring: rgba(124, 58, 237, 0.32);
