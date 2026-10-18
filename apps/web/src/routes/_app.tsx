@@ -119,7 +119,7 @@ function AppLayout() {
             <ThemeToggle />
           </div>
         </header>
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="mx-auto flex w-full max-w-360 flex-1 flex-col gap-4 p-4 pt-0">
           <Outlet />
         </div>
       </SidebarInset>

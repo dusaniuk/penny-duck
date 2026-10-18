@@ -82,7 +82,7 @@ export function CategoryDetail({
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute -top-[140px] -right-[80px] size-[280px] rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
+          className="pointer-events-none absolute -top-35 -right-20 size-70 rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
           style={{ filter: "blur(60px)" }}
         />
 

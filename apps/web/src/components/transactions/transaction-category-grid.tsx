@@ -27,7 +27,7 @@ const VISIBLE_CHILDREN_DESKTOP = 7
 const VISIBLE_CHILDREN_MOBILE = 8
 
 const CELL_LAYOUT =
-  "flex flex-col items-center gap-1 px-1 pt-2.5 pb-2 text-center text-foreground/[0.78]"
+  "flex flex-col items-center gap-1 px-1 pt-2.5 pb-2 text-center text-foreground/78"
 
 // Children inherit their visual color from their parent (top-level categories
 // hold the palette token; children carry null).
@@ -103,7 +103,7 @@ export function TransactionCategoryGrid({
               style={active ? { color: fg, borderColor: fg } : undefined}
             >
               <span
-                className="grid size-[22px] shrink-0 place-items-center"
+                className="grid size-5.5 shrink-0 place-items-center"
                 style={{ color: fg }}
               >
                 {icon ? <icon.component size={16} /> : null}
@@ -120,7 +120,7 @@ export function TransactionCategoryGrid({
             aria-label="More categories"
             className={cn(CELL_LAYOUT, "border-dashed text-foreground/50")}
           >
-            <span className="grid size-[22px] shrink-0 place-items-center">
+            <span className="grid size-5.5 shrink-0 place-items-center">
               <IconDots size={16} />
             </span>
             <span className="max-w-full truncate text-[11px] leading-[1.15] font-medium">

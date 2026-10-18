@@ -395,10 +395,7 @@ function AccountsPage() {
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[100px] animate-pulse rounded-lg bg-muted"
-            />
+            <div key={i} className="h-25 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       ) : isEmpty ? (

@@ -372,7 +372,7 @@ function CategoriesPage() {
                     className="px-3 py-1.5 text-[13px]"
                   >
                     {tab.label}
-                    <span className="ml-1.5 grid min-w-4 place-items-center rounded-full bg-foreground/[0.08] px-1 text-[10px] font-semibold tabular-nums">
+                    <span className="ml-1.5 grid min-w-4 place-items-center rounded-full bg-foreground/8 px-1 text-[10px] font-semibold tabular-nums">
                       {tabCounts[tab.value]}
                     </span>
                   </TabsTrigger>

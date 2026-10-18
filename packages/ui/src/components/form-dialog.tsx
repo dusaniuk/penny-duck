@@ -10,9 +10,9 @@ import {
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
 import { cn } from "@workspace/ui/lib/utils"
 
-const SHELL_BASE = "flex flex-col gap-[14px] bg-background text-foreground"
+const SHELL_BASE = "flex flex-col gap-3.5 bg-background text-foreground"
 const SHELL_DESKTOP =
-  "w-[440px] rounded-[18px] p-[18px_18px_16px] ring-1 ring-foreground/10"
+  "w-110 rounded-[18px] p-[18px_18px_16px] ring-1 ring-foreground/10"
 const SHELL_MOBILE =
   "min-h-dvh w-full px-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),22px)]"
 
@@ -23,10 +23,10 @@ export const FORM_TRIGGER_ROW =
   "w-full rounded-[11px] border-border bg-card px-3 text-[13px] hover:bg-card/80"
 
 export const FORM_CANCEL_BUTTON =
-  "h-auto rounded-[10px] border-foreground/10 bg-transparent px-[18px] py-[10px] text-[13px] text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground"
+  "h-auto rounded-[10px] border-foreground/10 bg-transparent px-4.5 py-2.5 text-[13px] text-foreground/70 hover:bg-foreground/4 hover:text-foreground"
 
 export const FORM_SUBMIT_BUTTON =
-  "h-auto rounded-[10px] px-[20px] py-[10px] text-[13px] font-semibold"
+  "h-auto rounded-[10px] px-5 py-2.5 text-[13px] font-semibold"
 
 interface FormDialogContext {
   shellClass: string
@@ -68,8 +68,8 @@ export function FormDialog({
         className={cn(
           "gap-0 rounded-none border-0 bg-transparent p-0 ring-0",
           isMobile
-            ? "top-0 left-0 h-dvh max-w-none translate-x-0 translate-y-0 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4"
-            : "w-[440px] max-w-none"
+            ? "top-0 left-0 h-dvh max-w-none translate-0 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4"
+            : "w-110 max-w-none"
         )}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
@@ -105,7 +105,7 @@ export function FormDialogHeader({ onClose, children }: FormDialogHeaderProps) {
         size="icon-sm"
         onClick={onClose}
         aria-label="Close"
-        className="size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+        className="size-7.5 bg-transparent text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
       >
         <IconX size={16} />
       </Button>

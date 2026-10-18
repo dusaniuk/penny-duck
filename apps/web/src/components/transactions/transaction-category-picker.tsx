@@ -38,10 +38,10 @@ interface TransactionCategoryPickerProps {
 }
 
 const ICON_BTN_CLASS =
-  "size-[30px] bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+  "size-7.5 bg-transparent text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
 
 const CHIP_CLASS =
-  "flex min-w-0 cursor-pointer items-center gap-[7px] rounded-[8px] border border-foreground/[0.05] bg-foreground/[0.02] px-[9px] py-[7px] text-left text-[11.5px] font-medium text-foreground/[0.78] transition-colors hover:bg-foreground/[0.05] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+  "flex min-w-0 cursor-pointer items-center gap-1.75 rounded-[8px] border border-foreground/5 bg-foreground/2 px-2.25 py-1.75 text-left text-[11.5px] font-medium text-foreground/78 transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 
 export function TransactionCategoryPicker({
   categories,
@@ -98,7 +98,7 @@ export function TransactionCategoryPicker({
         </Button>
       </div>
 
-      <InputGroup className="h-auto rounded-[11px] border-foreground/[0.06] bg-foreground/[0.04] py-[10px] pr-3 pl-3 [&_input]:text-base [&_input]:text-foreground [&_input]:placeholder:text-foreground/35 md:[&_input]:text-[13px]">
+      <InputGroup className="h-auto rounded-[11px] border-foreground/6 bg-foreground/4 px-3 py-2.5 [&_input]:text-base [&_input]:text-foreground [&_input]:placeholder:text-foreground/35 md:[&_input]:text-[13px]">
         <InputGroupAddon align="inline-start" className="text-foreground/40">
           <IconSearch size={15} />
         </InputGroupAddon>
@@ -112,7 +112,7 @@ export function TransactionCategoryPicker({
           <InputGroupAddon align="inline-end">
             <button
               type="button"
-              className="grid size-[18px] place-items-center rounded-full border-0 bg-foreground/10 text-foreground/70"
+              className="grid size-4.5 place-items-center rounded-full border-0 bg-foreground/10 text-foreground/70"
               onClick={() => setSearch("")}
               aria-label="Clear search"
             >
@@ -124,7 +124,7 @@ export function TransactionCategoryPicker({
 
       <div
         className={cn(
-          "-mx-1 flex [scrollbar-width:none] flex-col gap-3.5 overflow-y-auto px-1 pb-1 [&::-webkit-scrollbar]:w-0",
+          "-mx-1 flex scrollbar-none flex-col gap-3.5 overflow-y-auto px-1 pb-1 [&::-webkit-scrollbar]:w-0",
           bodyMaxH
         )}
       >
@@ -179,7 +179,7 @@ export function TransactionCategoryPicker({
             <div key={parent.id} className="flex flex-col gap-1.5">
               <div className="flex items-center">
                 <div
-                  className="flex w-full items-center gap-2 rounded-[9px] border border-foreground/[0.05] bg-foreground/[0.025] px-[11px] py-2 text-[13px] font-medium text-foreground"
+                  className="flex w-full items-center gap-2 rounded-[9px] border border-foreground/5 bg-foreground/2.5 px-2.75 py-2 text-[13px] font-medium text-foreground"
                   role="presentation"
                 >
                   <span
@@ -192,7 +192,7 @@ export function TransactionCategoryPicker({
                   <Badge
                     size="sm"
                     variant="secondary"
-                    className="border-0 bg-foreground/[0.05] text-foreground/40"
+                    className="border-0 bg-foreground/5 text-foreground/40"
                   >
                     {children.length}
                   </Badge>
@@ -200,7 +200,7 @@ export function TransactionCategoryPicker({
               </div>
               <div
                 className={cn(
-                  "relative grid gap-1 pl-[22px] before:absolute before:top-1 before:bottom-1 before:left-[10px] before:w-px before:bg-foreground/[0.07] before:content-['']",
+                  "relative grid gap-1 pl-5.5 before:absolute before:inset-y-1 before:left-2.5 before:w-px before:bg-foreground/[0.07] before:content-['']",
                   gridCols
                 )}
               >
@@ -227,7 +227,7 @@ export function TransactionCategoryPicker({
                       }
                     >
                       <span
-                        className="grid size-[18px] shrink-0 place-items-center"
+                        className="grid size-4.5 shrink-0 place-items-center"
                         style={{ color: childFg }}
                       >
                         {childIcon ? <childIcon.component size={13} /> : null}
@@ -246,7 +246,7 @@ export function TransactionCategoryPicker({
             type="button"
             variant="outline"
             onClick={onCreateCategory}
-            className="mt-1 h-auto w-full justify-center gap-[7px] rounded-[10px] border border-dashed border-foreground/[0.12] bg-transparent px-[11px] py-[11px] text-[12.5px] font-medium text-foreground/50 hover:border-primary/40 hover:bg-transparent hover:text-primary-ink"
+            className="mt-1 h-auto w-full justify-center gap-1.75 rounded-[10px] border border-dashed border-foreground/12 bg-transparent p-2.75 text-[12.5px] font-medium text-foreground/50 hover:border-primary/40 hover:bg-transparent hover:text-primary-ink"
           >
             <IconPlus size={14} />
             Create new category

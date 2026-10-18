@@ -51,7 +51,7 @@ export function ColorPicker({
             )}
           >
             <span
-              className="size-[18px] rounded-full"
+              className="size-4.5 rounded-full"
               style={{
                 background: paletteColor(value, { l: 0.7, c: 0.16 }),
                 outline: "1px solid rgb(0 0 0 / 0.1)",

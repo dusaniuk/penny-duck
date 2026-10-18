@@ -495,7 +495,7 @@ function TransactionModalBody({
             form.setFieldValue("categoryId", null)
           }}
         >
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-foreground/4 bg-foreground/4 p-[3px]">
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-[11px] border border-foreground/4 bg-foreground/4 p-0.75">
             {(["expense", "income", "transfer"] as const).map((t) => {
               const isActive = values.type === t
               const tonePalette = TYPE_PALETTE[t]
@@ -531,7 +531,7 @@ function TransactionModalBody({
       <div
         className={cn(
           "border-b border-dashed border-foreground/[0.07] px-1",
-          isMobile ? "pt-[14px] pb-2.5" : "pt-[18px] pb-[14px]"
+          isMobile ? "pt-3.5 pb-2.5" : "pt-4.5 pb-3.5"
         )}
       >
         <div className="flex items-baseline justify-center gap-1.5">
@@ -631,7 +631,7 @@ function TransactionModalBody({
                 </form.Field>
               </div>
             </div>
-            <div className="grid h-[54px] place-items-center text-violet-600 dark:text-violet-300">
+            <div className="grid h-13.5 place-items-center text-violet-600 dark:text-violet-300">
               <IconArrowRight size={18} />
             </div>
             <div className="min-w-0">
@@ -642,7 +642,7 @@ function TransactionModalBody({
                 ) : (
                   <button
                     type="button"
-                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-card px-[11px] py-[9px] text-left transition-colors hover:bg-card/80 dark:border-violet-300/35"
+                    className="flex w-full max-w-none cursor-pointer items-center gap-2 rounded-[11px] border border-violet-500/40 bg-card px-2.75 py-2.25 text-left transition-colors hover:bg-card/80 dark:border-violet-300/35"
                   >
                     <span className="size-2 shrink-0 rounded-full bg-muted-foreground/40" />
                     <div className="min-w-0 flex-1">
@@ -768,7 +768,7 @@ function TransactionModalBody({
           >
             <SelectTrigger
               size="default"
-              className="h-auto rounded-[10px] border-foreground/5 bg-card px-[11px] py-2 text-[12.5px] text-foreground hover:bg-card/80"
+              className="h-auto rounded-[10px] border-foreground/5 bg-card px-2.75 py-2 text-[12.5px] text-foreground hover:bg-card/80"
             >
               <SelectValue placeholder="Select member" />
             </SelectTrigger>
@@ -808,7 +808,7 @@ function TransactionModalBody({
                 variant="outline"
                 selected={isActive}
                 asChild
-                className={cn(isMobile && "px-[13px] py-2")}
+                className={cn(isMobile && "px-3.25 py-2")}
               >
                 <button
                   type="button"
@@ -826,7 +826,7 @@ function TransactionModalBody({
                 variant="outline"
                 selected={datePreset === "custom"}
                 asChild
-                className={cn("gap-1.5", isMobile && "px-[13px] py-2")}
+                className={cn("gap-1.5", isMobile && "px-3.25 py-2")}
               >
                 <button type="button" aria-label="Pick date">
                   <IconCalendar size={13} />
@@ -853,7 +853,7 @@ function TransactionModalBody({
       <InputGroup
         className={cn(
           "h-auto items-center rounded-[11px] border-foreground/5 bg-card px-3 py-2.5",
-          isMobile && "px-3 py-3"
+          isMobile && "p-3"
         )}
       >
         <InputGroupAddon align="inline-start" className="text-foreground/35">
@@ -907,7 +907,7 @@ function TransactionModalBody({
             size="sm"
             onClick={onDelete}
             disabled={isSubmitting}
-            className="mr-auto h-auto rounded-[10px] border border-destructive/35 bg-transparent px-[14px] py-[10px] text-[13px] text-destructive hover:bg-destructive/10"
+            className="mr-auto h-auto rounded-[10px] border border-destructive/35 bg-transparent px-3.5 py-2.5 text-[13px] text-destructive hover:bg-destructive/10"
           >
             Delete
           </Button>

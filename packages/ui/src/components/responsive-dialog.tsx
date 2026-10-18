@@ -42,7 +42,7 @@ function ResponsiveDialogContent({
     return (
       <DialogContent
         className={cn(
-          "top-0 left-0 h-dvh max-w-none -translate-x-0 -translate-y-0 rounded-none ring-0 data-open:zoom-in-100 data-open:slide-in-from-bottom-4 data-closed:zoom-out-100 data-closed:slide-out-to-bottom-4",
+          "top-0 left-0 h-dvh max-w-none translate-0 rounded-none ring-0 data-open:zoom-in-100 data-open:slide-in-from-bottom-4 data-closed:zoom-out-100 data-closed:slide-out-to-bottom-4",
           className
         )}
         showCloseButton={showCloseButton}

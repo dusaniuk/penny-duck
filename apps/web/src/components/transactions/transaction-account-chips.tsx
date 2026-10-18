@@ -76,7 +76,7 @@ export function TransactionAccountChips({
       <div className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-foreground/40 uppercase">
         {label}
       </div>
-      <div className="-mx-1 -my-1 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-1 py-1 [&::-webkit-scrollbar]:hidden">
+      <div className="-m-1 flex scrollbar-none gap-1.5 overflow-x-auto p-1 [&::-webkit-scrollbar]:hidden">
         {chips.map((chip) => {
           if (chip.kind === "account") {
             const active = chip.account.id === selectedId
@@ -86,7 +86,7 @@ export function TransactionAccountChips({
                 key={chip.account.id}
                 aria-pressed={active}
                 onClick={() => onSelect(chip.account.id)}
-                className="flex max-w-[170px] min-w-[140px] shrink-0 items-center gap-2 px-[11px] py-[9px] text-left sm:min-w-[150px] sm:px-3 sm:py-2.5"
+                className="flex max-w-42.5 min-w-35 shrink-0 items-center gap-2 px-2.75 py-2.25 text-left sm:min-w-37.5 sm:px-3 sm:py-2.5"
                 style={active ? { borderColor: color } : undefined}
               >
                 <AccountDot color={color} />
@@ -114,7 +114,7 @@ export function TransactionAccountChips({
                   onSelect(pickDefaultPocket(pockets))
                 }
               }}
-              className="flex max-w-[170px] min-w-[140px] shrink-0 items-center gap-2 px-[11px] py-[9px] text-left sm:min-w-[150px] sm:px-3 sm:py-2.5"
+              className="flex max-w-42.5 min-w-35 shrink-0 items-center gap-2 px-2.75 py-2.25 text-left sm:min-w-37.5 sm:px-3 sm:py-2.5"
               style={isWalletActive ? { borderColor: walletColor } : undefined}
             >
               <AccountDot color={walletColor} />
@@ -169,7 +169,7 @@ export function TransactionAccountBlock({
   return (
     <SelectableSurface
       onClick={onClick}
-      className="flex w-full items-center gap-2 border-violet-500/40 px-[11px] py-[9px] text-left sm:px-3 sm:py-2.5 dark:border-violet-300/35"
+      className="flex w-full items-center gap-2 border-violet-500/40 px-2.75 py-2.25 text-left sm:px-3 sm:py-2.5 dark:border-violet-300/35"
     >
       <AccountDot color={paletteColor(account.color, { l: 0.7, c: 0.16 })} />
       <AccountText account={account} />

@@ -23,9 +23,9 @@ const badgeVariants = cva(
       },
       size: {
         default: "h-5 px-2 py-0.5 text-xs",
-        xs: "h-auto px-[9px] py-[4px] text-[11px] tracking-[0.04em]",
-        sm: "h-auto px-[7px] py-[2px] text-[10.5px] tabular-nums",
-        lg: "h-auto px-[11px] py-[6px] text-[12px]",
+        xs: "h-auto px-2.25 py-1 text-[11px] tracking-[0.04em]",
+        sm: "h-auto px-1.75 py-0.5 text-[10.5px] tabular-nums",
+        lg: "h-auto px-2.75 py-1.5 text-[12px]",
       },
       selected: {
         true: "",

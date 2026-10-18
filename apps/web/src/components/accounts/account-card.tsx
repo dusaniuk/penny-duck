@@ -121,7 +121,7 @@ function AccountIconChip({
         } as CSSProperties
       }
     >
-      <Icon className="size-[18px]" />
+      <Icon className="size-4.5" />
     </span>
   )
 }

@@ -244,7 +244,7 @@ function CategoryModalBody({
                     </FieldLabel>
                     <div
                       className={cn(
-                        "flex items-center gap-1.5 rounded-[11px] border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/45",
+                        "flex items-center gap-1.5 rounded-[11px] border border-border bg-card p-1.5 focus-within:border-primary/45",
                         isInvalid && "border-destructive/45"
                       )}
                     >
@@ -408,7 +408,7 @@ function PreviewCard({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
+        className="pointer-events-none absolute -top-27.5 -right-17.5 size-50 rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
         style={{ filter: "blur(44px)" }}
       />
       <span className="relative grid size-9 shrink-0 place-items-center rounded-[9px] border border-foreground/4 bg-(--chip-bg-l) text-(--chip-fg-l) dark:bg-(--chip-bg-d) dark:text-(--chip-fg-d)">

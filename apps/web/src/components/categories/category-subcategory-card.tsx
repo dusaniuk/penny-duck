@@ -102,7 +102,7 @@ export function CategorySubcategoryCard({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-[90px] -right-[60px] size-[170px] rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
+        className="pointer-events-none absolute -top-22.5 -right-15 size-42.5 rounded-full bg-(--halo-l) dark:bg-(--halo-d)"
         style={{ filter: "blur(40px)" }}
       />
 
@@ -157,7 +157,7 @@ export function CategorySubcategoryCard({
           </span>
         </p>
 
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-foreground/[0.08]">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-foreground/8">
           <div
             className="h-full rounded-full bg-(--chip-fg-l) dark:bg-(--chip-fg-d)"
             style={{ width: `${pct}%` }}

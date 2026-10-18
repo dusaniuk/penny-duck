@@ -74,9 +74,7 @@ export function PositionsTable({ positions, onRowClick }: PositionsTableProps) {
                 onClick={onRowClick ? () => onRowClick(p) : undefined}
               >
                 <TableCell className="font-medium">{p.symbol}</TableCell>
-                <TableCell className="max-w-[200px] truncate">
-                  {p.name}
-                </TableCell>
+                <TableCell className="max-w-50 truncate">{p.name}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {p.quantity.toLocaleString(undefined, {
                     maximumFractionDigits: 4,

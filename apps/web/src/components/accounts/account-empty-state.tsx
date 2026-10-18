@@ -144,10 +144,10 @@ function QuickPickTile({
       )}
     >
       <span
-        className="grid size-[38px] shrink-0 place-items-center rounded-[10px] border border-foreground/4"
+        className="grid size-9.5 shrink-0 place-items-center rounded-[10px] border border-foreground/4"
         style={{ color: fg, background: tint }}
       >
-        <Icon className="size-[18px]" />
+        <Icon className="size-4.5" />
       </span>
       <div className="min-w-0 flex-1">
         <p className="font-heading text-sm font-semibold text-foreground">

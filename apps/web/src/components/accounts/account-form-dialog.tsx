@@ -449,7 +449,7 @@ function AccountModalBody({
               </FieldLabel>
               <div
                 className={cn(
-                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/45",
+                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-card p-1.5 focus-within:border-primary/45",
                   isInvalid && "border-destructive/45"
                 )}
               >
@@ -852,7 +852,7 @@ function PocketFields({
                 portalContainer={portalContainer}
               />
             </div>
-            <div className="w-[130px]">
+            <div className="w-32.5">
               <InputGroup className="h-10 items-center rounded-[11px] border-border bg-card px-3">
                 <InputGroupInput
                   type="text"
@@ -880,7 +880,7 @@ function PocketFields({
               size="icon"
               onClick={() => onRemovePocket(idx)}
               disabled={pockets.length <= 1}
-              className="mt-0 h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
+              className="mt-0 size-10 shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
             >
               <IconMinus size={14} />
             </Button>
@@ -1101,7 +1101,7 @@ function WalletEditBody({
               </FieldLabel>
               <div
                 className={cn(
-                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/45",
+                  "flex items-center gap-1.5 rounded-[11px] border border-border bg-card p-1.5 focus-within:border-primary/45",
                   isInvalid && "border-destructive/45"
                 )}
               >
@@ -1207,7 +1207,7 @@ function WalletEditBody({
                   portalContainer={portalContainer}
                 />
               </div>
-              <div className="w-[130px]">
+              <div className="w-32.5">
                 <InputGroup className="h-10 items-center rounded-[11px] border-border bg-card px-3">
                   <InputGroupInput
                     type="text"
@@ -1352,7 +1352,7 @@ function PreviewCard({
     <div className="relative flex flex-col gap-3 overflow-hidden rounded-[12px] border border-border bg-card p-3.5">
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full"
+        className="pointer-events-none absolute -top-27.5 -right-17.5 size-50 rounded-full"
         style={{ background: halo, filter: "blur(44px)" }}
       />
       <div className="relative flex items-start gap-2.5">

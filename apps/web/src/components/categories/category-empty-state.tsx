@@ -98,7 +98,7 @@ function TierBlock({ group }: { group: DefaultCategoryGroup }) {
       <div className="relative flex items-center gap-3 overflow-hidden rounded-[11px] border border-border bg-card px-3 py-2.5">
         <span
           aria-hidden
-          className="pointer-events-none absolute -top-[110px] -right-[70px] size-[200px] rounded-full bg-(--tier-halo-l) dark:bg-(--tier-halo-d)"
+          className="pointer-events-none absolute -top-27.5 -right-17.5 size-50 rounded-full bg-(--tier-halo-l) dark:bg-(--tier-halo-d)"
           style={{ filter: "blur(44px)" }}
         />
         <span className="relative grid size-9 shrink-0 place-items-center rounded-[10px] border border-foreground/5 bg-(--tier-bg-l) text-(--tier-fg-l) dark:bg-(--tier-bg-d) dark:text-(--tier-fg-d)">

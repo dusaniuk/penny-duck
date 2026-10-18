@@ -125,7 +125,7 @@ export function TransactionList({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-[52px] animate-pulse rounded-md bg-muted" />
+          <div key={i} className="h-13 animate-pulse rounded-md bg-muted" />
         ))}
       </div>
     )

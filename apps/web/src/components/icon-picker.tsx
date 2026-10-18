@@ -131,7 +131,7 @@ export function IconPicker({
             />
           </div>
         </div>
-        <div className="max-h-[320px] overflow-y-auto px-2.5 pt-2 pb-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:w-0">
+        <div className="max-h-80 scrollbar-none overflow-y-auto px-2.5 pt-2 pb-2.5 [&::-webkit-scrollbar]:w-0">
           {grouped ? (
             grouped.map(([group, icons]) => (
               <div key={group} className="mb-2 last:mb-0">
@@ -189,7 +189,7 @@ function IconGrid({ icons, selectedName, onSelect }: IconGridProps) {
                 "border-primary/45 bg-primary/10 text-primary hover:bg-primary/10"
             )}
           >
-            <Component className="size-[18px]" />
+            <Component className="size-4.5" />
           </button>
         )
       })}

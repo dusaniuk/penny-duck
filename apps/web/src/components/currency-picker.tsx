@@ -175,7 +175,7 @@ function CurrencyFlag({ country, code }: CurrencyFlagProps) {
     return (
       <span
         aria-hidden="true"
-        className="block h-[18px] w-[26px] shrink-0 rounded-[4px] bg-foreground/8 ring-1 ring-foreground/10 ring-inset"
+        className="block h-4.5 w-6.5 shrink-0 rounded-[4px] bg-foreground/8 ring-1 ring-foreground/10 ring-inset"
       />
     )
   }
@@ -183,7 +183,7 @@ function CurrencyFlag({ country, code }: CurrencyFlagProps) {
   return (
     <span
       aria-hidden="true"
-      className="block h-[18px] w-[26px] shrink-0 overflow-hidden rounded-[4px] ring-1 ring-foreground/10 ring-inset"
+      className="block h-4.5 w-6.5 shrink-0 overflow-hidden rounded-[4px] ring-1 ring-foreground/10 ring-inset"
     >
       <FlagComponent title={code} className="block size-full object-cover" />
     </span>
