@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { IconDeviceDesktop, IconMoon, IconSun } from "@tabler/icons-react"
 import { useTheme } from "./theme-provider"
 import { Button } from "./button"
@@ -23,8 +24,14 @@ const options: Array<{ value: Theme; label: string; icon: React.ReactNode }> = [
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-  const current = options.find((o) => o.value === theme) ?? options[2]
+  // The stored theme is only known in the browser, so the first render must
+  // match the server's "system" fallback to hydrate cleanly.
+  useEffect(() => setMounted(true), [])
+
+  const current =
+    (mounted && options.find((o) => o.value === theme)) || options[2]
 
   return (
     <DropdownMenu>
