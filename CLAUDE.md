@@ -77,6 +77,19 @@ This places components in `packages/ui/src/components/`. The shadcn config lives
 - Import UI components as: `@workspace/ui/components/<name>`
 - Import utilities as: `@workspace/ui/lib/utils`
 
+## Design System Artifact
+
+The Penny Duck design system lives in a Claude artifact (https://claude.ai/artifact/B6m44Fd1Q65NcMgLSg1fhY). Its code-derived files are rebuilt by `packages/ui/scripts/design-system/build.ts`, which sits outside the app build and turbo:
+
+```bash
+pnpm --filter @workspace/ui build:design-system --base <artifact tokens.json>
+```
+
+- Writes `packages/ui/dist/design-system/`, laid out like the artifact's `project/` folder: `tokens.json`, `fonts/`, `components/bundle.{js,css}`, `components/lib/react*.js`
+- Token values come from `globals.css` and `apps/web/src/lib/palette.ts`; `--base` (the artifact's current `project/tokens.json`) keeps the prose written on the artifact (usage notes, type styles, spacing, sizes). The script prints which tokens changed, were added, or were removed
+- To re-sync: read `project/tokens.json` from the artifact, run the script, publish the changed files to `project/<same path>`, and record the change in the artifact's `lastChange`
+- A new component needs an export in `scripts/design-system/entry.ts`, an entry in `COMPONENTS`, and a `preview.html` + `README.md` written on the artifact
+
 ## Key Conventions
 
 - **Tailwind CSS v4** — configured via `@tailwindcss/vite` plugin, styles in `packages/ui/src/styles/globals.css`
