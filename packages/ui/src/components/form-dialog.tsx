@@ -10,10 +10,9 @@ import {
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile"
 import { cn } from "@workspace/ui/lib/utils"
 
-const SHELL_BASE =
-  "flex flex-col gap-[14px] bg-background text-foreground [font-family:Inter,system-ui,sans-serif]"
+const SHELL_BASE = "flex flex-col gap-[14px] bg-background text-foreground"
 const SHELL_DESKTOP =
-  "w-[440px] rounded-[18px] border border-border p-[18px_18px_16px] shadow-[0_30px_80px_rgba(0,0,0,0.18)] dark:border-foreground/[0.06] dark:shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.02)]"
+  "w-[440px] rounded-[18px] p-[18px_18px_16px] ring-1 ring-foreground/10"
 const SHELL_MOBILE =
   "min-h-dvh w-full px-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),22px)]"
 
