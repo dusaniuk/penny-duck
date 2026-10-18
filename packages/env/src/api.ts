@@ -10,6 +10,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     WEB_URL: z.url().default("http://localhost:3000"),
     RAILWAY_ENVIRONMENT_NAME: z.string().optional(),
+    RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
     MAX_BODY_SIZE_MB: z.coerce
       .number()
       .positive()

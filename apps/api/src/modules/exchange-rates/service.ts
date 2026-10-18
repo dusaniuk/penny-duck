@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm"
 import { exchangeRates } from "@workspace/db"
 import { db } from "@/db"
+import { logger } from "@/logger"
 
 const PG_INT_MAX = 2_147_483_647
 
@@ -45,7 +46,7 @@ async function fetchRatesFromApi(
       return normalized
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
-      console.warn(`Failed to fetch from ${url}: ${lastError.message}`)
+      logger.warn(`Failed to fetch from ${url}: ${lastError.message}`)
     }
   }
 
@@ -129,7 +130,7 @@ export async function getRate(
     const message = err instanceof Error ? err.message : String(err)
     const fallback = await findLatestCachedRate(base, target)
     if (fallback !== null) {
-      console.warn(
+      logger.warn(
         `Exchange rate API failed for ${base}->${target} on ${dateStr} (${message}); using latest cached rate`
       )
       return fallback
@@ -154,7 +155,7 @@ export async function getRate(
 
   const rate = rates[target]
   if (rate === undefined) {
-    console.warn(`No rate found for ${base}->${target} on ${dateStr}`)
+    logger.warn(`No rate found for ${base}->${target} on ${dateStr}`)
     return 1
   }
 

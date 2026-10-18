@@ -12,6 +12,7 @@ import type {
   WalletSeriesItem,
 } from "@workspace/api-contract"
 import { db } from "@/db"
+import { logger } from "@/logger"
 import { getRate } from "@/modules/exchange-rates/service"
 import { ensureHistoricalPrices } from "@/modules/investments/instruments/service"
 import { getCurrentUser } from "@/modules/users/service"
@@ -301,7 +302,7 @@ export async function computeAccountSeries(
         )
         fxByDate.set(`${from}:${to}:${date}`, rate)
       } catch (err) {
-        console.warn(
+        logger.warn(
           `FX preheat failed for ${from}->${to} on ${date}: ${(err as Error).message}`
         )
         fxByDate.set(`${from}:${to}:${date}`, 1)

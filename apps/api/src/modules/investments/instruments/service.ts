@@ -3,6 +3,7 @@ import { desc, eq, inArray, sql } from "drizzle-orm"
 import { type Instrument } from "@workspace/api-contract"
 import { instrumentPrices, instruments } from "@workspace/db"
 import { db } from "@/db"
+import { logger } from "@/logger"
 import { type InstrumentRow } from "../helpers/mappers"
 import {
   fetchHistorical,
@@ -159,9 +160,9 @@ export async function refreshIfStale(
     return { refreshed: updated, stale: stillStale }
   } catch (err) {
     if (err instanceof RateLimitedError) {
-      console.warn("Yahoo rate-limited; serving stale prices")
+      logger.warn("Yahoo rate-limited; serving stale prices")
     } else {
-      console.warn(
+      logger.warn(
         `Yahoo fetch failed: ${(err as Error).message}; serving stale prices`
       )
     }
@@ -275,9 +276,9 @@ async function backfillOne(
       })
   } catch (err) {
     if (err instanceof RateLimitedError) {
-      console.warn(`Yahoo rate-limited fetching history for ${inst.symbol}`)
+      logger.warn(`Yahoo rate-limited fetching history for ${inst.symbol}`)
     } else {
-      console.warn(
+      logger.warn(
         `Yahoo chart failed for ${inst.symbol}: ${(err as Error).message}`
       )
     }

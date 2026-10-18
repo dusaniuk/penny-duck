@@ -3,6 +3,7 @@ import {
   getRequestHeader,
   setResponseHeader,
 } from "@tanstack/react-start/server"
+import { logger } from "@/server/logger"
 
 export interface AuthUser {
   id: string
@@ -16,14 +17,26 @@ export const getAuthUser = createServerFn().handler(
     const apiUrl = process.env.API_URL ?? "http://localhost:3030"
     const cookie = getRequestHeader("cookie")
     if (!cookie) return null
+    const requestId = getRequestHeader("x-request-id")
 
     try {
-      const res = await fetch(`${apiUrl}/users/me`, { headers: { cookie } })
+      const res = await fetch(`${apiUrl}/users/me`, {
+        headers: { cookie, ...(requestId && { "x-request-id": requestId }) },
+      })
       const setCookies = res.headers.getSetCookie()
       if (setCookies.length > 0) setResponseHeader("set-cookie", setCookies)
-      if (!res.ok) return null
+      if (res.status === 401) return null
+      if (!res.ok) {
+        logger.error("auth check failed", {
+          requestId,
+          status: res.status,
+          apiUrl,
+        })
+        return null
+      }
       return res.json()
-    } catch {
+    } catch (err) {
+      logger.error("auth check failed", { requestId, apiUrl, err })
       return null
     }
   }

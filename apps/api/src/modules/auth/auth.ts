@@ -11,6 +11,7 @@ import {
 } from "@workspace/db"
 import { env, isProduction } from "@workspace/env/api"
 import { db } from "@/db"
+import { logger } from "@/logger"
 import {
   NAME_MAX_LENGTH,
   findMembershipOrgId,
@@ -96,6 +97,16 @@ export const authOptions = {
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 3 },
+    },
+  },
+  logger: {
+    log: (level, message, ...args: unknown[]) => {
+      const err = args.find((arg) => arg instanceof Error)
+      const rest = args.filter((arg) => arg !== err)
+      logger[level](
+        { component: "better-auth", err, args: rest.length ? rest : undefined },
+        message
+      )
     },
   },
   onAPIError: {

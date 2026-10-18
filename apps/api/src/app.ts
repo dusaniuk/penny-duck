@@ -2,6 +2,8 @@ import { Hono } from "hono"
 import type { Context } from "hono"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
+import { contextStorage } from "hono/context-storage"
+import { requestId } from "hono/request-id"
 import { ZodError } from "zod"
 import { env } from "@workspace/env/api"
 import {
@@ -9,6 +11,7 @@ import {
   buildValidationError,
   type ApiError,
 } from "@workspace/shared/errors"
+import { requestLogger } from "./middleware/request-logger"
 import { accountsRoutes } from "./modules/accounts/routes"
 import { auth } from "./modules/auth/auth"
 import { categoriesRoutes } from "./modules/categories/routes"
@@ -81,7 +84,6 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
       )
     }
 
-    console.error(err)
     return errorResponse(
       c,
       buildApiError({ statusCode: 500, message: "Internal server error" })
@@ -93,6 +95,9 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 
 export const honoApp = attachErrorHandlers(
   new Hono()
+    .use("*", contextStorage())
+    .use("*", requestId())
+    .use("*", requestLogger)
     .use(
       "*",
       cors({

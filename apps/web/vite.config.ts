@@ -20,6 +20,8 @@ const config = defineConfig({
   plugins: [
     nitro({
       preset: "bun",
+      plugins: ["./src/server/logging-plugin.ts"],
+      runtimeConfig: { apiProxyTarget: apiUrl },
       routeRules: {
         "/api/**": {
           proxy: {
