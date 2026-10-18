@@ -18,7 +18,7 @@ import { AccountFormDialog } from "@/components/accounts/account-form-dialog"
 import { AccountsGroups } from "@/components/accounts/accounts-groups"
 import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-card"
 import { PageHeader } from "@/components/page-header"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 import { isArchived, leafAccountsOf, walletsOf } from "@/lib/accounts"
 import { errorMessage } from "@/lib/errors"
 
@@ -46,11 +46,7 @@ function AccountsPage() {
   // ── Accounts query (flat list of leaf accounts + wallets) ─────────────────
   const { data, isLoading: loading } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const wallets = useMemo(() => walletsOf(data), [data])
   const standaloneAccounts = useMemo(() => leafAccountsOf(data), [data])
@@ -68,11 +64,7 @@ function AccountsPage() {
   // dialog may also offer a hard delete.
   const { data: usageData } = useQuery({
     queryKey: ["accounts", "usage"],
-    queryFn: async () => {
-      const res = await api.accounts.usage.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.usage.$get()),
   })
   const pocketTransactionCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -83,11 +75,7 @@ function AccountsPage() {
   // ── Series query ──────────────────────────────────────────────────────────
   const { data: seriesData } = useQuery({
     queryKey: ["accounts", "series", 30],
-    queryFn: async () => {
-      const res = await api.accounts.series.$get({ query: { days: "30" } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.series.$get({ query: { days: "30" } })),
   })
 
   const seriesByAccount = useMemo(() => {
@@ -127,87 +115,69 @@ function AccountsPage() {
 
   // ── Account mutations ─────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: async (body: CreateAccountBody) => {
-      const res = await api.accounts.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (body: CreateAccountBody) =>
+      unwrap(api.accounts.$post({ json: body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
   const updateMutation = useMutation({
-    mutationFn: async (vars: { id: string; body: UpdateAccountBody }) => {
-      const res = await api.accounts[":id"].$patch({
-        param: { id: vars.id },
-        json: vars.body,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (vars: { id: string; body: UpdateAccountBody }) =>
+      unwrap(
+        api.accounts[":id"].$patch({
+          param: { id: vars.id },
+          json: vars.body,
+        })
+      ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.accounts[":id"].$delete({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.accounts[":id"].$delete({ param: { id } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
   const archiveMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.accounts[":id"].archive.$put({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.accounts[":id"].archive.$put({ param: { id } })),
     onSuccess: () => invalidateAccounts(),
   })
 
   const unarchiveMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.accounts[":id"].archive.$delete({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.accounts[":id"].archive.$delete({ param: { id } })),
     onSuccess: () => invalidateAccounts(),
   })
 
   const setDefaultMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.accounts[":id"].default.$put({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.accounts[":id"].default.$put({ param: { id } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["accounts"] }),
   })
 
   // ── Pocket mutations (wallet create/update/delete reuse the account ones) ──
   const addPocketMutation = useMutation({
-    mutationFn: async (vars: {
+    mutationFn: (vars: {
       walletId: string
       currency: string
       balance: number
-    }) => {
-      const res = await api.accounts[":id"].pockets.$post({
-        param: { id: vars.walletId },
-        json: { currency: vars.currency, balance: vars.balance },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) =>
+      unwrap(
+        api.accounts[":id"].pockets.$post({
+          param: { id: vars.walletId },
+          json: { currency: vars.currency, balance: vars.balance },
+        })
+      ),
     onSuccess: () => invalidateAccounts(),
   })
 
   const deletePocketMutation = useMutation({
-    mutationFn: async (vars: { walletId: string; currency: string }) => {
-      const res = await api.accounts[":id"].pockets[":currency"].$delete({
-        param: { id: vars.walletId, currency: vars.currency },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (vars: { walletId: string; currency: string }) =>
+      unwrap(
+        api.accounts[":id"].pockets[":currency"].$delete({
+          param: { id: vars.walletId, currency: vars.currency },
+        })
+      ),
     onSuccess: () => invalidateAccounts(),
   })
 

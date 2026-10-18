@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type { Category, InboxItem } from "@workspace/api-contract"
 import type { AcceptInput } from "@/components/inbox/inbox-item-card"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 import { flattenAccounts } from "@/lib/accounts"
 import { PageHeader } from "@/components/page-header"
 import { InboxItemCard } from "@/components/inbox/inbox-item-card"
@@ -42,44 +42,34 @@ function groupByDay(items: Array<InboxItem>) {
 function InboxPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["inbox", "pending"],
-    queryFn: async () => {
-      const res = await api.inbox.$get({
-        query: { status: "pending", limit: "100" },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () =>
+      unwrap(
+        api.inbox.$get({
+          query: { status: "pending", limit: "100" },
+        })
+      ),
   })
 
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await api.categories.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.$get()),
   })
   const categories: Array<Category> = categoriesData ?? []
 
   const acceptMutation = useMutation({
-    mutationFn: async (vars: { id: string; input: AcceptInput }) => {
-      const res = await api.inbox[":id"].accept.$post({
-        param: { id: vars.id },
-        json: vars.input,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (vars: { id: string; input: AcceptInput }) =>
+      unwrap(
+        api.inbox[":id"].accept.$post({
+          param: { id: vars.id },
+          json: vars.input,
+        })
+      ),
     onSuccess: async () => {
       await invalidateAfterChange()
       toast.success("Added to transactions")
@@ -91,11 +81,8 @@ function InboxPage() {
   })
 
   const dismissMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.inbox[":id"].dismiss.$post({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.inbox[":id"].dismiss.$post({ param: { id } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inbox"] }),
     onError: (err) => {
       toast.error(errorMessage(err, "Couldn't dismiss this tap"))

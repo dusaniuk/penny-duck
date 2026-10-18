@@ -8,7 +8,7 @@ import {
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
 import type { ChartConfig } from "@workspace/ui/components/chart"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 
 const chartConfig = {
   total: {
@@ -20,11 +20,7 @@ const chartConfig = {
 export function NetWorthCard() {
   const { data, isLoading } = useQuery({
     queryKey: ["stats", "net-worth"],
-    queryFn: async () => {
-      const res = await api.stats["net-worth"].$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.stats["net-worth"].$get()),
   })
 
   if (isLoading || !data) {

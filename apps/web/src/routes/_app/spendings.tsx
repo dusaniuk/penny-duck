@@ -5,7 +5,7 @@ import { Amount } from "@workspace/ui/components/amount"
 import { Badge } from "@workspace/ui/components/badge"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import type { Category, Member, Transaction } from "@workspace/api-contract"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { MonthNavigator } from "@/components/spendings/month-navigator"
 import { SpendingsDonutChart } from "@/components/spendings/spendings-donut-chart"
@@ -39,21 +39,13 @@ function SpendingsPage() {
   const { data: transactions, isLoading } = useMonthTransactions(year, month)
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await api.categories.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.$get()),
   })
   const categories: Array<Category> = categoriesData ?? []
 
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const accounts = useMemo(() => flattenAccounts(accountsData), [accountsData])
   const allAccounts = useMemo(
@@ -64,32 +56,20 @@ function SpendingsPage() {
 
   const { data: meData } = useQuery({
     queryKey: ["users", "me"],
-    queryFn: async () => {
-      const res = await api.users.me.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.me.$get()),
   })
   const homeCurrency = meData?.homeCurrency ?? "UAH"
   const currentUserId = meData?.id ?? ""
 
   const { data: membersData } = useQuery({
     queryKey: ["users", "members"],
-    queryFn: async () => {
-      const res = await api.users.members.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.members.$get()),
   })
   const members: Array<Member> = membersData ?? []
 
   const { data: ratesData } = useQuery({
     queryKey: ["exchange-rates", "latest"],
-    queryFn: async () => {
-      const res = await api["exchange-rates"].latest.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api["exchange-rates"].latest.$get()),
   })
   const latestRates = ratesData?.rates ?? {}
 
@@ -139,7 +119,7 @@ function SpendingsPage() {
   }
 
   const updateMutation = useMutation({
-    mutationFn: async (vars: {
+    mutationFn: (vars: {
       id: string
       body: {
         accountId?: string
@@ -153,36 +133,31 @@ function SpendingsPage() {
         madeById?: string
         settled?: boolean
       }
-    }) => {
-      const res = await api.transactions[":id"].$patch({
-        param: { id: vars.id },
-        json: vars.body,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) =>
+      unwrap(
+        api.transactions[":id"].$patch({
+          param: { id: vars.id },
+          json: vars.body,
+        })
+      ),
     onSuccess: invalidateAll,
   })
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.transactions[":id"].$delete({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.transactions[":id"].$delete({ param: { id } })),
     onSuccess: invalidateAll,
   })
   const settleMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.transactions[":id"].settle.$patch({
-        param: { id },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(
+        api.transactions[":id"].settle.$patch({
+          param: { id },
+        })
+      ),
     onSuccess: invalidateAll,
   })
   const createReimbursementMutation = useMutation({
-    mutationFn: async (vars: {
+    mutationFn: (vars: {
       id: string
       body: {
         accountId: string
@@ -191,14 +166,13 @@ function SpendingsPage() {
         exchangeRate?: number
         madeById?: string
       }
-    }) => {
-      const res = await api.transactions[":id"].reimburse.$post({
-        param: { id: vars.id },
-        json: vars.body,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) =>
+      unwrap(
+        api.transactions[":id"].reimburse.$post({
+          param: { id: vars.id },
+          json: vars.body,
+        })
+      ),
     onSuccess: invalidateAll,
   })
 

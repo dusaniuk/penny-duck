@@ -128,6 +128,8 @@ apps/api/src/
 ## Web ↔ API
 
 - The web app calls the API through a typed Hono RPC client: `api = hc<AppType>("/api")` in `apps/web/src/lib/api.ts`, with TanStack Query (`queryClient` in the same file)
+- Wrap calls in `unwrap()` from the same file: `queryFn: () => unwrap(api.accounts.$get())`. It returns the typed success body and throws `ApiRequestError` (`apps/web/src/lib/errors.ts`, carries `statusCode`/`code`/`details`) on non-2xx. Only branch on `res.ok` by hand when a non-2xx is an expected result (e.g. a 404 that means "none")
+- Not Hono's built-in `parseResponse`: its `DetailedError` puts the status line in `message` and buries the API error body in `detail.data`, which breaks `errorMessage()` toasts
 - Nitro proxies `/api/**` → `API_URL` (`routeRules` in `apps/web/vite.config.ts`) so cookies are same-origin; the proxy strips the `/api` prefix
 - Because `AppType` is inferred from `app.ts`, new routes must be chained onto the Hono builders (not registered imperatively) to show up on the client
 

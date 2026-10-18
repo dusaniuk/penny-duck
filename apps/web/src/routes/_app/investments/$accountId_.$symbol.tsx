@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { formatSigned } from "@/lib/money"
 
 export const Route = createFileRoute("/_app/investments/$accountId_/$symbol")({
@@ -26,11 +26,7 @@ function PositionPage() {
 
   const { data: tradesData } = useQuery({
     queryKey: ["trades", accountId, symbol],
-    queryFn: async () => {
-      const res = await api.trades.$get({ query: { accountId, symbol } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.trades.$get({ query: { accountId, symbol } })),
     enabled: !!position,
   })
   const trades = tradesData ?? []

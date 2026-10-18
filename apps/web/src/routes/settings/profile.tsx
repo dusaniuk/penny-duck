@@ -6,7 +6,7 @@ import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { Button } from "@workspace/ui/components/button"
 import { Separator } from "@workspace/ui/components/separator"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { CurrencyPicker } from "@/components/currency-picker"
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog"
 
@@ -23,11 +23,8 @@ function ProfilePage() {
   const [currency, setCurrency] = useState<string>(user.homeCurrency)
 
   const updateMutation = useMutation({
-    mutationFn: async (body: { name?: string; homeCurrency?: string }) => {
-      const res = await api.users.me.$patch({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (body: { name?: string; homeCurrency?: string }) =>
+      unwrap(api.users.me.$patch({ json: body })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.success("Profile updated")

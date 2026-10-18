@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/chart"
 import type { ChartConfig } from "@workspace/ui/components/chart"
 import type { SpendingByCategoryItem } from "@workspace/api-contract"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { paletteColor } from "@/lib/palette"
 
 const chartConfig = {} satisfies ChartConfig
@@ -54,11 +54,7 @@ export function SpendingByCategoryCard() {
   const locale = useLocale()
   const { data, isLoading } = useQuery({
     queryKey: ["stats", "spending-by-category"],
-    queryFn: async () => {
-      const res = await api.stats["spending-by-category"].$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.stats["spending-by-category"].$get()),
   })
 
   const monthLabel = data

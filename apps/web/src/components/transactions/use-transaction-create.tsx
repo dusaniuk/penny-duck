@@ -6,7 +6,7 @@ import type {
   CategoryUsageItem,
   Member,
 } from "@workspace/api-contract"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 import { flattenAccounts, walletsOf } from "@/lib/accounts"
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog"
 
@@ -19,11 +19,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
 
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const accountsForForm = useMemo(
     () => flattenAccounts(accountsData),
@@ -34,61 +30,37 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
 
   const { data: accountUsageData } = useQuery({
     queryKey: ["accounts", "usage"],
-    queryFn: async () => {
-      const res = await api.accounts.usage.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.usage.$get()),
   })
   const accountUsage: Array<AccountUsageItem> = accountUsageData ?? []
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await api.categories.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.$get()),
   })
   const categories: Array<Category> = categoriesData ?? []
 
   const { data: categoryUsageData } = useQuery({
     queryKey: ["categories", "usage"],
-    queryFn: async () => {
-      const res = await api.categories.usage.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.usage.$get()),
   })
   const categoryUsage: Array<CategoryUsageItem> = categoryUsageData ?? []
 
   const { data: meData } = useQuery({
     queryKey: ["users", "me"],
-    queryFn: async () => {
-      const res = await api.users.me.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.me.$get()),
   })
   const currentUserId = meData?.id ?? ""
 
   const { data: membersData } = useQuery({
     queryKey: ["users", "members"],
-    queryFn: async () => {
-      const res = await api.users.members.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.members.$get()),
   })
   const members: Array<Member> = membersData ?? []
 
   const { data: ratesData } = useQuery({
     queryKey: ["exchange-rates", "latest"],
-    queryFn: async () => {
-      const res = await api["exchange-rates"].latest.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api["exchange-rates"].latest.$get()),
   })
   const latestRates = ratesData?.rates ?? {}
 
@@ -100,7 +72,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (body: {
+    mutationFn: (body: {
       accountId: string
       type: "expense" | "income"
       amount: number
@@ -109,15 +81,11 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       note?: string
       settled?: boolean
       madeById?: string
-    }) => {
-      const res = await api.transactions.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) => unwrap(api.transactions.$post({ json: body })),
     onSuccess: invalidateAll,
   })
   const createTransferMutation = useMutation({
-    mutationFn: async (body: {
+    mutationFn: (body: {
       fromAccountId: string
       toAccountId: string
       amount: number
@@ -127,11 +95,7 @@ export function useTransactionCreate(options?: UseTransactionCreateOptions) {
       originalCurrency?: string
       exchangeRate?: number
       madeById?: string
-    }) => {
-      const res = await api.transactions.transfers.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) => unwrap(api.transactions.transfers.$post({ json: body })),
     onSuccess: invalidateAll,
   })
 

@@ -12,7 +12,7 @@ import {
 import { Input } from "@workspace/ui/components/input"
 import { Field, FieldLabel } from "@workspace/ui/components/field"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 
 interface DeleteAccountDialogProps {
   open: boolean
@@ -30,11 +30,8 @@ export function DeleteAccountDialog({
   const navigate = useNavigate()
 
   const deleteMutation = useMutation({
-    mutationFn: async (body: { email: string }) => {
-      const res = await api.users.me.$delete({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (body: { email: string }) =>
+      unwrap(api.users.me.$delete({ json: body })),
   })
 
   async function handleDelete() {

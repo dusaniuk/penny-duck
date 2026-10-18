@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 
 function invalidateAll() {
   queryClient.invalidateQueries({ queryKey: ["positions"] })
@@ -11,7 +11,7 @@ function invalidateAll() {
 
 export function useTradeCreate() {
   return useMutation({
-    mutationFn: async (body: {
+    mutationFn: (body: {
       accountId: string
       symbol: string
       type: "buy" | "sell" | "dividend"
@@ -20,18 +20,14 @@ export function useTradeCreate() {
       amount?: number
       fees?: number
       date: string
-    }) => {
-      const res = await api.trades.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) => unwrap(api.trades.$post({ json: body })),
     onSuccess: invalidateAll,
   })
 }
 
 export function useTradeUpdate() {
   return useMutation({
-    mutationFn: async (vars: {
+    mutationFn: (vars: {
       id: string
       body: {
         symbol?: string
@@ -41,25 +37,21 @@ export function useTradeUpdate() {
         fees?: number
         date?: string
       }
-    }) => {
-      const res = await api.trades[":id"].$patch({
-        param: { id: vars.id },
-        json: vars.body,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    }) =>
+      unwrap(
+        api.trades[":id"].$patch({
+          param: { id: vars.id },
+          json: vars.body,
+        })
+      ),
     onSuccess: invalidateAll,
   })
 }
 
 export function useTradeDelete() {
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.trades[":id"].$delete({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.trades[":id"].$delete({ param: { id } })),
     onSuccess: invalidateAll,
   })
 }

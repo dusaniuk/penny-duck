@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Button } from "@workspace/ui/components/button"
 import { useQuery } from "@tanstack/react-query"
 import type { Account } from "@workspace/api-contract"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { leafAccountsOf } from "@/lib/accounts"
 import { PortfolioSummary } from "@/components/investments/portfolio-summary"
 import { PositionsTable } from "@/components/investments/positions-table"
@@ -22,41 +22,25 @@ function InvestmentsIndexPage() {
 
   const { data: positionsData, isLoading } = useQuery({
     queryKey: ["positions"],
-    queryFn: async () => {
-      const res = await api.positions.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.positions.$get()),
   })
   const positions = positionsData?.positions ?? []
   const pricesStale = positionsData?.pricesStale ?? false
 
   const { data: summaryData } = useQuery({
     queryKey: ["investments-summary"],
-    queryFn: async () => {
-      const res = await api.investments.summary.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.investments.summary.$get()),
   })
 
   const { data: meData } = useQuery({
     queryKey: ["users", "me"],
-    queryFn: async () => {
-      const res = await api.users.me.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.me.$get()),
   })
   const homeCurrency = meData?.homeCurrency ?? "UAH"
 
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const brokerages: Array<Account> = leafAccountsOf(accountsData).filter(
     (a) => a.type === "brokerage"
@@ -67,11 +51,7 @@ function InvestmentsIndexPage() {
   // that don't already have trades (i.e., fresh accounts).
   const { data: tradesData } = useQuery({
     queryKey: ["trades", "all"],
-    queryFn: async () => {
-      const res = await api.trades.$get({ query: {} })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.trades.$get({ query: {} })),
   })
   const accountIdsWithTrades = new Set(
     (tradesData ?? []).map((t) => t.accountId)

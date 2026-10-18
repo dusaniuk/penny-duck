@@ -16,7 +16,7 @@ import {
 } from "@workspace/ui/components/popover"
 import { useQuery } from "@tanstack/react-query"
 import type { Instrument } from "@workspace/api-contract"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 
 interface Props {
   value: string
@@ -41,13 +41,12 @@ export function InstrumentAutocomplete({ value, onChange, disabled }: Props) {
 
   const { data, isFetching } = useQuery({
     queryKey: ["instruments", "search", debounced],
-    queryFn: async () => {
-      const res = await api.instruments.search.$get({
-        query: { q: debounced },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () =>
+      unwrap(
+        api.instruments.search.$get({
+          query: { q: debounced },
+        })
+      ),
     enabled: debounced.length > 0,
   })
   const results = data ?? []

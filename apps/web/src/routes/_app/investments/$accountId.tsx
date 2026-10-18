@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { leafAccountsOf } from "@/lib/accounts"
 import { PositionsTable } from "@/components/investments/positions-table"
 import { toTypographicMinus } from "@/lib/money"
@@ -16,11 +16,7 @@ function AccountInvestmentsPage() {
 
   const { data: positionsData } = useQuery({
     queryKey: ["positions"],
-    queryFn: async () => {
-      const res = await api.positions.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.positions.$get()),
   })
   const positions = (positionsData?.positions ?? []).filter(
     (p) => p.accountId === accountId
@@ -28,11 +24,7 @@ function AccountInvestmentsPage() {
 
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.accounts.$get()),
   })
   const account = leafAccountsOf(accountsData, { includeArchived: true }).find(
     (a) => a.id === accountId

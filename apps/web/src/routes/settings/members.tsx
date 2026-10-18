@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/responsive-dialog"
 import { Input } from "@workspace/ui/components/input"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 import { getSignupOpen } from "@/lib/signup"
 
 export const Route = createFileRoute("/settings/members")({
@@ -25,22 +25,14 @@ function MembersPage() {
   const signupOpen = Route.useLoaderData()
   const { data, isLoading } = useQuery({
     queryKey: ["members"],
-    queryFn: async () => {
-      const res = await api.users.members.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.members.$get()),
   })
 
   const members = data ?? []
 
   const { data: meData } = useQuery({
     queryKey: ["me"],
-    queryFn: async () => {
-      const res = await api.users.me.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.users.me.$get()),
   })
 
   const currentUser = meData ?? null
@@ -95,11 +87,7 @@ function InviteButton() {
   const [copied, setCopied] = useState(false)
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.invites.$post()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: () => unwrap(api.invites.$post()),
   })
 
   function handleOpen() {

@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui/components/chart"
 import { useQuery } from "@tanstack/react-query"
 import type { ChartConfig } from "@workspace/ui/components/chart"
-import { api } from "@/lib/api"
+import { api, unwrap } from "@/lib/api"
 
 export const Route = createFileRoute("/_app/income-expenses")({
   staticData: { breadcrumb: "Income vs Expenses" },
@@ -30,13 +30,12 @@ const chartConfig = {
 function IncomeExpensesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["stats", "monthly-summary", 12],
-    queryFn: async () => {
-      const res = await api.stats["monthly-summary"].$get({
-        query: { months: "12" },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () =>
+      unwrap(
+        api.stats["monthly-summary"].$get({
+          query: { months: "12" },
+        })
+      ),
   })
 
   const chartData = (data ?? []).map((item) => ({

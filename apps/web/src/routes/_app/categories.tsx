@@ -19,7 +19,7 @@ import {
   statFor,
 } from "@/components/categories/category-stats"
 import { PageHeader } from "@/components/page-header"
-import { api, queryClient } from "@/lib/api"
+import { api, queryClient, unwrap } from "@/lib/api"
 import { activeCategories, isArchivedCategory } from "@/lib/categories"
 import { errorMessage } from "@/lib/errors"
 
@@ -51,11 +51,7 @@ function CategoriesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await api.categories.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.$get()),
   })
 
   const categories = useMemo<Array<Category>>(() => data ?? [], [data])
@@ -73,11 +69,7 @@ function CategoriesPage() {
 
   const { data: usageData } = useQuery({
     queryKey: ["categories", "usage"],
-    queryFn: async () => {
-      const res = await api.categories.usage.$get()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    queryFn: () => unwrap(api.categories.usage.$get()),
   })
 
   const statsMap = useMemo(() => buildStatsMap(usageData), [usageData])
@@ -161,61 +153,46 @@ function CategoriesPage() {
   const [dialogMode, setDialogMode] = useState<CategoryDialogMode>("archive")
 
   const createMutation = useMutation({
-    mutationFn: async (body: CreateCategoryBody) => {
-      const res = await api.categories.$post({ json: body })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (body: CreateCategoryBody) =>
+      unwrap(api.categories.$post({ json: body })),
     onSuccess: invalidateCategories,
   })
 
   const updateMutation = useMutation({
-    mutationFn: async (vars: { id: string; body: UpdateCategoryBody }) => {
-      const res = await api.categories[":id"].$patch({
-        param: { id: vars.id },
-        json: vars.body,
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (vars: { id: string; body: UpdateCategoryBody }) =>
+      unwrap(
+        api.categories[":id"].$patch({
+          param: { id: vars.id },
+          json: vars.body,
+        })
+      ),
     onSuccess: invalidateCategories,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.categories[":id"].$delete({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.categories[":id"].$delete({ param: { id } })),
     onSuccess: invalidateCategories,
   })
 
   const archiveMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.categories[":id"].archive.$put({ param: { id } })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(api.categories[":id"].archive.$put({ param: { id } })),
     onSuccess: invalidateCategories,
   })
 
   const unarchiveMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.categories[":id"].archive.$delete({
-        param: { id },
-      })
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: (id: string) =>
+      unwrap(
+        api.categories[":id"].archive.$delete({
+          param: { id },
+        })
+      ),
     onSuccess: invalidateCategories,
   })
 
   const seedMutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.categories.seed.$post()
-      if (!res.ok) throw await res.json()
-      return res.json()
-    },
+    mutationFn: () => unwrap(api.categories.seed.$post()),
     onSuccess: invalidateCategories,
   })
 
