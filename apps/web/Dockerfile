@@ -13,7 +13,7 @@ COPY --from=prune /app/out/full/ .
 ARG API_URL
 RUN pnpm --filter web build
 
-FROM oven/bun:1.4.3-slim
+FROM oven/bun:1.4.3-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/apps/web/.output ./.output
