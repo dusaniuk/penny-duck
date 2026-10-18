@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { Card, CardContent } from "@workspace/ui/components/card"
+import { cn } from "@workspace/ui/lib/utils"
 import { buildNetWorthBreakdown } from "./net-worth-breakdown"
 import type { AssetGroup, LiabilityGroup } from "./net-worth-breakdown"
 import type { Account, NetWorthResponse, Wallet } from "@workspace/api-contract"
@@ -12,18 +13,18 @@ const ASSET_LABEL: Record<AssetGroup, string> = {
   wallet: "Wallet",
 }
 
-const ASSET_COLOR: Record<AssetGroup, string> = {
-  bank: "oklch(0.72 0.15 50)",
-  brokerage: "oklch(0.65 0.18 290)",
-  wallet: "oklch(0.72 0.18 145)",
+const ASSET_BG: Record<AssetGroup, string> = {
+  bank: "bg-chart-1",
+  brokerage: "bg-chart-3",
+  wallet: "bg-chart-2",
 }
 
 const LIABILITY_LABEL: Record<LiabilityGroup, string> = {
   loan: "Loan",
 }
 
-const LIABILITY_COLOR: Record<LiabilityGroup, string> = {
-  loan: "oklch(0.58 0.22 12)",
+const LIABILITY_BG: Record<LiabilityGroup, string> = {
+  loan: "bg-chart-4",
 }
 
 function formatAmount(n: number): { whole: string; fraction: string } {
@@ -62,12 +63,12 @@ export function AccountsNetWorthCard({ accounts, wallets }: Props) {
   const assetRows = assets.rows.map((r) => ({
     ...r,
     label: ASSET_LABEL[r.type],
-    color: ASSET_COLOR[r.type],
+    bg: ASSET_BG[r.type],
   }))
   const liabilityRows = liabilities.rows.map((r) => ({
     ...r,
     label: LIABILITY_LABEL[r.type],
-    color: LIABILITY_COLOR[r.type],
+    bg: LIABILITY_BG[r.type],
   }))
 
   return (
@@ -130,7 +131,7 @@ type SectionRow = {
   value: number
   pct: number
   label: string
-  color: string
+  bg: string
 }
 
 function BreakdownSection({
@@ -170,8 +171,7 @@ function BreakdownSection({
             <div className="flex items-center gap-2">
               <span
                 aria-hidden
-                className="size-2 shrink-0 rounded-full"
-                style={{ background: r.color }}
+                className={cn("size-2 shrink-0 rounded-full", r.bg)}
               />
               <span className="text-sm font-medium">{r.label}</span>
               <span className="ml-auto font-mono text-[11px] text-muted-foreground">
@@ -187,11 +187,11 @@ function BreakdownSection({
               className="h-1.5 rounded-full bg-muted"
             >
               <div
-                className="h-full rounded-full transition-[width] duration-300"
-                style={{
-                  width: `${r.pct}%`,
-                  background: r.color,
-                }}
+                className={cn(
+                  "h-full rounded-full transition-[width] duration-300",
+                  r.bg
+                )}
+                style={{ width: `${r.pct}%` }}
               />
             </div>
             <div className="text-right text-sm font-medium tabular-nums">
