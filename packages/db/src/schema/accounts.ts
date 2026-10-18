@@ -43,5 +43,8 @@ export const accounts = appSchema.table(
     uniqueIndex("accounts_wallet_currency_uq")
       .on(table.walletId, table.currency)
       .where(sql`wallet_id is not null`),
+    uniqueIndex("accounts_org_name_uq")
+      .on(table.organizationId, sql`lower(${table.name})`)
+      .where(sql`wallet_id is null and archived_at is null`),
   ]
 )

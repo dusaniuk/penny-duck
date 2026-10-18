@@ -27,6 +27,24 @@ import { usersRoutes } from "./modules/users/routes"
 
 type StatusForJson = Parameters<Context["json"]>[1]
 
+const UNIQUE_NAME_MESSAGES: Record<string, string> = {
+  accounts_org_name_uq: "An account with this name already exists",
+  categories_top_level_name_uq: "A category with this name already exists",
+  categories_child_name_uq:
+    "A subcategory with this name already exists under this parent",
+}
+
+// Drizzle wraps driver errors, so the pg unique violation (23505) sits
+// somewhere down the cause chain.
+function uniqueViolationMessage(err: unknown): string | null {
+  for (let e = err; e instanceof Error; e = e.cause) {
+    if ("code" in e && e.code === "23505" && "constraint" in e) {
+      return UNIQUE_NAME_MESSAGES[e.constraint as string] ?? null
+    }
+  }
+  return null
+}
+
 function errorResponse(c: Context, body: ApiError) {
   return c.json(body, body.statusCode as StatusForJson)
 }
@@ -53,6 +71,14 @@ export function attachErrorHandlers<E extends Hono>(app: E): E {
 
     if (err instanceof ZodError) {
       return errorResponse(c, buildValidationError(err.issues))
+    }
+
+    const conflict = uniqueViolationMessage(err)
+    if (conflict !== null) {
+      return errorResponse(
+        c,
+        buildApiError({ statusCode: 409, message: conflict })
+      )
     }
 
     console.error(err)

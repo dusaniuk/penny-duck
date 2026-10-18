@@ -9,23 +9,12 @@ import { flattenAccounts } from "@/lib/accounts"
 import { PageHeader } from "@/components/page-header"
 import { InboxItemCard } from "@/components/inbox/inbox-item-card"
 import { formatDateLabel } from "@/components/transactions/transaction-list"
+import { errorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/_app/inbox")({
   staticData: { breadcrumb: "Inbox" },
   component: InboxPage,
 })
-
-function errorMessage(err: unknown, fallback: string): string {
-  if (
-    err &&
-    typeof err === "object" &&
-    "message" in err &&
-    typeof err.message === "string"
-  ) {
-    return (err as { message: string }).message
-  }
-  return fallback
-}
 
 function invalidateAfterChange() {
   return Promise.all([

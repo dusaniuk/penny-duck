@@ -21,6 +21,7 @@ import {
 import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
 import { activeCategories, isArchivedCategory } from "@/lib/categories"
+import { errorMessage } from "@/lib/errors"
 
 type CreateCategoryBody = InferRequestType<typeof api.categories.$post>["json"]
 type UpdateCategoryBody = InferRequestType<
@@ -35,18 +36,6 @@ const TYPE_TABS: ReadonlyArray<{ value: CategoryType | "all"; label: string }> =
     { value: "income", label: "Income" },
     { value: "all", label: "All" },
   ]
-
-function errorMessage(err: unknown, fallback: string): string {
-  if (
-    err &&
-    typeof err === "object" &&
-    "message" in err &&
-    typeof err.message === "string"
-  ) {
-    return (err as { message: string }).message
-  }
-  return fallback
-}
 
 export const Route = createFileRoute("/_app/categories")({
   staticData: { breadcrumb: "Categories" },

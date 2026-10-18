@@ -422,6 +422,68 @@ describe("Categories", () => {
   })
 })
 
+describe("Categories — unique names", () => {
+  it("rejects a top-level name already used, ignoring case", async () => {
+    await createCategoryHttp({ name: "Food", type: "expense", color: "red" })
+    const res = await honoApp.request("/categories", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ name: "food", type: "expense", color: "blue" }),
+    })
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { message: string }
+    expect(body.message).toBe("A category with this name already exists")
+  })
+
+  it("allows the same top-level name for a different type", async () => {
+    await createCategoryHttp({ name: "Gifts", type: "expense", color: "red" })
+    await createCategoryHttp({ name: "Gifts", type: "income", color: "green" })
+  })
+
+  it("allows the same subcategory name under different parents", async () => {
+    const food = await createCategoryHttp({ name: "Food", color: "red" })
+    const home = await createCategoryHttp({ name: "Home", color: "blue" })
+    await createCategoryHttp({ name: "Other", parentId: food.id })
+    await createCategoryHttp({ name: "Other", parentId: home.id })
+    await createCategoryHttp({ name: "OTHER", parentId: food.id }, 409)
+  })
+
+  it("rejects renaming onto a sibling's name", async () => {
+    await createCategoryHttp({ name: "Food", color: "red" })
+    const home = await createCategoryHttp({ name: "Home", color: "blue" })
+    await updateCategoryHttp(home.id, { name: "Food" }, 409)
+  })
+
+  it("rejects moving a subcategory under a parent with that name", async () => {
+    const food = await createCategoryHttp({ name: "Food", color: "red" })
+    const home = await createCategoryHttp({ name: "Home", color: "blue" })
+    await createCategoryHttp({ name: "Other", parentId: food.id })
+    const homeOther = await createCategoryHttp({
+      name: "Other",
+      parentId: home.id,
+    })
+    await updateCategoryHttp(homeOther.id, { parentId: food.id }, 409)
+  })
+
+  it("frees the name on archive and rejects unarchiving into a clash", async () => {
+    const old = await createCategoryHttp({ name: "Food", color: "red" })
+    await archiveCategoryHttp(old.id)
+    await createCategoryHttp({ name: "Food", color: "blue" })
+    await unarchiveCategoryHttp(old.id, 409)
+  })
+
+  it("allows the same name in another organization", async () => {
+    await createCategoryHttp({ name: "Food", color: "red" })
+    const other = await signupUser()
+    const res = await honoApp.request("/categories", {
+      method: "POST",
+      headers: { cookie: other.cookie, "content-type": "application/json" },
+      body: JSON.stringify({ name: "Food", color: "red" }),
+    })
+    expect(res.status).toBe(201)
+  })
+})
+
 describe("Categories — archiving", () => {
   async function tripsWithWarsaw() {
     const trips = await createCategoryHttp({

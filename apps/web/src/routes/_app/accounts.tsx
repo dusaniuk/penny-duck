@@ -20,20 +20,9 @@ import { AccountsNetWorthCard } from "@/components/accounts/accounts-net-worth-c
 import { PageHeader } from "@/components/page-header"
 import { api, queryClient } from "@/lib/api"
 import { isArchived, leafAccountsOf, walletsOf } from "@/lib/accounts"
+import { errorMessage } from "@/lib/errors"
 
 type AccountType = "bank" | "wallet" | "brokerage" | "loan"
-
-function errorMessage(err: unknown, fallback: string): string {
-  if (
-    err &&
-    typeof err === "object" &&
-    "message" in err &&
-    typeof err.message === "string"
-  ) {
-    return (err as { message: string }).message
-  }
-  return fallback
-}
 
 type CreateAccountBody = InferRequestType<typeof api.accounts.$post>["json"]
 type UpdateAccountBody = InferRequestType<

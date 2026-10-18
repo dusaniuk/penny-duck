@@ -621,6 +621,50 @@ describe("Accounts — archiving", () => {
   })
 })
 
+describe("Accounts — unique names", () => {
+  it("rejects a name already used, ignoring case", async () => {
+    await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
+    const res = await honoApp.request("/accounts", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ name: "BANK", type: "loan", currency: "USD" }),
+    })
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { message: string }
+    expect(body.message).toBe("An account with this name already exists")
+  })
+
+  it("rejects renaming onto another account's name", async () => {
+    await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
+    const savings = await createAccountHttp({
+      name: "Savings",
+      type: "bank",
+      currency: "UAH",
+    })
+    await updateAccountHttp(savings.id, { name: "Bank" }, cookie, 409)
+  })
+
+  it("frees the name on archive and rejects unarchiving into a clash", async () => {
+    const old = await createAccountHttp({
+      name: "Bank",
+      type: "bank",
+      currency: "UAH",
+    })
+    await archiveAccountHttp(old.id)
+    await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
+    await unarchiveAccountHttp(old.id, cookie, 409)
+  })
+
+  it("allows the same name in another organization", async () => {
+    await createAccountHttp({ name: "Bank", type: "bank", currency: "UAH" })
+    const other = await signupUser()
+    await createAccountHttp(
+      { name: "Bank", type: "bank", currency: "UAH" },
+      other.cookie
+    )
+  })
+})
+
 describe("Accounts — brokerage balance", () => {
   beforeEach(() => {
     quoteMock.mockReset()

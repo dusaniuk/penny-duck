@@ -31,6 +31,7 @@ import {
   categoryShadeVars,
   pickRandomUnusedColor,
 } from "@/lib/palette"
+import { errorMessage } from "@/lib/errors"
 
 function asPaletteColor(s: string | null | undefined): PaletteColor | null {
   return s != null && (PALETTE_TOKENS as ReadonlyArray<string>).includes(s)
@@ -177,7 +178,7 @@ function CategoryModalBody({
       } catch (err) {
         formApi.setErrorMap({
           onSubmit: {
-            form: err instanceof Error ? err.message : "Something went wrong",
+            form: errorMessage(err, "Something went wrong"),
             fields: {},
           },
         })

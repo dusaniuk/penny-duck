@@ -1,0 +1,3 @@
+CREATE UNIQUE INDEX "accounts_org_name_uq" ON "app"."accounts" USING btree ("organization_id",lower("name")) WHERE wallet_id is null and archived_at is null;--> statement-breakpoint
+CREATE UNIQUE INDEX "categories_top_level_name_uq" ON "app"."categories" USING btree ("organization_id","type",lower("name")) WHERE parent_id is null and archived_at is null;--> statement-breakpoint
+CREATE UNIQUE INDEX "categories_child_name_uq" ON "app"."categories" USING btree ("parent_id",lower("name")) WHERE parent_id is not null and archived_at is null;
