@@ -54,7 +54,7 @@ cp .env.example .env
 DATABASE_URL=postgresql://penny:duck@localhost:5433/penny_duck
 ```
 
-For production, generate a proper `BETTER_AUTH_SECRET` (at least 32 characters):
+Generate a `BETTER_AUTH_SECRET` (at least 32 characters) and set it in `.env`:
 
 ```bash
 openssl rand -base64 32
@@ -134,3 +134,7 @@ Components are placed in `packages/ui/src/components/`.
 ## Deployment
 
 Hosted on Railway (web + API services, each built from its own Dockerfile) with the database on Neon. See `CLAUDE.md` for details.
+
+## License
+
+[MIT](LICENSE)

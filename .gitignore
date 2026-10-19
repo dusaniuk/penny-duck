@@ -49,3 +49,5 @@ graphify-out
 *.pem
 
 .env.migration
+# Claude Code runtime state
+.claude/scheduled_tasks.lock
