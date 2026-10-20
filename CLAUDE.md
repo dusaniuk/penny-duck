@@ -176,27 +176,10 @@ When features change (e.g., new data collected, third-party integrations, auth c
 
 ## Branching & Releases
 
-- **`main`** is the production branch — linked to Railway, every push triggers a deploy
+- **`main`** is the production branch — linked to Railway, every push triggers a deploy. Never commit to it directly
 - Work on a version branch (e.g. `v0.2.0`), push freely without triggering deploys
-- Issues live on GitHub; each version has a GitHub milestone — assign issues worked on that branch to it
-- When ready to release: rebase onto main, fast-forward merge, tag, push
-
-```bash
-git checkout v0.2.0
-git rebase main
-git checkout main
-git merge --ff-only refs/heads/v0.2.0
-git tag -m "v0.2.0" v0.2.0
-git push origin main refs/tags/v0.2.0
-```
-
-- Tags must be annotated (`tag.gpgsign` is on): always `git tag -m "<version>" <version>`; a bare `git tag` fails with "no tag message?"
-- Push only the release tag, never `--tags` (it publishes every stray local tag)
-- Version branch and tag share a name — use `refs/heads/` / `refs/tags/` where a ref could be ambiguous
-
-- **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users
-- While on `0.x`, no need to bump major for breaking changes
-- After merging, delete the version branch (local + remote), then create the next version branch (bump minor)
+- Release with `/release` (`.claude/commands/release.md`): rebase, fast-forward `main`, signed tag, next version branch
+- **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users. While on `0.x`, no need to bump major for breaking changes
 
 ## graphify
 
