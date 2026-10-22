@@ -15,6 +15,7 @@ RUN pnpm --filter web build
 
 FROM oven/bun:1.4.3-alpine
 WORKDIR /app
-ENV NODE_ENV=production
+ARG GIT_COMMIT_SHA
+ENV NODE_ENV=production GIT_COMMIT_SHA=$GIT_COMMIT_SHA
 COPY --from=build /app/apps/web/.output ./.output
 CMD ["bun", ".output/server/index.mjs"]

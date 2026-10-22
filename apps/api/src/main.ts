@@ -13,8 +13,8 @@ process.on("unhandledRejection", (reason) => {
 
 logger.info(
   {
-    version: env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
-    env: env.RAILWAY_ENVIRONMENT_NAME ?? process.env.NODE_ENV ?? "development",
+    version: env.GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
+    env: process.env.NODE_ENV ?? "development",
     production: isProduction,
     port: env.PORT,
     dbHost: new URL(env.DATABASE_URL).host,

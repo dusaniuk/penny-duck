@@ -115,7 +115,7 @@ export const authOptions = {
   advanced: {
     cookiePrefix: "penny-duck",
     database: { generateId: "uuid" },
-    ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
+    ipAddress: { ipAddressHeaders: ["x-client-ip", "x-forwarded-for"] },
   },
   databaseHooks: {
     user: {

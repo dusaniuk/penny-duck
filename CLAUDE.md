@@ -148,27 +148,35 @@ apps/api/src/
 - Postgres runs in Docker on `127.0.0.1:5433`; `docker/init` creates the `app` schema and the test database on first start
 - The API dev server uses `bun --hot`, which doesn't always pick up schema or api-contract changes — restart it after those
 
-## Deployment (Railway)
+## Deployment (Cloud Run)
 
-Hosted on Railway with two services: **Web**, **API** (private networking only). The Postgres database is hosted on **Neon** (Postgres 18, eu-central-1, direct/non-pooler connection URL with `sslmode=verify-full`).
+Hosted on Google Cloud Run in `europe-west3` (Frankfurt) with two services, **web** (public) and **api** (IAM-only), plus a **migrate** job. The Postgres database is hosted on **Neon** (Postgres 18, eu-central-1, direct/non-pooler connection URL with `sslmode=verify-full`). Infrastructure is Terraform in `infra/` (see `infra/README.md`); Yaro runs `terraform plan`/`apply` locally.
 
-### Build & Start
+### Build & Deploy
 
-Each service builds from its own Dockerfile, configured as code in its `railway.json` (Railway → service → Settings → Config-as-code path):
+`.github/workflows/deploy.yml` runs on every push to `main`: build both images → push to Artifact Registry → run the `migrate` job and wait → `gcloud run deploy api` → `gcloud run deploy web`. GitHub authenticates through Workload Identity Federation (no stored key), pinned to this repo's ID and `refs/heads/main`. Terraform ignores image changes; CI owns them.
 
 - **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step)
 - **Web** — `apps/web/Dockerfile`: `turbo prune web --docker` → install + `vite build` → `oven/bun` runtime with only `.output/` (Nitro output is self-contained)
-- **Pre-deploy migration** (API): `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically (drizzle-kit CLI silently fails on Railway). It runs even if the new API then fails its healthcheck, so set new required env vars before deploying
+- **Migrations** run as the `migrate` Cloud Run job (API image, `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically; the drizzle-kit CLI silently failed in the hosted runtime). A failed migration stops the deploy before either service changes. It runs before the new API passes its startup probe, so set new required env vars/secrets first
+- **web → api**: the API accepts only callers with a Google ID token for its URL. `apps/web/src/server/api-auth.ts` fetches one from the metadata server (cached, refreshed 5 min before expiry) and sends it as `X-Serverless-Authorization` on the `/api/**` proxy and SSR auth calls. Locally `API_IAM_AUDIENCE` is unset and nothing is signed
+- **Production** means `NODE_ENV === "production"` (set by both Dockerfiles, never by dev/tests). It closes sign-up and enables rate limiting, and fails closed
+- API runs `max_instance_count = 1` because Better Auth's rate limiter is in-memory
 - Bun is pinned in three places that must move together: `.bun-version` (local, read by mise), and the `oven/bun:<version>` tag in both Dockerfiles
-- `.dockerignore` keeps env files and build artifacts out of the build context; watch paths live in each `railway.json`
+- `.dockerignore` keeps env files and build artifacts out of the build context
 - Turbo runs in strict env mode: build-time vars must be listed in `turbo.json` (`API_URL` is)
+- Logs are JSON lines with `severity`, `message` and `time`, which Cloud Logging parses
+- Cloud Run domain mapping isn't available in `europe-west3`, so the app is on `web-<project_number>.europe-west3.run.app` for now (custom domain options in `infra/README.md`)
 
 Build locally with `docker build -f apps/api/Dockerfile .` (web needs `--build-arg API_URL=...`).
 
 ### Environment Variables
 
-- **API service**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`, `PORT=3030`; optional `MAX_BODY_SIZE_MB` (default 1). `RAILWAY_ENVIRONMENT_NAME=production` (set by Railway) drives `isProduction`
-- **Web service**: `API_URL` — used at build time (baked into the Nitro `/api/**` proxy target, passed as a Docker build arg) and at runtime (SSR auth in `auth.ts`)
+Secrets live in Secret Manager (`database-url`, `better-auth-secret`, `google-client-id`, `google-client-secret`); Terraform creates them empty and values are added with `gcloud secrets versions add`, so they never reach Terraform state.
+
+- **api**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`; optional `MAX_BODY_SIZE_MB` (default 1). `PORT` is injected by Cloud Run (8080); don't set it. `GIT_COMMIT_SHA` is baked in by CI as a build arg
+- **web**: `API_URL` — used at build time (baked into the Nitro `/api/**` proxy target, passed as a Docker build arg) and at runtime (SSR auth in `auth.ts`); `API_IAM_AUDIENCE` (the API URL) turns on ID-token signing
+- **GitHub repository variables**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WIF_PROVIDER`, `GCP_DEPLOYER_EMAIL`, `API_URL`
 
 ## Legal
 
@@ -176,7 +184,7 @@ When features change (e.g., new data collected, third-party integrations, auth c
 
 ## Branching & Releases
 
-- **`main`** is the production branch — linked to Railway, every push triggers a deploy. Never commit to it directly
+- **`main`** is the production branch — every push triggers the GitHub Actions deploy to Cloud Run. Never commit to it directly
 - Work on a version branch (e.g. `v0.2.0`), push freely without triggering deploys
 - Release with `/release` (`.claude/commands/release.md`): rebase, fast-forward `main`, signed tag, next version branch
 - **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users. While on `0.x`, no need to bump major for breaking changes

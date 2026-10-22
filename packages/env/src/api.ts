@@ -9,8 +9,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     WEB_URL: z.url().default("http://localhost:3000"),
-    RAILWAY_ENVIRONMENT_NAME: z.string().optional(),
-    RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
+    GIT_COMMIT_SHA: z.string().optional(),
     MAX_BODY_SIZE_MB: z.coerce
       .number()
       .positive()
@@ -21,4 +20,4 @@ export const env = createEnv({
   emptyStringAsUndefined: true,
 })
 
-export const isProduction = env.RAILWAY_ENVIRONMENT_NAME === "production"
+export const isProduction = process.env.NODE_ENV === "production"

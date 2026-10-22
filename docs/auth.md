@@ -55,7 +55,7 @@ Better Auth's `/update-user` endpoint is disabled (`disabledPaths`); profiles ar
 
 ## Sign-up availability
 
-Sign-up is closed in production (`RAILWAY_ENVIRONMENT_NAME === "production"`) and open everywhere else (local dev, unit tests, e2e).
+Sign-up is closed in production builds (`NODE_ENV === "production"`, which both Dockerfiles set) and open everywhere else (local dev, unit tests, e2e). This fails closed: a deployed image never opens sign-up because an env var was forgotten.
 
 - API: `emailAndPassword.disableSignUp` and the Google provider's `disableSignUp` (not `disableImplicitSignUp`, which a client can bypass with `requestSignUp`). Email sign-up returns 400 `EMAIL_PASSWORD_SIGN_UP_DISABLED`; a Google sign-in for an unknown email redirects to `/login?error=signup_disabled`. Existing users can still sign in, and Google still links to an existing account with a verified email
 - Web: `getSignupOpen()` (`apps/web/src/lib/signup.ts`) reads the same env var at runtime. `/signup` and `/invite` redirect to `/login`, and the "Sign up" link and the members page Invite button are hidden

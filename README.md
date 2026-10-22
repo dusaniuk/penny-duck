@@ -133,7 +133,7 @@ Components are placed in `packages/ui/src/components/`.
 
 ## Deployment
 
-Hosted on Railway (web + API services, each built from its own Dockerfile) with the database on Neon. See `CLAUDE.md` for details.
+Hosted on Google Cloud Run (web + API services, each built from its own Dockerfile, deployed from `main` by GitHub Actions) with the database on Neon. Infrastructure is Terraform in [`infra/`](infra/README.md); see `CLAUDE.md` for details.
 
 ## License
 

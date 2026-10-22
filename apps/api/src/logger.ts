@@ -8,6 +8,7 @@ const REDACTED_KEYS = [
   "cookie",
   "set-cookie",
   "x-api-key",
+  "x-serverless-authorization",
   "password",
   "currentPassword",
   "newPassword",
@@ -18,14 +19,27 @@ const REDACTED_KEYS = [
   "secret",
 ]
 
-// Railway's log explorer reads `message` and a string `level`.
+const SEVERITIES: Record<string, string> = {
+  trace: "DEBUG",
+  debug: "DEBUG",
+  info: "INFO",
+  warn: "WARNING",
+  error: "ERROR",
+  fatal: "CRITICAL",
+}
+
+export function toSeverity(label: string): string {
+  return SEVERITIES[label] ?? "DEFAULT"
+}
+
+// Cloud Logging reads `message`, `severity` and an ISO `time` from JSON lines.
 export const logger = pino({
   level: nodeEnv === "test" ? "silent" : "info",
   base: undefined,
   messageKey: "message",
   errorKey: "err",
   formatters: {
-    level: (label) => ({ level: label }),
+    level: (label) => ({ severity: toSeverity(label) }),
   },
   timestamp: pino.stdTimeFunctions.isoTime,
   mixin: () => {

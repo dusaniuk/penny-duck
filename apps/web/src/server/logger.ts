@@ -3,6 +3,12 @@ type Fields = Record<string, unknown>
 
 const isProduction = process.env.NODE_ENV === "production"
 
+const SEVERITIES: Record<Level, string> = {
+  info: "INFO",
+  warn: "WARNING",
+  error: "ERROR",
+}
+
 function serializeError(err: unknown): unknown {
   if (!(err instanceof Error)) return err
   return {
@@ -13,11 +19,11 @@ function serializeError(err: unknown): unknown {
   }
 }
 
-// Same line shape as the API's pino logger, which is what Railway parses.
+// Same line shape as the API's pino logger, which is what Cloud Logging parses.
 function log(level: Level, message: string, fields: Fields = {}) {
   const { err, ...rest } = fields
   const line = {
-    level,
+    severity: SEVERITIES[level],
     time: new Date().toISOString(),
     ...rest,
     ...(err === undefined ? {} : { err: serializeError(err) }),

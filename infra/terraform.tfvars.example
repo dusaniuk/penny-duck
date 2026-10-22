@@ -1,0 +1,4 @@
+project_id         = "penny-duck-123456"
+project_number     = "123456789012"
+billing_account_id = "000000-000000-000000"
+budget_currency    = "USD"

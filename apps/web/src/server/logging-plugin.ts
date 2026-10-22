@@ -13,8 +13,8 @@ export default definePlugin((nitroApp) => {
   const startedAt = new WeakMap<Request, number>()
 
   logger.info("web started", {
-    version: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
-    env: process.env.RAILWAY_ENVIRONMENT_NAME ?? process.env.NODE_ENV,
+    version: process.env.GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
+    env: process.env.NODE_ENV ?? "development",
     apiProxyTarget,
     apiUrl: process.env.API_URL,
     bun: process.versions.bun,

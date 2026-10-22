@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: ${{ vars.GCP_REGION }}
+  REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/penny-duck
+  TAG: ${{ github.sha }}
+  API_URL: ${{ vars.API_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+
+      - name: Build and push images
+        run: |
+          docker build -f apps/api/Dockerfile \
+            --build-arg GIT_COMMIT_SHA="$TAG" \
+            -t "$REGISTRY/api:$TAG" .
+          docker build -f apps/web/Dockerfile \
+            --build-arg GIT_COMMIT_SHA="$TAG" \
+            --build-arg API_URL="$API_URL" \
+            -t "$REGISTRY/web:$TAG" .
+          docker push "$REGISTRY/api:$TAG"
+          docker push "$REGISTRY/web:$TAG"
+
+      - name: Run migrations
+        run: |
+          gcloud run jobs update migrate --region "$REGION" --image "$REGISTRY/api:$TAG"
+          gcloud run jobs execute migrate --region "$REGION" --wait
+
+      - name: Deploy API
+        run: gcloud run deploy api --region "$REGION" --image "$REGISTRY/api:$TAG"
+
+      - name: Deploy web
+        run: gcloud run deploy web --region "$REGION" --image "$REGISTRY/web:$TAG"

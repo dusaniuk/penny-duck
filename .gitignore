@@ -51,3 +51,11 @@ graphify-out
 .env.migration
 # Claude Code runtime state
 .claude/scheduled_tasks.lock
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate*
+infra/terraform.tfvars
+
+# google-github-actions/auth credentials
+gha-creds-*.json

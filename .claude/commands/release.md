@@ -23,4 +23,4 @@ Follow these steps exactly:
    - The branch and tag share a name, so use `refs/heads/` / `refs/tags/` wherever a ref could be ambiguous
 6. Clean up: `git branch -d <branch>`, and delete the remote branch only if it exists (`git ls-remote --heads origin <branch>` → `git push origin --delete refs/heads/<branch>`)
 7. Create the next version branch (bump the minor version, e.g. `v0.7.0` → `v0.8.0`)
-8. Report the release tag and that Railway deploy is triggered
+8. Report the release tag and that the GitHub Actions deploy is triggered (`gh run list --workflow deploy.yml --limit 1`)
