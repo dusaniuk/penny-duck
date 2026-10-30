@@ -1,0 +1,10 @@
+[Unit]
+Description=Redeploy Penny Duck when new images are published
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/penny-duck/deploy.env
+StateDirectory=penny-duck-deploy
+ExecStart=/usr/local/bin/penny-duck-deploy

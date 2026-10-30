@@ -1,0 +1,55 @@
+name: Images
+
+# Builds both images and pushes them to GHCR as :<commit> and :<branch>.
+# The homelab watches the :<branch> tag it deploys (main, or a version branch
+# for a rehearsal) and redeploys when it moves; nothing here reaches the server.
+
+on:
+  push:
+    branches: [main, "v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: images-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  SHA: ${{ github.sha }}
+  CHANNEL: ${{ github.ref_name }}
+  SOURCE: https://github.com/${{ github.repository }}
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      # web is pushed last: the homelab watches it, so by the time its tag
+      # moves the matching api image is already there.
+      - name: Build and push images
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          docker build -f apps/api/Dockerfile \
+            --build-arg GIT_COMMIT_SHA="$SHA" \
+            --label org.opencontainers.image.source="$SOURCE" \
+            -t "$registry/penny-duck-api:$SHA" \
+            -t "$registry/penny-duck-api:$CHANNEL" .
+          docker build -f apps/web/Dockerfile \
+            --build-arg GIT_COMMIT_SHA="$SHA" \
+            --build-arg API_URL=http://api:3030 \
+            --label org.opencontainers.image.source="$SOURCE" \
+            -t "$registry/penny-duck-web:$SHA" \
+            -t "$registry/penny-duck-web:$CHANNEL" .
+          docker push --all-tags "$registry/penny-duck-api"
+          docker push --all-tags "$registry/penny-duck-web"
