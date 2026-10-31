@@ -5,8 +5,6 @@ import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 import mdx from "@mdx-js/rollup"
 
-const apiUrl = process.env.API_URL ?? "http://localhost:3030"
-
 const config = defineConfig({
   envDir: "../../",
   resolve: {
@@ -24,14 +22,8 @@ const config = defineConfig({
         "./src/server/logging-plugin.ts",
         "./src/server/api-auth-plugin.ts",
       ],
-      runtimeConfig: { apiProxyTarget: apiUrl },
+      handlers: [{ route: "/api/**", handler: "./src/server/api-proxy.ts" }],
       routeRules: {
-        "/api/**": {
-          proxy: {
-            to: `${apiUrl}/**`,
-            fetchOptions: { redirect: "manual" },
-          },
-        },
         "/**": {
           headers: {
             "Content-Security-Policy":

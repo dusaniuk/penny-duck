@@ -4,6 +4,7 @@ import {
   setResponseHeader,
 } from "@tanstack/react-start/server"
 import { getApiAuthHeaders } from "@/server/api-auth"
+import { getApiUrl } from "@/server/api-url"
 import { logger } from "@/server/logger"
 
 export interface AuthUser {
@@ -15,7 +16,7 @@ export interface AuthUser {
 
 export const getAuthUser = createServerFn().handler(
   async (): Promise<AuthUser | null> => {
-    const apiUrl = process.env.API_URL ?? "http://localhost:3030"
+    const apiUrl = getApiUrl()
     const cookie = getRequestHeader("cookie")
     if (!cookie) return null
     const requestId = getRequestHeader("x-request-id")

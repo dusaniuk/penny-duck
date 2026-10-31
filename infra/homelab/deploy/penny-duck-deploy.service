@@ -7,4 +7,5 @@ After=network-online.target docker.service
 Type=oneshot
 EnvironmentFile=/etc/penny-duck/deploy.env
 StateDirectory=penny-duck-deploy
+TimeoutStartSec=40min
 ExecStart=/usr/local/bin/penny-duck-deploy

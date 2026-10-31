@@ -5,15 +5,16 @@ Penny Duck runs on a Coolify server that's reachable only through Twingate. Noth
 ```
 push to main/v* → images.yml → ghcr.io/dusaniuk/penny-duck-{api,web}:<branch> + :<sha>
                                         ↑ polled every 2 min
-server: penny-duck-deploy.timer → docker pull → Coolify API (localhost) → docker-compose.yml
+server: penny-duck-deploy.timer → docker pull → Coolify API (localhost) → deploy api, then web
 Twingate client → app.penny-duck.com → Traefik (wildcard cert, DNS-01) → web → api → Postgres
 ```
 
-| Folder               | What                                                     |
-| -------------------- | -------------------------------------------------------- |
-| `docker-compose.yml` | the `api` + `web` stack Coolify runs                     |
-| `deploy/`            | the watcher that redeploys when new images are published |
-| `backup/`            | encrypted off-site database backups (see its README)     |
+`api` and `web` are separate Coolify applications built from those images, so each deploys with a rolling update: the new container has to pass its health check before the old one stops. The images carry their own health checks, and the API runs migrations before it starts, so a failed migration leaves the old API serving.
+
+| Folder    | What                                                     |
+| --------- | -------------------------------------------------------- |
+| `deploy/` | the watcher that redeploys when new images are published |
+| `backup/` | encrypted off-site database backups (see its README)     |
 
 Host files follow one layout: scripts in `/usr/local/bin/penny-duck-*`, config in `/etc/penny-duck/`, units in `/etc/systemd/system/penny-duck-*`.
 
@@ -61,33 +62,46 @@ The app has no public DNS record, so Let's Encrypt can't reach it over HTTP; DNS
 - **Resource** for the Coolify dashboard and SSH: admin group only.
 - Postgres is never a resource.
 
-## 4. Coolify application
+## 4. Coolify applications
 
-New Resource → **Public Repository** → `https://github.com/dusaniuk/penny-duck`:
+Create two applications in the same project and environment as the Postgres resource: New Resource → **Docker Image**. Leave Coolify's own health check off; the images define theirs.
 
-- Branch: `main` (a version branch for a rehearsal)
-- Build pack: **Docker Compose**, compose file `/infra/homelab/docker-compose.yml`
+### api
 
-Environment variables:
+- Image `ghcr.io/dusaniuk/penny-duck-api`, tag `main`
+- Ports exposes `3030`, no domain: only `web` reaches it
 
-| Variable                                    | Value                                            |
-| ------------------------------------------- | ------------------------------------------------ |
-| `IMAGE_TAG`                                 | `main`, or the version branch during a rehearsal |
-| `DATABASE_URL`                              | the Postgres resource's internal URL             |
-| `BETTER_AUTH_SECRET`                        | `openssl rand -base64 32`                        |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from the Google OAuth client                     |
-| `WEB_URL`                                   | `https://app.penny-duck.com`                     |
+| Variable                                    | Value                                |
+| ------------------------------------------- | ------------------------------------ |
+| `DATABASE_URL`                              | the Postgres resource's internal URL |
+| `BETTER_AUTH_SECRET`                        | `openssl rand -base64 32`            |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from the Google OAuth client         |
+| `WEB_URL`                                   | `https://app.penny-duck.com`         |
 
-Domains: on the `web` service, `https://app.penny-duck.com:3000`. `api` gets no domain; only `web` reaches it.
+Deploy it and check the logs show `Migrations applied successfully!` and `api listening on :3030`.
+
+### web
+
+- Image `ghcr.io/dusaniuk/penny-duck-web`, tag `main`
+- Ports exposes `3000`, domain `https://app.penny-duck.com`
+- Variable `API_URL=http://<api hostname>:3030`
+
+`web` finds the API by a name on Coolify's network that has to survive rolling updates (which replace the container), so use the alias rather than the container name. On the server, with the `api` container running:
+
+```bash
+docker inspect $(docker ps -q --filter name=<api uuid>) --format '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}}: {{$cfg.Aliases}}{{"\n"}}{{end}}'
+```
+
+`Aliases` should include the api application's UUID (shown in its URL in the Coolify dashboard); that's the hostname.
 
 In Google Cloud → APIs & Services → Credentials → the OAuth client, add the redirect URI `https://app.penny-duck.com/api/auth/callback/google`.
 
-Deploy once by hand and check that the `api` logs show migrations applied and `api listening`, and that both containers turn healthy.
+Deploy `web`, then open `https://app.penny-duck.com` through Twingate and sign in.
 
 ## 5. Deploy watcher
 
 1. Coolify → Settings → enable **API access**. Keys & Tokens → API tokens → new token with **deploy** permission.
-2. The application's UUID is in its URL in the Coolify dashboard.
+2. Each application's UUID is in its URL in the Coolify dashboard; the env file needs both.
 3. Install, from your Mac:
 
    ```bash
@@ -108,10 +122,10 @@ Deploy once by hand and check that the `api` logs show migrations applied and `a
    rm -r ~/deploy
    ```
 
-`IMAGE_TAG` in `deploy.env` must match the one in Coolify. The first run always deploys, since it has no record of what's running.
+`IMAGE_TAG` in `deploy.env` must match the tag both applications use. The first run always deploys, since it has no record of what's running. It deploys `api`, waits for Coolify to report it finished, then deploys `web`; if `api` fails, `web` is left alone and the failure is in `journalctl -u penny-duck-deploy`.
 
 ## Rolling back
 
-Set `IMAGE_TAG` in Coolify to an earlier commit SHA (every build is also tagged with it) and redeploy. The watcher keeps redeploying when `main` moves, but Coolify stays on the pinned SHA until you set it back to `main`.
+Set the image tag of `api`, `web` or both to an earlier commit SHA (every build is also tagged with it) and redeploy. The watcher keeps redeploying when `main` moves, but the applications stay on the pinned SHA until you set them back to `main`.
 
 Migrations only move forward. Rolling back past a migration leaves the newer schema in place, which the older code has to tolerate, or the database has to be restored from a backup.

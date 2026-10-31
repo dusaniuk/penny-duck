@@ -130,7 +130,7 @@ apps/api/src/
 - The web app calls the API through a typed Hono RPC client: `api = hc<AppType>("/api")` in `apps/web/src/lib/api.ts`, with TanStack Query (`queryClient` in the same file)
 - Wrap calls in `unwrap()` from the same file: `queryFn: () => unwrap(api.accounts.$get())`. It returns the typed success body and throws `ApiRequestError` (`apps/web/src/lib/errors.ts`, carries `statusCode`/`code`/`details`) on non-2xx. Only branch on `res.ok` by hand when a non-2xx is an expected result (e.g. a 404 that means "none")
 - Not Hono's built-in `parseResponse`: its `DetailedError` puts the status line in `message` and buries the API error body in `detail.data`, which breaks `errorMessage()` toasts
-- Nitro proxies `/api/**` → `API_URL` (`routeRules` in `apps/web/vite.config.ts`) so cookies are same-origin; the proxy strips the `/api` prefix
+- Nitro proxies `/api/**` → `API_URL` (handler in `apps/web/src/server/api-proxy.ts`, registered in `vite.config.ts`) so cookies are same-origin; the proxy strips the `/api` prefix. `API_URL` is read at runtime (`getApiUrl()` in `src/server/api-url.ts`), never baked into the build, so one web image runs against any API address
 - Because `AppType` is inferred from `app.ts`, new routes must be chained onto the Hono builders (not registered imperatively) to show up on the client
 
 ## Auth
@@ -164,19 +164,21 @@ Hosted on Google Cloud Run in `europe-west3` (Frankfurt) with two services, **we
 - API runs `max_instance_count = 1` because Better Auth's rate limiter is in-memory
 - Bun is pinned in three places that must move together: `.bun-version` (local, read by mise), and the `oven/bun:<version>` tag in both Dockerfiles
 - `.dockerignore` keeps env files and build artifacts out of the build context
-- Turbo runs in strict env mode: build-time vars must be listed in `turbo.json` (`API_URL` is)
+- Turbo runs in strict env mode: build-time vars must be listed in `turbo.json` (there are none today)
 - Logs are JSON lines with `severity`, `message` and `time`, which Cloud Logging parses
 - Cloud Run domain mapping isn't available in `europe-west3`, so the app is on `web-<project_number>.europe-west3.run.app` for now (custom domain options in `infra/README.md`)
 
-Build locally with `docker build -f apps/api/Dockerfile .` (web needs `--build-arg API_URL=...`).
+Build locally with `docker build -f apps/api/Dockerfile .` / `-f apps/web/Dockerfile .`. Both images carry a Docker `HEALTHCHECK`, and the API image runs migrations before starting.
+
+The move to a self-hosted Coolify server behind Twingate is in progress: `.github/workflows/images.yml` publishes both images to GHCR, and `infra/homelab/` holds the server setup (deploy watcher, backups); see `infra/homelab/README.md`.
 
 ### Environment Variables
 
 Secrets live in Secret Manager (`database-url`, `better-auth-secret`, `google-client-id`, `google-client-secret`); Terraform creates them empty and values are added with `gcloud secrets versions add`, so they never reach Terraform state.
 
 - **api**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`; optional `MAX_BODY_SIZE_MB` (default 1). `PORT` is injected by Cloud Run (8080); don't set it. `GIT_COMMIT_SHA` is baked in by CI as a build arg
-- **web**: `API_URL` — used at build time (baked into the Nitro `/api/**` proxy target, passed as a Docker build arg) and at runtime (SSR auth in `auth.ts`); `API_IAM_AUDIENCE` (the API URL) turns on ID-token signing
-- **GitHub repository variables**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WIF_PROVIDER`, `GCP_DEPLOYER_EMAIL`, `API_URL`
+- **web**: `API_URL` — read at runtime by the `/api/**` proxy and the SSR auth check; `API_IAM_AUDIENCE` (the API URL) turns on ID-token signing
+- **GitHub repository variables**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WIF_PROVIDER`, `GCP_DEPLOYER_EMAIL`
 
 ## Legal
 

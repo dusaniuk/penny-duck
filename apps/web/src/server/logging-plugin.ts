@@ -1,5 +1,6 @@
 import { definePlugin } from "nitro"
-import { useRuntimeConfig } from "nitro/runtime-config"
+import { proxyTarget } from "./api-proxy"
+import { getApiUrl } from "./api-url"
 import { logger } from "./logger"
 
 const REQUEST_ID_HEADER = "x-request-id"
@@ -9,14 +10,12 @@ function isPageOrApi(pathname: string) {
 }
 
 export default definePlugin((nitroApp) => {
-  const apiProxyTarget = String(useRuntimeConfig().apiProxyTarget)
   const startedAt = new WeakMap<Request, number>()
 
   logger.info("web started", {
     version: process.env.GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
     env: process.env.NODE_ENV ?? "development",
-    apiProxyTarget,
-    apiUrl: process.env.API_URL,
+    apiUrl: getApiUrl(),
     bun: process.versions.bun,
   })
 
@@ -56,7 +55,7 @@ export default definePlugin((nitroApp) => {
       logger.error("api proxy failed", {
         requestId,
         status,
-        target: `${apiProxyTarget}${url.pathname.slice(4)}${url.search}`,
+        target: proxyTarget(url.href),
         err: error,
       })
       return

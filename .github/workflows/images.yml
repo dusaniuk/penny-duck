@@ -47,7 +47,6 @@ jobs:
             -t "$registry/penny-duck-api:$CHANNEL" .
           docker build -f apps/web/Dockerfile \
             --build-arg GIT_COMMIT_SHA="$SHA" \
-            --build-arg API_URL=http://api:3030 \
             --label org.opencontainers.image.source="$SOURCE" \
             -t "$registry/penny-duck-web:$SHA" \
             -t "$registry/penny-duck-web:$CHANNEL" .
