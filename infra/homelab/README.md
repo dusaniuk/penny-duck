@@ -35,18 +35,25 @@ The app has no public DNS record, so Let's Encrypt can't reach it over HTTP; DNS
 
    Save, then **Restart Proxy**.
 
-3. Proxy → Dynamic Configurations → new file `wildcard-penny-duck-com.yaml`:
+3. Proxy → Dynamic Configurations → new file `wildcard-penny-duck-com.yaml`. Traefik only requests certificates for routers, so this placeholder router (unused host, no-op service) exists to request the wildcard; app routers then reuse it instead of getting their own:
 
    ```yaml
-   tls:
-     certResolver: letsencrypt
-     domains:
-       - main: penny-duck.com
-         sans:
-           - "*.penny-duck.com"
+   http:
+     routers:
+       wildcard-penny-duck-com:
+         rule: Host(`wildcard.penny-duck.com`)
+         entryPoints:
+           - https
+         service: noop@internal
+         tls:
+           certResolver: letsencrypt
+           domains:
+             - main: penny-duck.com
+               sans:
+                 - "*.penny-duck.com"
    ```
 
-4. Watch Proxy → Logs for the ACME request to succeed.
+4. Watch Proxy → Logs for the ACME request to succeed. Once the app is deployed, [crt.sh](https://crt.sh/?q=penny-duck.com) should list only the wildcard, not `app.penny-duck.com`.
 
 ## 3. Twingate
 
