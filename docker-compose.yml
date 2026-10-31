@@ -4,11 +4,14 @@ services:
     ports:
       # Bind to loopback only so the dev DB isn't reachable from the local
       # network (it uses trivial dev credentials).
-      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:5433:5432"
+    # Fixed dev credentials, matching DATABASE_URL in .env.example, so the app
+    # config is just DATABASE_URL like in production. Postgres only reads these
+    # when the volume is first created.
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: penny_duck
+      POSTGRES_USER: penny
+      POSTGRES_PASSWORD: duck
     volumes:
       # Postgres 18+ image places data in a versioned subdirectory and expects
       # the volume mounted at /var/lib/postgresql (not .../data), which also
