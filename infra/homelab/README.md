@@ -70,6 +70,7 @@ Create two applications in the same project and environment as the Postgres reso
 
 - Image `ghcr.io/dusaniuk/penny-duck-api`, tag `main`
 - Ports exposes `3030`, no domain: only `web` reaches it
+- Networking → Edit Networking → network alias `penny-duck-api`. Container names carry a deploy timestamp and change on every rolling update; the alias stays
 
 | Variable                                    | Value                                |
 | ------------------------------------------- | ------------------------------------ |
@@ -84,15 +85,13 @@ Deploy it and check the logs show `Migrations applied successfully!` and `api li
 
 - Image `ghcr.io/dusaniuk/penny-duck-web`, tag `main`
 - Ports exposes `3000`, domain `https://app.penny-duck.com`
-- Variable `API_URL=http://<api hostname>:3030`
+- Variable `API_URL=http://penny-duck-api:3030`
 
-`web` finds the API by a name on Coolify's network that has to survive rolling updates (which replace the container), so use the alias rather than the container name. On the server, with the `api` container running:
+To check that `web` will reach the API, from the server:
 
 ```bash
-docker inspect $(docker ps -q --filter name=<api uuid>) --format '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}}: {{$cfg.Aliases}}{{"\n"}}{{end}}'
+docker run --rm --network coolify busybox wget -qO- http://penny-duck-api:3030/healthz
 ```
-
-`Aliases` should include the api application's UUID (shown in its URL in the Coolify dashboard); that's the hostname.
 
 In Google Cloud → APIs & Services → Credentials → the OAuth client, add the redirect URI `https://app.penny-duck.com/api/auth/callback/google`.
 
@@ -100,7 +99,7 @@ Deploy `web`, then open `https://app.penny-duck.com` through Twingate and sign i
 
 ## 5. Deploy watcher
 
-1. Coolify → Settings → enable **API access**. Keys & Tokens → API tokens → new token with **deploy** permission.
+1. Coolify → Settings → Advanced → enable **API access**. If you limit it to allowed IPs, include the `coolify` network's gateway (`docker network inspect coolify --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'`): requests to `localhost:8000` reach Coolify from there, not from `127.0.0.1`. Keys & Tokens → API tokens → new token with **read** and **deploy** permissions (read lets the watcher follow a deployment until it finishes).
 2. Each application's UUID is in its URL in the Coolify dashboard; the env file needs both.
 3. Install, from your Mac:
 

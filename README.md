@@ -133,7 +133,7 @@ Components are placed in `packages/ui/src/components/`.
 
 ## Deployment
 
-Hosted on Google Cloud Run (web + API services, each built from its own Dockerfile, deployed from `main` by GitHub Actions) with the database on Neon. Infrastructure is Terraform in [`infra/`](infra/README.md); see `CLAUDE.md` for details.
+Self-hosted on a [Coolify](https://coolify.io) server, reachable only through Twingate. GitHub Actions builds the web and API images from `main`, and the server deploys them; setup is in [`infra/homelab/`](infra/homelab/README.md), and `CLAUDE.md` has the details.
 
 ## License
 

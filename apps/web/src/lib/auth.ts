@@ -3,7 +3,6 @@ import {
   getRequestHeader,
   setResponseHeader,
 } from "@tanstack/react-start/server"
-import { getApiAuthHeaders } from "@/server/api-auth"
 import { getApiUrl } from "@/server/api-url"
 import { logger } from "@/server/logger"
 
@@ -26,7 +25,6 @@ export const getAuthUser = createServerFn().handler(
         headers: {
           cookie,
           ...(requestId && { "x-request-id": requestId }),
-          ...(await getApiAuthHeaders()),
         },
       })
       const setCookies = res.headers.getSetCookie()

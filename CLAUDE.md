@@ -148,37 +148,38 @@ apps/api/src/
 - Postgres runs in Docker on `127.0.0.1:5433`; `docker/init` creates the `app` schema and the test database on first start
 - The API dev server uses `bun --hot`, which doesn't always pick up schema or api-contract changes — restart it after those
 
-## Deployment (Cloud Run)
+## Deployment (homelab)
 
-Hosted on Google Cloud Run in `europe-west3` (Frankfurt) with two services, **web** (public) and **api** (IAM-only), plus a **migrate** job. The Postgres database is hosted on **Neon** (Postgres 18, eu-central-1, direct/non-pooler connection URL with `sslmode=verify-full`). Infrastructure is Terraform in `infra/` (see `infra/README.md`); Yaro runs `terraform plan`/`apply` locally.
+Production runs on a self-hosted **Coolify** server at home in Poland, reachable only through **Twingate** at `https://app.penny-duck.com` (no public DNS record; Twingate resolves the name). Setup, rollback and gotchas are in `infra/homelab/README.md`; the server is managed by hand.
+
+- **api** and **web** are separate Coolify "Docker Image" applications, deployed with rolling updates. `web` reaches `api` at `http://penny-duck-api:3030`, a network alias set in Coolify (container names carry a deploy timestamp and change every deploy)
+- **Postgres 18** is a Coolify database resource on the same `coolify` Docker network; it is never exposed outside the server
+- **TLS**: one Let's Encrypt wildcard for `*.penny-duck.com` via Traefik's Cloudflare DNS-01 challenge, so app hostnames stay out of Certificate Transparency logs
 
 ### Build & Deploy
 
-`.github/workflows/deploy.yml` runs on every push to `main`: build both images → push to Artifact Registry → run the `migrate` job and wait → `gcloud run deploy api` → `gcloud run deploy web`. GitHub authenticates through Workload Identity Federation (no stored key), pinned to this repo's ID and `refs/heads/main`. Terraform ignores image changes; CI owns them.
+`.github/workflows/images.yml` runs on every push to `main` and to `v*` branches: builds both images and pushes them to GHCR (public) as `ghcr.io/dusaniuk/penny-duck-{api,web}:<branch>` and `:<sha>`. Nothing on GitHub can reach the server: a systemd timer on it (`penny-duck-deploy`, every 2 minutes) notices a new `:main` image, deploys `api`, waits for Coolify to report it finished, then deploys `web`.
 
-- **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step)
+- **API** — `apps/api/Dockerfile`: `turbo prune api --docker` → prod-only pnpm install → `oven/bun` runtime running `apps/api/src/main.ts` from source (no build step). The container runs migrations (`bun --cwd packages/db src/migrate.ts`, drizzle-orm `migrate()`) before starting the API; if one fails the new container never turns healthy and the old one keeps serving
 - **Web** — `apps/web/Dockerfile`: `turbo prune web --docker` → install + `vite build` → `oven/bun` runtime with only `.output/` (Nitro output is self-contained)
-- **Migrations** run as the `migrate` Cloud Run job (API image, `bun --cwd packages/db src/migrate.ts` — drizzle-orm `migrate()` programmatically; the drizzle-kit CLI silently failed in the hosted runtime). A failed migration stops the deploy before either service changes. It runs before the new API passes its startup probe, so set new required env vars/secrets first
-- **web → api**: the API accepts only callers with a Google ID token for its URL. `apps/web/src/server/api-auth.ts` fetches one from the metadata server (cached, refreshed 5 min before expiry) and sends it as `X-Serverless-Authorization` on the `/api/**` proxy and SSR auth calls. Locally `API_IAM_AUDIENCE` is unset and nothing is signed
+- Both images carry a Docker `HEALTHCHECK` (`/healthz` on the API, `/legal/privacy` on web), which Coolify's rolling updates wait on
 - **Production** means `NODE_ENV === "production"` (set by both Dockerfiles, never by dev/tests). It closes sign-up and enables rate limiting, and fails closed
-- API runs `max_instance_count = 1` because Better Auth's rate limiter is in-memory
+- Run one `api` container: Better Auth's rate limiter is in-memory. Behind Twingate every request arrives from the connector's IP, so rate limits are effectively shared
 - Bun is pinned in three places that must move together: `.bun-version` (local, read by mise), and the `oven/bun:<version>` tag in both Dockerfiles
 - `.dockerignore` keeps env files and build artifacts out of the build context
 - Turbo runs in strict env mode: build-time vars must be listed in `turbo.json` (there are none today)
-- Logs are JSON lines with `severity`, `message` and `time`, which Cloud Logging parses
-- Cloud Run domain mapping isn't available in `europe-west3`, so the app is on `web-<project_number>.europe-west3.run.app` for now (custom domain options in `infra/README.md`)
+- Logs are JSON lines with `severity`, `message` and `time`; read them in Coolify
 
-Build locally with `docker build -f apps/api/Dockerfile .` / `-f apps/web/Dockerfile .`. Both images carry a Docker `HEALTHCHECK`, and the API image runs migrations before starting.
+Build locally with `docker build -f apps/api/Dockerfile .` / `-f apps/web/Dockerfile .`.
 
-The move to a self-hosted Coolify server behind Twingate is in progress: `.github/workflows/images.yml` publishes both images to GHCR, and `infra/homelab/` holds the server setup (deploy watcher, backups); see `infra/homelab/README.md`.
+**Backups**: Coolify keeps 7 daily local dumps; a host timer (`penny-duck-backup`) uploads a daily age-encrypted dump to Backblaze B2 (EU) with Object Lock. The age private key and the read-only B2 key live only in 1Password. See `infra/homelab/backup/README.md`.
 
 ### Environment Variables
 
-Secrets live in Secret Manager (`database-url`, `better-auth-secret`, `google-client-id`, `google-client-secret`); Terraform creates them empty and values are added with `gcloud secrets versions add`, so they never reach Terraform state.
+Set per application in Coolify; locally in `.env` (same names, see `.env.example`).
 
-- **api**: `DATABASE_URL` (Neon direct connection string), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`; optional `MAX_BODY_SIZE_MB` (default 1). `PORT` is injected by Cloud Run (8080); don't set it. `GIT_COMMIT_SHA` is baked in by CI as a build arg
-- **web**: `API_URL` — read at runtime by the `/api/**` proxy and the SSR auth check; `API_IAM_AUDIENCE` (the API URL) turns on ID-token signing
-- **GitHub repository variables**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WIF_PROVIDER`, `GCP_DEPLOYER_EMAIL`
+- **api**: `DATABASE_URL` (the Coolify Postgres internal URL), `BETTER_AUTH_SECRET` (min 32 chars), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WEB_URL`; optional `MAX_BODY_SIZE_MB` (default 1). `PORT` defaults to 3030. `GIT_COMMIT_SHA` is baked in by CI as a build arg
+- **web**: `API_URL` — read at runtime by the `/api/**` proxy and the SSR auth check
 
 ## Legal
 
@@ -186,7 +187,7 @@ When features change (e.g., new data collected, third-party integrations, auth c
 
 ## Branching & Releases
 
-- **`main`** is the production branch — every push triggers the GitHub Actions deploy to Cloud Run. Never commit to it directly
+- **`main`** is the production branch — every push builds images that the homelab deploys within minutes. Never commit to it directly
 - Work on a version branch (e.g. `v0.2.0`), push freely without triggering deploys
 - Release with `/release` (`.claude/commands/release.md`): rebase, fast-forward `main`, signed tag, next version branch
 - **Semver**: PATCH = bug fixes, MINOR = new features, MAJOR = breaking changes visible to users. While on `0.x`, no need to bump major for breaking changes

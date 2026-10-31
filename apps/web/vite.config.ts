@@ -20,7 +20,7 @@ const config = defineConfig({
       preset: "bun",
       plugins: [
         "./src/server/logging-plugin.ts",
-        "./src/server/api-auth-plugin.ts",
+        "./src/server/client-ip-plugin.ts",
       ],
       handlers: [{ route: "/api/**", handler: "./src/server/api-proxy.ts" }],
       routeRules: {
